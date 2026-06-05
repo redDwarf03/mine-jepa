@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+dist/
+build/
+
+# Data & checkpoints (trop volumineux pour git → HuggingFace)
+data/
+checkpoints/
+
+# Assets générés (GIFs, vidéos) — on commite seulement les finaux
+assets/*.gif
+assets/*.mp4
+assets/*.webp
+
+# Configs locales
+configs/local/
+*.local.yaml
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# OS
+.DS_Store

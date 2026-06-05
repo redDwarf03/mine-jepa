@@ -1,0 +1,42 @@
+[project]
+name = "mine-jepa"
+version = "0.1.0"
+description = "A JEPA world model agent that plays Minecraft from raw pixels"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "torch>=2.5.1",
+    "torchvision>=0.20",
+    "timm>=1.0",
+    "einops>=0.8",
+    "numpy>=2.0",
+    "pillow>=11.0",
+    "opencv-python>=4.10",
+    "matplotlib>=3.9",
+    "scikit-learn>=1.5",
+    "pyyaml>=6.0",
+    "omegaconf>=2.3",
+    "pandas>=2.0",
+    "tqdm>=4.67",
+    "seaborn>=0.13",
+    "wandb>=0.27",
+    "crafter>=1.8",
+    "imageio>=2.35",
+    "imageio-ffmpeg>=0.5",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.8",
+]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
