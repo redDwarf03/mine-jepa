@@ -24,7 +24,7 @@ mais le modèle n'a rien appris). **Toujours** :
 - monitorer `batch_var` à chaque epoch — si < 1e-6 : collapse en cours
 
 ## Phase courante
-**PHASE 1 — Représentation JEPA** (voir PLAN.md §4). Phase 0 complète ✅.
+**PHASE 4 — Port vers le vrai Minecraft (MineRL)** (voir PLAN.md §4). Phases 0→3 complètes ✅.
 
 Phase 0 — gates validés :
 - [x] Env Python tourne + Crafter installé
@@ -32,14 +32,37 @@ Phase 0 — gates validés :
 - [x] `mine_jepa/eb_jepa/` — code Meta vendored, importable, smoke test OK
 - [x] `docs/01_jepa.md` + `docs/02_setup.md` rédigés
 
-Gates à valider avant Phase 2 :
-- [ ] `scripts/train_encoder.py` → entraînement 30 epochs sur GPU NVIDIA (PC)
-- [ ] `batch_var` > 1e-4 à la fin de l'entraînement (pas de collapse)
-- [ ] `scripts/probe.py` → linear-probe accuracy > baseline (33 %) sur `health`
-- [ ] `docs/03_representation_collapse.md` rédigé
+Phase 1 — gates validés ✅ :
+- [x] `scripts/train_encoder.py` → 30 epochs GPU RTX 5060 Ti — val_loss=0.080, batch_var=1.13
+- [x] `batch_var` > 1e-4 — mesuré 1.178 au probe (pas de collapse)
+- [x] `scripts/probe.py` → linear-probe health : 90.8% vs baseline 86.9% (+3.8%) ✅
+- [x] `docs/03_representation_collapse.md` rédigé
 
-⚠️  Entraînement Phase 1 sur **PC NVIDIA uniquement** (8 Go VRAM).
-Commande : `uv run python scripts/train_encoder.py`
+Phase 2 — gates validés ✅ :
+- [x] `scripts/train_wm.py` → 30 epochs GPU — val_pred=0.033 vs val_copy=0.086 (ratio=0.38)
+- [x] erreur latente 1-pas < baseline : ratio 0.367 ✅
+- [x] `scripts/eval_wm.py` → multi-pas 10/10 k sous baseline (ratio ~0.38 stable) ✅
+- [x] `docs/04_world_model.md` rédigé
+
+Phase 3 — gates validés ✅ :
+- [x] `scripts/play.py` → agent MPC latent dans Crafter (random-shooting, horizon=12, N=512)
+- [x] 100% success rate, 2.56 achievements/ep vs 2.38 random (+7.5%), reward +14%
+- [x] GIF sauvegardé : `assets/agent_play.gif`
+- [x] `docs/05_planning.md` rédigé
+
+Gates à valider avant Phase 5 :
+- [ ] MineRL installé et env tourne (`import minerl` OK)
+- [ ] `scripts/collect.py --env minerl` → dataset Minecraft réel
+- [ ] Ré-entraîner encoder + WM sur frames MineRL
+- [ ] `scripts/play.py --env minerl` → agent joue au vrai Minecraft
+- [ ] `docs/06_minecraft_port.md` rédigé
+
+⚠️  Phase 4 sur **PC NVIDIA uniquement**. MineRL nécessite Java 8.
+Commande install : `uv pip install minerl` (peut prendre 10+ min)
+
+Notes PC Windows :
+- Toujours utiliser `run.bat <script>` (wrapper PYTHONUTF8=1 + PYTHONUNBUFFERED=1)
+- torch CUDA 12.8 installé manuellement (uv sync installe CPU par défaut)
 
 ## Conventions de code
 - Python 3.11+, PyTorch 2.x, timm, einops
