@@ -1,8 +1,10 @@
 """
-Datasets pour Phase 1 de Mine-JEPA.
+Datasets pour Mine-JEPA.
 
-CrafterFrameDataset  — paires (frame_t, frame_t+1) pour entraîner le JEPA
-ProbeDataset         — paires (frame, label) pour le linear-probe
+CrafterFrameDataset  — paires (frame_t, frame_t+1) pour entraîner le JEPA (Phase 1)
+ProbeDataset         — paires (frame, label) pour le linear-probe (Phase 1)
+CrafterWMDataset     — triplets (frame_t, action_t, frame_t+1) pour le world model (Phase 2)
+CrafterSeqDataset    — séquences (frames[0..k], actions[0..k-1]) pour l'éval multi-pas
 """
 from pathlib import Path
 
@@ -99,3 +101,73 @@ class ProbeDataset(Dataset):
     def class_counts(self) -> dict:
         counts = torch.bincount(self.labels, minlength=3)
         return {"low": counts[0].item(), "med": counts[1].item(), "high": counts[2].item()}
+
+
+class CrafterWMDataset(Dataset):
+    """
+    Triplets (frame_t, action_t, frame_{t+1}) pour entraîner le world model.
+
+    Le world model doit apprendre : étant donné l'état latent s_t et l'action a_t,
+    prédire l'état latent suivant ŝ_{t+1}. On fournit les frames brutes — l'encodeur
+    gelé (Phase 1) les convertira en latents pendant l'entraînement.
+
+    Crafter a 17 actions discrètes (noop, déplacements, do, craft…).
+    """
+
+    N_ACTIONS: int = 17
+
+    def __init__(self, data_path: str):
+        data = _load_npz(data_path)
+        frames = _to_float(data["frames"])         # [N, 3, H, W]
+        actions = data["actions"].astype(np.int64) # [N]
+        dones = data["dones"]                      # [N] bool
+
+        valid = np.where(~dones[:-1])[0]
+        self.x_context = frames[valid]
+        self.x_target = frames[valid + 1]
+        self.actions = torch.from_numpy(actions[valid])
+
+    def __len__(self) -> int:
+        return len(self.x_context)
+
+    def __getitem__(self, idx: int):
+        return self.x_context[idx], self.actions[idx], self.x_target[idx]
+
+
+class CrafterSeqDataset(Dataset):
+    """
+    Séquences (frames[0..k], actions[0..k-1]) pour l'évaluation multi-pas.
+
+    Retourne des fenêtres glissantes de longueur k+1 sans franchir de frontière
+    d'épisode. Utilisé par eval_wm.py pour mesurer l'erreur de rollout latent
+    sur k pas vs la baseline "copie de l'état initial".
+    """
+
+    def __init__(self, data_path: str, k: int = 10):
+        data = _load_npz(data_path)
+        frames = _to_float(data["frames"])
+        actions = data["actions"].astype(np.int64)
+        dones = data["dones"]
+
+        # Une fenêtre [i, i+k] est valide si aucun done dans [i, i+k-1]
+        # On vérifie en cumulant les dones sur la fenêtre.
+        n = len(frames)
+        valid_starts = []
+        for i in range(n - k):
+            if not dones[i : i + k].any():
+                valid_starts.append(i)
+
+        self.frames = frames
+        self.actions = torch.from_numpy(actions)
+        self.starts = valid_starts
+        self.k = k
+
+    def __len__(self) -> int:
+        return len(self.starts)
+
+    def __getitem__(self, idx: int):
+        i = self.starts[idx]
+        k = self.k
+        seq_frames = self.frames[i : i + k + 1]   # [k+1, 3, H, W]
+        seq_actions = self.actions[i : i + k]      # [k]
+        return seq_frames, seq_actions

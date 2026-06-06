@@ -1,0 +1,31 @@
+# Hyperparamètres — Phase 3 : agent MPC en latent dans Crafter
+
+encoder:
+  checkpoint: checkpoints/encoder_phase1.pt
+
+world_model:
+  checkpoint: checkpoints/wm_phase2.pt
+
+planner:
+  n_candidates: 512   # séquences d'actions candidates par step
+  horizon: 12         # nombre de pas imaginés en avant
+  n_actions: 17       # Crafter : 17 actions discrètes
+
+goal:
+  # Frames du dataset dont food >= 7 servent à construire le goal embedding.
+  # "food élevé" ≈ l'agent a mangé une plante récemment = bon état de survie.
+  data_path: data/crafter/episodes.npz
+  label: food         # label utilisé pour sélectionner les frames "goal"
+  threshold: 7        # valeur min pour qualifier de "bon état"
+  min_frames: 50      # au moins N frames pour calculer le centroïde
+
+agent:
+  episodes: 50
+  max_steps: 500      # steps max par épisode (limite Crafter par défaut)
+  seed: 0
+
+logging:
+  print_every: 10     # afficher stats tous les N épisodes
+  save_gif: true
+  gif_episodes: 3     # nombre d'épisodes à enregistrer en GIF
+  gif_path: assets/agent_play.gif

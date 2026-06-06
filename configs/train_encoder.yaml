@@ -15,7 +15,7 @@ training:
   lr: 3.0e-4
   weight_decay: 1.0e-5
   ema_decay: 0.99      # θ̄ ← 0.99·θ̄ + 0.01·θ (ESANN 2025)
-  num_workers: 4
+  num_workers: 0
 
 vicreg:
   std_coeff: 1.0       # poids de la pénalité de variance (anti-collapse)
