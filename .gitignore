@@ -10,11 +10,6 @@ build/
 data/
 checkpoints/
 
-# Assets générés (GIFs, vidéos) — on commite seulement les finaux
-assets/*.gif
-assets/*.mp4
-assets/*.webp
-
 # Configs locales
 configs/local/
 *.local.yaml
