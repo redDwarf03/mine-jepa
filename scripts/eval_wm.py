@@ -1,20 +1,20 @@
 """
-Phase 2 — Gate : évaluation du world model (erreur latente 1-pas et multi-pas).
+Phase 2 — Gate: world model evaluation (1-step and multi-step latent error).
 
-Questions auxquelles ce script répond :
-  1. Erreur 1-pas : le predictor fait-il mieux que "copier l'état" ?
-  2. Erreur multi-pas (k=1..10) : comment l'erreur de rollout évolue-t-elle ?
+Questions answered by this script:
+  1. 1-step error: does the predictor beat "copy the state"?
+  2. Multi-step error (k=1..10): how does rollout error evolve?
 
-Méthode :
-  1-pas  : MSE(ŝ_{t+1}, s_{t+1}) vs MSE(s_t, s_{t+1})
-  k-pas  : dérouler ŝ_1 = pred(s_0, a_0), ŝ_2 = pred(ŝ_1, a_1), ...
-           comparer ŝ_k à s_k et à s_0 (baseline constante)
+Method:
+  1-step  : MSE(ŝ_{t+1}, s_{t+1}) vs MSE(s_t, s_{t+1})
+  k-step  : unroll ŝ_1 = pred(s_0, a_0), ŝ_2 = pred(ŝ_1, a_1), ...
+            compare ŝ_k to s_k and to s_0 (constant baseline)
 
-Gate Phase 2 :
-  - erreur 1-pas < erreur copy_baseline
-  - erreur multi-pas < baseline constante sur la majorité des k
+Phase 2 Gate:
+  - 1-step error < copy_baseline error
+  - multi-step error < constant baseline for most k
 
-Usage :
+Usage:
     run.bat scripts/eval_wm.py
     run.bat scripts/eval_wm.py --max_k 15
 """
@@ -79,7 +79,7 @@ def load_predictor(ckpt_path: str, cfg: dict, device: torch.device) -> ActionCon
     predictor.load_state_dict(ckpt["predictor_state"])
     predictor.eval()
     print(
-        f"World model chargé : epoch {ckpt['epoch']}, "
+        f"World model loaded: epoch {ckpt['epoch']}, "
         f"val_pred={ckpt['val_pred_loss']:.4f}, "
         f"val_copy={ckpt['val_copy_loss']:.4f}"
     )
@@ -88,7 +88,7 @@ def load_predictor(ckpt_path: str, cfg: dict, device: torch.device) -> ActionCon
 
 @torch.no_grad()
 def eval_one_step(encoder, predictor, cfg: dict, device: torch.device) -> dict:
-    """MSE 1-pas du predictor vs baseline copie."""
+    """1-step MSE of the predictor vs copy baseline."""
     dataset = CrafterWMDataset(cfg["data"]["path"])
     loader = DataLoader(dataset, batch_size=512, shuffle=False, num_workers=0)
 
@@ -112,17 +112,17 @@ def eval_one_step(encoder, predictor, cfg: dict, device: torch.device) -> dict:
 
 @torch.no_grad()
 def eval_multistep(encoder, predictor, cfg: dict, device: torch.device, max_k: int) -> dict:
-    """Erreur de rollout latent pour k=1..max_k."""
+    """Latent rollout error for k=1..max_k."""
     e_cfg = cfg["eval"]
     dataset = CrafterSeqDataset(cfg["data"]["path"], k=max_k)
 
-    # Limiter à n_sequences pour la rapidité
+    # Limit to n_sequences for speed
     n = min(e_cfg["n_sequences"], len(dataset))
     idx = np.random.RandomState(42).choice(len(dataset), n, replace=False)
     subset = Subset(dataset, idx.tolist())
     loader = DataLoader(subset, batch_size=128, shuffle=False, num_workers=0)
 
-    # Accumuler MSE par pas k
+    # Accumulate MSE per step k
     pred_errors_k = [[] for _ in range(max_k)]
     copy_errors_k = [[] for _ in range(max_k)]
 
@@ -133,19 +133,19 @@ def eval_multistep(encoder, predictor, cfg: dict, device: torch.device, max_k: i
         seq_frames = seq_frames.to(device)
         seq_actions = seq_actions.to(device)
 
-        # Encoder toutes les frames de la séquence
+        # Encode all frames in the sequence
         # [B, k+1, D]
         all_states = torch.stack(
             [encoder(seq_frames[:, t]) for t in range(max_k + 1)], dim=1
         )
 
-        # Rollout du predictor
-        s_hat = all_states[:, 0]  # état initial réel
+        # Predictor rollout
+        s_hat = all_states[:, 0]  # real initial state
         for k in range(max_k):
             a_k = seq_actions[:, k]        # [B]
             s_hat = predictor(s_hat, a_k)  # [B, D]
-            s_real = all_states[:, k + 1]  # [B, D] — état réel au pas k+1
-            s_init = all_states[:, 0]      # [B, D] — baseline constante
+            s_real = all_states[:, k + 1]  # [B, D] — real state at step k+1
+            s_init = all_states[:, 0]      # [B, D] — constant baseline
 
             pred_err = F.mse_loss(s_hat, s_real, reduction="none").mean(dim=1)  # [B]
             copy_err = F.mse_loss(s_init, s_real, reduction="none").mean(dim=1) # [B]
@@ -172,23 +172,23 @@ def main():
     max_k = args.max_k or cfg["eval"]["max_k"]
 
     if not Path(wm_ckpt).exists():
-        print(f"Checkpoint WM introuvable : {wm_ckpt}")
-        print("Lance d'abord : run.bat scripts/train_wm.py")
+        print(f"WM checkpoint not found: {wm_ckpt}")
+        print("Run first: run.bat scripts/train_wm.py")
         return
 
     encoder = load_encoder(encoder_ckpt, device)
     predictor = load_predictor(str(wm_ckpt), cfg, device)
 
-    # --- Éval 1-pas ---
-    print("\n--- Évaluation 1-pas ---")
+    # --- 1-step eval ---
+    print("\n--- 1-step evaluation ---")
     r1 = eval_one_step(encoder, predictor, cfg, device)
     gate_1step = r1["ratio"] < 1.0
     print(f"  pred_loss  = {r1['pred']:.5f}")
     print(f"  copy_loss  = {r1['copy']:.5f}")
-    print(f"  ratio      = {r1['ratio']:.3f}  {'✅ MIEUX QUE BASELINE' if gate_1step else '❌ pas encore mieux'}")
+    print(f"  ratio      = {r1['ratio']:.3f}  {'✅ BETTER THAN BASELINE' if gate_1step else '❌ not yet better'}")
 
-    # --- Éval multi-pas ---
-    print(f"\n--- Évaluation multi-pas (k=1..{max_k}, {cfg['eval']['n_sequences']} séquences) ---")
+    # --- Multi-step eval ---
+    print(f"\n--- Multi-step evaluation (k=1..{max_k}, {cfg['eval']['n_sequences']} sequences) ---")
     mk = eval_multistep(encoder, predictor, cfg, device, max_k)
 
     print(f"\n{'k':>3} | {'pred':>8} | {'copy':>8} | {'ratio':>6} | gate")
@@ -204,15 +204,15 @@ def main():
         )
 
     print(f"\n{'='*45}")
-    print(f"Gate Phase 2")
+    print(f"Phase 2 Gate")
     print(f"{'='*45}")
     gate_multistep = gates_ok >= max_k // 2
-    print(f"  1-pas < baseline     : {'✅' if gate_1step else '❌'}")
-    print(f"  multi-pas ({gates_ok}/{max_k} k) : {'✅' if gate_multistep else '❌'}")
+    print(f"  1-step < baseline    : {'✅' if gate_1step else '❌'}")
+    print(f"  multi-step ({gates_ok}/{max_k} k): {'✅' if gate_multistep else '❌'}")
     overall = gate_1step and gate_multistep
-    print(f"\n  Gate Phase 2         : {'✅ PASSÉ' if overall else '❌ NON PASSÉ'}")
+    print(f"\n  Phase 2 Gate         : {'✅ PASSED' if overall else '❌ NOT PASSED'}")
     if not overall:
-        print("  → Relancer train_wm.py avec plus d'epochs ou lr plus élevé.")
+        print("  → Re-run train_wm.py with more epochs or a higher lr.")
 
 
 if __name__ == "__main__":

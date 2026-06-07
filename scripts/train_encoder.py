@@ -1,16 +1,15 @@
 """
-Phase 1 — Entraînement de l'encodeur JEPA sur Crafter.
+Phase 1 — JEPA encoder training on Crafter.
 
-Ce script entraîne un CrafterJEPA en self-supervised sur les trajectoires
-collectées par scripts/collect.py. Pas d'étiquettes, pas de récompense :
-uniquement la dynamique des frames (frame_t → frame_t+1).
+Trains a CrafterJEPA self-supervised on trajectories collected by scripts/collect.py.
+No labels, no reward: only frame dynamics (frame_t → frame_t+1).
 
-À surveiller absolument :
-  batch_var  — variance des embeddings. Si < 1e-4 → collapse imminent.
-  jepa_loss  — doit diminuer. Si stagne → predictor ou encodeur trop faible.
-  std_loss   — doit rester proche de 0 (variance >= 1). Monte → risque de collapse.
+Must watch:
+  batch_var  — embedding variance. If < 1e-4 → imminent collapse.
+  jepa_loss  — must decrease. If stagnates → predictor or encoder too weak.
+  std_loss   — must stay near 0 (variance >= 1). Rising → collapse risk.
 
-Usage :
+Usage:
     uv run python scripts/train_encoder.py
     uv run python scripts/train_encoder.py --epochs 50 --lr 1e-3
 """
@@ -45,6 +44,7 @@ def train(cfg: dict) -> None:
     print(f"Device: {device}")
 
     # --- Dataset ---
+
     dataset = CrafterFrameDataset(cfg["data"]["path"])
     val_size = max(256, len(dataset) // 10)
     train_ds, val_ds = random_split(
@@ -62,9 +62,9 @@ def train(cfg: dict) -> None:
         drop_last=True,
     )
     val_loader = DataLoader(val_ds, batch_size=t_cfg["batch_size"], shuffle=False)
-    print(f"Train: {len(train_ds)} paires | Val: {len(val_ds)} paires")
+    print(f"Train: {len(train_ds)} pairs | Val: {len(val_ds)} pairs")
 
-    # --- Modèle ---
+    # --- Model ---
     m_cfg = cfg["model"]
     v_cfg = cfg["vicreg"]
     model = CrafterJEPA(
@@ -77,9 +77,9 @@ def train(cfg: dict) -> None:
     ).to(device)
 
     n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    print(f"Paramètres entraînables : {n_params:,}")
+    print(f"Trainable parameters: {n_params:,}")
 
-    # --- Optimiseur ---
+    # --- Optimizer ---
     optimizer = optim.AdamW(
         list(model.encoder.parameters()) + list(model.predictor.parameters()),
         lr=t_cfg["lr"],
@@ -87,7 +87,7 @@ def train(cfg: dict) -> None:
     )
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=t_cfg["epochs"])
 
-    # --- Boucle d'entraînement ---
+    # --- Training loop ---
     log_every = cfg["logging"]["log_every"]
     collapse_thr = cfg["logging"]["collapse_threshold"]
     best_val_loss = float("inf")
@@ -119,13 +119,14 @@ def train(cfg: dict) -> None:
                 bv = losses["batch_var"]
                 if bv < collapse_thr:
                     print(
-                        f"  ⚠️  COLLAPSE DÉTECTÉ step {step}: batch_var={bv:.2e} < {collapse_thr:.0e}"
+                        f"  ⚠️  COLLAPSE DETECTED step {step}: batch_var={bv:.2e} < {collapse_thr:.0e}"
                     )
 
-        # Moyennes d'époque
+        # Epoch averages
         avgs = {k: v / steps for k, v in running.items()}
 
         # Validation
+
         model.eval()
         val_loss = 0.0
         with torch.no_grad():
@@ -156,7 +157,7 @@ def train(cfg: dict) -> None:
                 ckpt_path,
             )
 
-    print(f"\nMeilleur checkpoint → {ckpt_path}  (val_loss={best_val_loss:.4f})")
+    print(f"\nBest checkpoint → {ckpt_path}  (val_loss={best_val_loss:.4f})")
 
 
 def main():

@@ -1,25 +1,24 @@
 """
-Phase 1 — Gate : linear-probe sur les embeddings JEPA.
+Phase 1 — Gate: linear-probe on JEPA embeddings.
 
-Ce script répond à la question : « l'encodeur JEPA a-t-il appris
-quelque chose d'utile sur le jeu, sans jamais voir d'étiquettes ? »
+This script answers: "has the JEPA encoder learned something useful about
+the game, without ever seeing labels?"
 
-Méthode :
-  1. Charger l'encodeur entraîné (gelé — aucun gradient).
-  2. Extraire les embeddings de toutes les frames du dataset.
-  3. Entraîner un classifieur linéaire sur ces embeddings pour prédire
-     la valeur de santé (health) du joueur (low/med/high).
-  4. Comparer à la baseline (classifieur aléatoire ~33 %).
+Method:
+  1. Load the trained encoder (frozen — no gradients).
+  2. Extract embeddings from all dataset frames.
+  3. Train a linear classifier on these embeddings to predict
+     the player's health value (low/med/high).
+  4. Compare to baseline (random classifier ~33%).
 
-Si l'accuracy dépasse significativement 33 %, les embeddings capturent
-des informations sémantiques sur l'état du jeu — malgré un entraînement
-100 % non supervisé.
+If accuracy significantly exceeds 33%, the embeddings capture semantic
+information about game state — despite 100% unsupervised training.
 
-Gate Phase 1 :
-  - accuracy linear-probe > baseline (33 %)
-  - batch_var > 1e-4 (pas de collapse)
+Phase 1 gate:
+  - linear-probe accuracy > baseline (33%)
+  - batch_var > 1e-4 (no collapse)
 
-Usage :
+Usage:
     uv run python scripts/probe.py
     uv run python scripts/probe.py --label food
 """
@@ -54,7 +53,7 @@ def load_cfg(path: str) -> dict:
 
 @torch.no_grad()
 def extract_embeddings(encoder: nn.Module, loader: DataLoader, device: torch.device):
-    """Extrait les embeddings pour tout le dataset. Encodeur gelé."""
+    """Extracts embeddings for the entire dataset. Frozen encoder."""
     all_embs, all_labels = [], []
     for frames, labels in loader:
         frames = frames.to(device)
@@ -67,7 +66,7 @@ def extract_embeddings(encoder: nn.Module, loader: DataLoader, device: torch.dev
 def probe(cfg: dict, ckpt_path: str, label: str) -> None:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # --- Charger le modèle ---
+    # --- Load model ---
     ckpt = torch.load(ckpt_path, map_location=device, weights_only=False)
     m_cfg = ckpt["cfg"]["model"]
     t_cfg = ckpt["cfg"]["training"]
@@ -85,46 +84,46 @@ def probe(cfg: dict, ckpt_path: str, label: str) -> None:
     model.eval()
     encoder = model.encoder
 
-    print(f"Checkpoint chargé : epoch {ckpt['epoch']}, val_loss={ckpt['val_loss']:.4f}")
+    print(f"Checkpoint loaded: epoch {ckpt['epoch']}, val_loss={ckpt['val_loss']:.4f}")
 
-    # --- Dataset probe ---
+    # --- Probe dataset ---
     dataset = ProbeDataset(cfg["data"]["path"], label=label)
     counts = dataset.class_counts()
     print(f"\nDistribution '{label}': low={counts['low']}, med={counts['med']}, high={counts['high']}")
     baseline = max(counts.values()) / sum(counts.values())
-    print(f"Baseline (classe majoritaire) : {baseline:.1%}")
+    print(f"Baseline (majority class): {baseline:.1%}")
 
-    # Extraction des embeddings
+    # Extract embeddings
     loader = DataLoader(dataset, batch_size=512, shuffle=False, num_workers=0)
-    print("Extraction des embeddings...")
+    print("Extracting embeddings...")
     embs, labels = extract_embeddings(encoder, loader, device)
 
-    # Vérification anti-collapse
+    # Anti-collapse check
     batch_var = embs.var(axis=0).mean()
     collapse_ok = batch_var > cfg["logging"]["collapse_threshold"]
-    print(f"\nbatch_var = {batch_var:.6f}  {'✅ pas de collapse' if collapse_ok else '❌ COLLAPSE DÉTECTÉ'}")
+    print(f"\nbatch_var = {batch_var:.6f}  {'✅ no collapse' if collapse_ok else '❌ COLLAPSE DETECTED'}")
 
     # --- Linear probe ---
-    # Split 80/20
+    # 80/20 split
     n = len(embs)
     idx = np.random.RandomState(42).permutation(n)
     split = int(0.8 * n)
     X_train, X_val = embs[idx[:split]], embs[idx[split:]]
     y_train, y_val = labels[idx[:split]], labels[idx[split:]]
 
-    # Normaliser les embeddings (bonne pratique pour le probe linéaire)
+    # Normalize embeddings (best practice for linear probing)
     scaler = StandardScaler()
     X_train = scaler.fit_transform(X_train)
     X_val = scaler.transform(X_val)
 
-    print("\nEntraînement du classifieur linéaire...")
+    print("\nTraining linear classifier...")
     clf = LogisticRegression(max_iter=1000, C=1.0, random_state=42)
     clf.fit(X_train, y_train)
 
     acc_train = accuracy_score(y_train, clf.predict(X_train))
     acc_val = accuracy_score(y_val, clf.predict(X_val))
 
-    # --- Résultats ---
+    # --- Results ---
     print(f"\n{'='*50}")
     print(f"Linear-probe '{label}'")
     print(f"{'='*50}")
@@ -132,13 +131,13 @@ def probe(cfg: dict, ckpt_path: str, label: str) -> None:
     print(f"  Val   accuracy  : {acc_val:.1%}")
     print(f"  Baseline        : {baseline:.1%}")
     delta = acc_val - baseline
-    gate = acc_val > baseline + 0.02  # au moins 2 points au-dessus de la baseline
+    gate = acc_val > baseline + 0.02  # at least 2 points above baseline
     print(f"  Δ vs baseline   : {delta:+.1%}")
-    print(f"\n  Gate Phase 1    : {'✅ PASSÉ' if gate and collapse_ok else '❌ NON PASSÉ'}")
+    print(f"\n  Phase 1 Gate    : {'✅ PASSED' if gate and collapse_ok else '❌ NOT PASSED'}")
     if not gate:
-        print("  → Relancer train_encoder.py avec plus d'epochs ou de données.")
+        print("  → Re-run train_encoder.py with more epochs or data.")
     if not collapse_ok:
-        print("  → Collapse détecté : augmenter std_coeff dans configs/train_encoder.yaml.")
+        print("  → Collapse detected: increase std_coeff in configs/train_encoder.yaml.")
 
 
 def main():
@@ -146,8 +145,8 @@ def main():
     cfg = load_cfg(args.config)
     ckpt_path = args.checkpoint or (Path(cfg["checkpoint"]["dir"]) / cfg["checkpoint"]["name"])
     if not Path(ckpt_path).exists():
-        print(f"Checkpoint introuvable : {ckpt_path}")
-        print("Lance d'abord : uv run python scripts/train_encoder.py")
+        print(f"Checkpoint not found: {ckpt_path}")
+        print("Run first: uv run python scripts/train_encoder.py")
         return
     probe(cfg, str(ckpt_path), args.label)
 

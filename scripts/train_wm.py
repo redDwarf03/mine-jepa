@@ -1,17 +1,17 @@
 """
-Phase 2 — Entraînement du world model action-conditionné.
+Phase 2 — Action-conditioned world model training.
 
-L'encodeur (Phase 1) est gelé. On entraîne uniquement le predictor :
+The encoder (Phase 1) is frozen. Only the predictor is trained:
     ŝ_{t+1} = Predictor(s_t, a_t)
 
-La loss est la MSE entre la prédiction et l'état latent réel s_{t+1},
-fourni par l'encodeur gelé (pas besoin d'EMA ici — le target est fixe).
+Loss is the MSE between the prediction and the real latent state s_{t+1},
+produced by the frozen encoder (no EMA needed here — the target is fixed).
 
-À surveiller :
-  pred_loss  — doit décroître. Baseline de référence = copy_loss (MSE entre s_t et s_{t+1}).
-  Si pred_loss < copy_loss → le predictor MIEUX que "ne rien faire".
+Monitor:
+  pred_loss  — should decrease. Reference baseline = copy_loss (MSE between s_t and s_{t+1}).
+  If pred_loss < copy_loss → predictor BETTER than "do nothing".
 
-Usage :
+Usage:
     run.bat scripts/train_wm.py
     run.bat scripts/train_wm.py --epochs 50 --lr 1e-3
 """
@@ -43,7 +43,7 @@ def load_cfg(path: str) -> dict:
 
 
 def load_frozen_encoder(ckpt_path: str, cfg: dict, device: torch.device) -> torch.nn.Module:
-    """Charge l'encodeur Phase 1 et gèle tous ses paramètres."""
+    """Loads the Phase 1 encoder and freezes all its parameters."""
     ckpt = torch.load(ckpt_path, map_location=device, weights_only=False)
     m_cfg = ckpt["cfg"]["model"]
     t_cfg = ckpt["cfg"]["training"]
@@ -62,7 +62,7 @@ def load_frozen_encoder(ckpt_path: str, cfg: dict, device: torch.device) -> torc
     for p in encoder.parameters():
         p.requires_grad_(False)
     encoder.eval()
-    print(f"Encodeur chargé : epoch {ckpt['epoch']}, val_loss={ckpt['val_loss']:.4f} [GELÉ]")
+    print(f"Encoder loaded: epoch {ckpt['epoch']}, val_loss={ckpt['val_loss']:.4f} [FROZEN]")
     return encoder
 
 
@@ -70,7 +70,7 @@ def train(cfg: dict) -> None:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
 
-    # --- Encodeur gelé ---
+    # --- Frozen encoder ---
     encoder = load_frozen_encoder(cfg["encoder"]["checkpoint"], cfg, device)
 
     # --- Dataset ---
@@ -102,9 +102,9 @@ def train(cfg: dict) -> None:
         hidden_dim=m_cfg["hidden_dim"],
     ).to(device)
     n_params = sum(p.numel() for p in predictor.parameters())
-    print(f"Paramètres predictor : {n_params:,}")
+    print(f"Predictor parameters: {n_params:,}")
 
-    # --- Optimiseur ---
+    # --- Optimizer ---
     optimizer = optim.AdamW(
         predictor.parameters(),
         lr=t_cfg["lr"],
@@ -130,8 +130,8 @@ def train(cfg: dict) -> None:
             x_tgt = x_tgt.to(device)
 
             with torch.no_grad():
-                s_t = encoder(x_ctx)    # [B, D] — état courant
-                s_t1 = encoder(x_tgt)  # [B, D] — état suivant (cible fixe)
+                s_t = encoder(x_ctx)    # [B, D] — current state
+                s_t1 = encoder(x_tgt)  # [B, D] — next state (fixed target)
 
             s_hat = predictor(s_t, actions)
             pred_loss = F.mse_loss(s_hat, s_t1)
@@ -156,7 +156,7 @@ def train(cfg: dict) -> None:
         avg_pred = running_pred / steps
         avg_copy = running_copy / steps
 
-        # Validation
+        # Validation ---
         predictor.eval()
         val_pred = 0.0
         val_copy = 0.0
@@ -176,7 +176,7 @@ def train(cfg: dict) -> None:
         scheduler.step()
 
         ratio = val_pred / (val_copy + 1e-8)
-        gate = "✅ MIEUX QUE BASELINE" if ratio < 1.0 else "  en dessous baseline"
+        gate = "✅ BETTER THAN BASELINE" if ratio < 1.0 else "  below baseline"
         print(
             f"Epoch {epoch:3d}/{t_cfg['epochs']} | "
             f"pred={avg_pred:.4f} copy={avg_copy:.4f} ratio={ratio:.3f} | "
@@ -196,7 +196,7 @@ def train(cfg: dict) -> None:
                 ckpt_path,
             )
 
-    print(f"\nMeilleur checkpoint → {ckpt_path}  (val_pred={best_val_loss:.4f})")
+    print(f"\nBest checkpoint → {ckpt_path}  (val_pred={best_val_loss:.4f})")
 
 
 def main():

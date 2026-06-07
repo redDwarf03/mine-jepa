@@ -1,10 +1,10 @@
 """
-Datasets pour Mine-JEPA.
+Datasets for Mine-JEPA.
 
-CrafterFrameDataset  — paires (frame_t, frame_t+1) pour entraîner le JEPA (Phase 1)
-ProbeDataset         — paires (frame, label) pour le linear-probe (Phase 1)
-CrafterWMDataset     — triplets (frame_t, action_t, frame_t+1) pour le world model (Phase 2)
-CrafterSeqDataset    — séquences (frames[0..k], actions[0..k-1]) pour l'éval multi-pas
+CrafterFrameDataset  — (frame_t, frame_t+1) pairs for JEPA encoder training (Phase 1)
+ProbeDataset         — (frame, label) pairs for linear-probe (Phase 1)
+CrafterWMDataset     — (frame_t, action_t, frame_t+1) triplets for world model (Phase 2)
+CrafterSeqDataset    — (frames[0..k], actions[0..k-1]) sequences for multi-step eval
 """
 from pathlib import Path
 
@@ -26,15 +26,14 @@ def _to_float(frames: np.ndarray) -> torch.Tensor:
 
 class CrafterFrameDataset(Dataset):
     """
-    Paires (frame_t, frame_t+1) pour entraîner l'encodeur JEPA.
+    (frame_t, frame_t+1) pairs for JEPA encoder training.
 
-    On évite soigneusement les frontières d'épisodes (done=True) :
-    on ne crée jamais une paire dont la première frame est la dernière
-    d'un épisode.
+    Episode boundaries (done=True) are carefully avoided: we never
+    create a pair whose first frame is the last frame of an episode.
 
-    Pourquoi cette contrainte ? Si frame_t est la dernière frame d'un épisode
-    (le joueur est mort ou a gagné), frame_t+1 appartient à un épisode différent
-    — le modèle ne peut pas prédire une dynamique cohérente entre les deux.
+    Why this constraint? If frame_t is the last frame of an episode
+    (player died or won), frame_t+1 belongs to a different episode
+    — the model cannot predict coherent dynamics across them.
     """
 
     def __init__(self, data_path: str):
@@ -42,8 +41,8 @@ class CrafterFrameDataset(Dataset):
         frames = _to_float(data["frames"])  # [N, 3, H, W]
         dones = data["dones"]               # [N] bool
 
-        # Indices valides : frame t tel que done[t] == False
-        # (on peut former la paire (t, t+1) sans franchir une frontière)
+        # Valid indices: frame t such that done[t] == False
+        # (we can form the pair (t, t+1) without crossing an episode boundary)
         valid = np.where(~dones[:-1])[0]
         self.x_context = frames[valid]       # [M, 3, H, W]
         self.x_target = frames[valid + 1]    # [M, 3, H, W]
@@ -57,20 +56,20 @@ class CrafterFrameDataset(Dataset):
 
 class ProbeDataset(Dataset):
     """
-    Dataset pour le linear-probe : (embedding, label).
+    Linear-probe dataset: (embedding, label).
 
-    Labels disponibles (tirés de l'inventaire Crafter) :
-    - 'health'  (0–9) → buckettisé en 3 classes : low/med/high
-    - 'food'    (0–9) → idem
-    - 'drink'   (0–9) → idem
+    Available labels (from Crafter inventory):
+    - 'health'  (0–9) → bucketed into 3 classes: low/med/high
+    - 'food'    (0–9) → same
+    - 'drink'   (0–9) → same
 
-    Le probe test : un classifieur linéaire peut-il prédire ces valeurs
-    à partir des embeddings JEPA gelés ?
-    - Baseline aléatoire : ~33%
-    - Bon encodeur : devrait capturer les infos visuelles de la HUD
+    Probe test: can a linear classifier predict these values
+    from frozen JEPA embeddings?
+    - Random baseline: ~33%
+    - Good encoder: should capture HUD visual information
 
-    Note : les frames sont renvoyées brutes (pas pré-encodées) pour permettre
-    l'extraction d'embeddings avec l'encodeur entraîné.
+    Note: frames are returned raw (not pre-encoded) to allow
+    embedding extraction with the trained encoder.
     """
 
     BUCKET_EDGES = [3, 7]  # low: 0-2, med: 3-6, high: 7-9
@@ -79,16 +78,16 @@ class ProbeDataset(Dataset):
         data = _load_npz(data_path)
         assert label in ("health", "food", "drink", "energy"), f"unknown label: {label}"
         assert label in data, (
-            f"'{label}' absent du dataset — relance scripts/collect.py pour le générer"
+            f"'{label}' missing from dataset — re-run scripts/collect.py to generate it"
         )
 
         self.frames = _to_float(data["frames"])         # [N, 3, H, W]
         raw_labels = data[label].astype(np.int64)       # [N] int 0–9
 
-        # Bucketise en 3 classes (0=low, 1=med, 2=high)
+        # Bucket into 3 classes (0=low, 1=med, 2=high)
         self.labels = torch.from_numpy(
             np.digitize(raw_labels, self.BUCKET_EDGES).astype(np.int64)
-        )  # valeurs 0, 1 ou 2
+        )  # values 0, 1, or 2
 
         self.label_name = label
 
@@ -105,13 +104,13 @@ class ProbeDataset(Dataset):
 
 class CrafterWMDataset(Dataset):
     """
-    Triplets (frame_t, action_t, frame_{t+1}) pour entraîner le world model.
+    (frame_t, action_t, frame_{t+1}) triplets for world model training.
 
-    Le world model doit apprendre : étant donné l'état latent s_t et l'action a_t,
-    prédire l'état latent suivant ŝ_{t+1}. On fournit les frames brutes — l'encodeur
-    gelé (Phase 1) les convertira en latents pendant l'entraînement.
+    The world model must learn: given latent state s_t and action a_t,
+    predict the next latent state ŝ_{t+1}. Raw frames are provided —
+    the frozen encoder (Phase 1) converts them to latents during training.
 
-    Crafter a 17 actions discrètes (noop, déplacements, do, craft…).
+    Crafter has 17 discrete actions (noop, movements, do, craft…).
     """
 
     N_ACTIONS: int = 17
@@ -136,11 +135,11 @@ class CrafterWMDataset(Dataset):
 
 class CrafterSeqDataset(Dataset):
     """
-    Séquences (frames[0..k], actions[0..k-1]) pour l'évaluation multi-pas.
+    (frames[0..k], actions[0..k-1]) sequences for multi-step evaluation.
 
-    Retourne des fenêtres glissantes de longueur k+1 sans franchir de frontière
-    d'épisode. Utilisé par eval_wm.py pour mesurer l'erreur de rollout latent
-    sur k pas vs la baseline "copie de l'état initial".
+    Returns sliding windows of length k+1 without crossing episode boundaries.
+    Used by eval_wm.py to measure latent rollout error over k steps
+    vs the "copy initial state" baseline.
     """
 
     def __init__(self, data_path: str, k: int = 10):
@@ -149,8 +148,8 @@ class CrafterSeqDataset(Dataset):
         actions = data["actions"].astype(np.int64)
         dones = data["dones"]
 
-        # Une fenêtre [i, i+k] est valide si aucun done dans [i, i+k-1]
-        # On vérifie en cumulant les dones sur la fenêtre.
+        # A window [i, i+k] is valid if no done in [i, i+k-1]
+        # Checked by scanning dones over the window.
         n = len(frames)
         valid_starts = []
         for i in range(n - k):
