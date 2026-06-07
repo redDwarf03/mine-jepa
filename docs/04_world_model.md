@@ -1,52 +1,52 @@
-# Le World Model action-conditionné
+# The action-conditioned world model
 
-> Ce doc explique le deuxième composant de Mine-JEPA : le **world model**.
-> Si Phase 1 t'a appris à représenter les états du jeu en latent,
-> Phase 2 t'apprend à *prédire comment ces états changent* quand l'agent agit.
-
----
-
-## La question centrale
-
-À la fin de Phase 1, l'encodeur sait transformer une frame Crafter en un vecteur
-latent `s_t` qui capture la structure du jeu (position, santé, objets…).
-
-Mais l'agent ne peut pas encore planifier. Il ne sait pas répondre à la question :
-> « Si je fais l'action *frapper ce bloc*, à quoi ressemblera mon état latent après ? »
-
-Le world model répond exactement à ça.
+> This doc explains Mine-JEPA's second component: the **world model**.
+> If Phase 1 taught you to represent game states in latent space,
+> Phase 2 teaches you to *predict how those states change* when the agent acts.
 
 ---
 
-## L'architecture en une ligne
+## The central question
+
+At the end of Phase 1, the encoder knows how to transform a Crafter frame into a
+latent vector `s_t` that captures game structure (position, health, objects…).
+
+But the agent can't plan yet. It can't answer the question:
+> "If I perform the action *hit this block*, what will my latent state look like after?"
+
+The world model answers exactly that.
+
+---
+
+## The architecture in one line
 
 ```
 s_t  +  a_t  →  [ Predictor ]  →  ŝ_{t+1}
 ```
 
-- `s_t` : état latent courant (sortie de l'encodeur gelé, Phase 1) — `[B, 128]`
-- `a_t` : action discrète (0–16 dans Crafter) — `[B]`
-- `ŝ_{t+1}` : **prédiction** de l'état latent suivant — `[B, 128]`
+- `s_t`: current latent state (output of frozen encoder, Phase 1) — `[B, 128]`
+- `a_t`: discrete action (0–16 in Crafter) — `[B]`
+- `ŝ_{t+1}`: **prediction** of the next latent state — `[B, 128]`
 
-Le predictor ne touche jamais les pixels. Il opère entièrement dans l'espace latent.
-
----
-
-## Pourquoi "action-conditionné" est crucial
-
-Un predictor sans action prédirait juste "l'état moyen suivant" — utile pour la
-dynamique passive (le soleil qui se déplace) mais inutile pour planifier.
-
-Avec l'action en entrée, le predictor apprend des règles causales :
-- Action *move_right* + position gauche → position droite
-- Action *do* + arbre devant → arbre disparaît + bois en inventaire
-- Action *sleep* + énergie faible → énergie remonte
-
-C'est la différence entre **observer** le monde et **comprendre** ce qu'on peut y faire.
+The predictor never touches pixels. It operates entirely in latent space.
 
 ---
 
-## L'architecture du predictor (Mine-JEPA)
+## Why "action-conditioned" is crucial
+
+A predictor without action would just predict "the average next state" — useful for
+passive dynamics (sun moving) but useless for planning.
+
+With the action as input, the predictor learns causal rules:
+- Action *move_right* + left position → right position
+- Action *do* + tree in front → tree disappears + wood in inventory
+- Action *sleep* + low energy → energy recovers
+
+That's the difference between **observing** the world and **understanding** what you can do in it.
+
+---
+
+## The predictor architecture (Mine-JEPA)
 
 ```python
 class ActionConditionedPredictor(nn.Module):
@@ -65,51 +65,50 @@ class ActionConditionedPredictor(nn.Module):
         return self.net(torch.cat([s, a_emb])) # [B, 128]
 ```
 
-**Pourquoi si petit (140K params) ?** On veut que la *compréhension* soit dans
-l'encodeur (Phase 1, 688K params). Le predictor doit juste apprendre les
-*transitions* — si on le fait trop gros, il peut compenser un mauvais encodeur.
+**Why so small (140K params)?** We want *understanding* to be in the encoder
+(Phase 1, 688K params). The predictor just needs to learn *transitions* — making
+it too large lets it compensate for a weak encoder.
 
-**Pourquoi GELU ?** Activation douce qui ne bloque pas les gradients pour les petites
-valeurs négatives, meilleure que ReLU pour des embeddings centrés en 0.
+**Why GELU?** Smooth activation that doesn't block gradients for small negative
+values, better than ReLU for zero-centered embeddings.
 
 ---
 
-## La loss : MSE dans l'espace latent
+## The loss: MSE in latent space
 
 ```
 L = MSE(ŝ_{t+1}, s_{t+1})
   = ‖ Predictor(s_t, a_t) - Encoder(frame_{t+1}) ‖²
 ```
 
-L'encodeur est **gelé** — ses poids ne bougent plus depuis Phase 1. Seul le predictor
-reçoit des gradients. Cela garantit que les représentations apprises en Phase 1 restent
-stables.
+The encoder is **frozen** — its weights no longer move since Phase 1. Only the
+predictor receives gradients. This guarantees that Phase 1 representations stay stable.
 
-**Pas besoin de VICReg ici** : la cible `s_{t+1}` est fournie par l'encodeur gelé qui
-a déjà une variance saine (~1.15 depuis Phase 1). Difficile de colapser contre une
-cible qui bouge vraiment.
+**No VICReg needed here**: the target `s_{t+1}` is provided by the frozen encoder
+which already has healthy variance (~1.15 from Phase 1). Hard to collapse against a
+target that actually moves.
 
 ---
 
-## La baseline et le gate
+## The baseline and the gate
 
-Pour savoir si le predictor est utile, on compare à la **baseline la plus simple** :
-*"l'état ne change pas"*, i.e. `ŝ_{t+1} = s_t`.
+To know if the predictor is useful, we compare against the **simplest baseline**:
+*"the state doesn't change"*, i.e. `ŝ_{t+1} = s_t`.
 
 ```
-copy_loss = MSE(s_t, s_{t+1})   # combien les états diffèrent d'un pas
-pred_loss = MSE(ŝ_{t+1}, s_{t+1})  # erreur du predictor
+copy_loss = MSE(s_t, s_{t+1})       # how much states differ per step
+pred_loss = MSE(ŝ_{t+1}, s_{t+1})  # predictor error
 ratio     = pred_loss / copy_loss
 ```
 
-- `ratio > 1` : le predictor est **pire** que ne rien faire
-- `ratio < 1` : le predictor **prédit mieux** que la copie → gate validé ✅
+- `ratio > 1`: the predictor is **worse** than doing nothing
+- `ratio < 1`: the predictor **predicts better** than copying → gate passed ✅
 
 ---
 
-## Ce qu'on observe (run réel Phase 2)
+## What we observe (real Phase 2 run)
 
-Premier epoch sur RTX 5060 Ti, encodeur gelé Phase 1 (val_loss=0.080) :
+First epoch on RTX 5060 Ti, frozen Phase 1 encoder (val_loss=0.080):
 
 | Step | pred_loss | copy_loss | ratio |
 |-----:|----------:|----------:|------:|
@@ -119,61 +118,61 @@ Premier epoch sur RTX 5060 Ti, encodeur gelé Phase 1 (val_loss=0.080) :
 |   80 | 0.1877    | 0.1026    |  1.83 |
 |  100 | 0.1338    | 0.0806    |  1.66 |
 
-Le ratio chute de 14x à 1.4x en 100 steps — le predictor apprend très vite
-les transitions les plus fréquentes (l'agent ne bouge souvent pas beaucoup).
-Le gate (ratio < 1.0) est attendu autour de l'epoch 5–10.
+Ratio drops from 14x to 1.4x in 100 steps — the predictor very quickly learns the
+most frequent transitions (the agent often barely moves).
+The gate (ratio < 1.0) is expected around epochs 5–10.
 
 ---
 
-## L'imagination en latent : dérouler sur k pas
+## Latent imagination: unrolling over k steps
 
-Une fois entraîné, le predictor permet d'**imaginer le futur sans toucher au jeu** :
+Once trained, the predictor allows **imagining the future without touching the game**:
 
 ```python
-s_hat_1 = predictor(s_0, a_0)        # imaginer le pas 1
-s_hat_2 = predictor(s_hat_1, a_1)    # imaginer le pas 2
+s_hat_1 = predictor(s_0, a_0)        # imagine step 1
+s_hat_2 = predictor(s_hat_1, a_1)    # imagine step 2
 ...
-s_hat_k = predictor(s_hat_{k-1}, a_{k-1})  # imaginer le pas k
+s_hat_k = predictor(s_hat_{k-1}, a_{k-1})  # imagine step k
 ```
 
-C'est exactement ce que fait le gate multi-pas de `eval_wm.py` : mesurer si
-l'erreur de rollout sur k=1..10 pas reste inférieure à la baseline constante.
+This is exactly what the `eval_wm.py` multi-step gate does: measure whether
+rollout error over k=1..10 steps stays below the constant baseline.
 
-**Pourquoi l'erreur monte avec k ?** Chaque pas accumule une petite erreur. C'est
-normal et attendu. Ce qui serait anormal : une erreur qui explose ou une erreur
-nulle (le predictor aurait appris à ignorer les actions).
+**Why does error grow with k?** Each step accumulates a small error. That's
+normal and expected. What would be abnormal: error that explodes, or zero error
+(the predictor would have learned to ignore actions).
 
 ---
 
-## Visualisation : retrieval du plus proche voisin
+## Visualization: nearest-neighbor retrieval
 
-La visualisation la plus parlante du world model n'est pas une courbe de loss —
-c'est de **voir ce que le modèle imagine**.
+The most telling visualization of the world model isn't a loss curve —
+it's **seeing what the model imagines**.
 
-Méthode :
-1. Prendre un état initial `s_0` (encodé depuis une frame réelle).
-2. Dérouler k pas dans le world model avec une séquence d'actions → `ŝ_1, ..., ŝ_k`.
-3. Pour chaque `ŝ_k`, trouver la frame réelle la plus proche dans le dataset
-   (par distance cosinus en latent) → afficher cette frame.
+Method:
+1. Take an initial state `s_0` (encoded from a real frame).
+2. Unroll k steps in the world model with an action sequence → `ŝ_1, ..., ŝ_k`.
+3. For each `ŝ_k`, find the closest real frame in the dataset
+   (by cosine distance in latent space) → display that frame.
 
-Résultat : une "imagination" de ce qui pourrait arriver si l'agent exécutait cette
-séquence d'actions. C'est le hook visuel de Phase 2.
+Result: an "imagination" of what might happen if the agent executed this action
+sequence. That's Phase 2's visual hook.
 
-→ Implémenté dans `scripts/eval_wm.py` (option future : `--visualize`).
-
----
-
-## Résumé : la boucle complète jusqu'ici
-
-```
-Phase 1 :  Frame → [Encoder] → s_t        (représentation, gelé)
-Phase 2 :  s_t + a_t → [Predictor] → ŝ_{t+1}  (world model, entraîné maintenant)
-Phase 3 :  s_goal + [WM] → plan d'actions  (planning en latent, à venir)
-```
-
-Le world model est la pièce manquante entre "comprendre le jeu" et "jouer au jeu".
+→ Implemented in `scripts/eval_wm.py` (future option: `--visualize`).
 
 ---
 
-*Concepts suivants : `docs/05_planning.md` (MPC/CEM latent, goal-conditioned),
-`docs/01_jepa.md` (l'architecture globale).*
+## Summary: the full loop so far
+
+```
+Phase 1 :  Frame → [Encoder] → s_t        (representation, frozen)
+Phase 2 :  s_t + a_t → [Predictor] → ŝ_{t+1}  (world model, trained now)
+Phase 3 :  s_goal + [WM] → action plan     (latent planning, coming next)
+```
+
+The world model is the missing piece between "understanding the game" and "playing the game".
+
+---
+
+*Next concepts: `docs/05_planning.md` (latent MPC/CEM, goal-conditioned),
+`docs/01_jepa.md` (global architecture).*

@@ -1,0 +1,36 @@
+# Phase 4c — Action-conditioned world model (Meta's eb_jepa)
+# Encoder + predictor trained JOINTLY, conditioned on action.
+# Data: human demos from Zenodo (453k frames).
+
+data:
+  path: data/minerl_goal/episodes.npz
+  num_frames: 12          # longer sequences (8→12): better captures attack dynamics
+  subsample: 2            # 4→2: 2× more training data
+  val_fraction: 0.1
+
+model:                     # muscled WM (v1 had 664K params / ratio 0.929)
+  embed_dim: 128          # 64→128: richer latent maps [128, 8, 8]
+  encoder_hidden: 48      # 32→48
+  n_actions: 17
+  action_embed_dim: 32    # 16→32
+  predictor_hidden: 256   # 128→256: more expressive predictor
+
+regularizer:               # anti-collapse (risk #1, see CLAUDE.md)
+  std_coeff: 10.0          # VICReg variance (hinge std) — strong to counter collapse
+  cov_coeff: 1.0           # VICReg covariance (decorrelation)
+  sim_coeff_t: 0.0         # temporal similarity (0 = OFF, otherwise worsens collapse)
+
+training:
+  epochs: 25              # 20→25
+  batch_size: 32          # 64→32: compensates VRAM (embed×2, T×1.5)
+  lr: 3.0e-4
+  weight_decay: 1.0e-5
+  num_workers: 0
+
+logging:
+  log_every: 1
+  collapse_threshold: 1.0e-4
+
+checkpoint:
+  dir: checkpoints/
+  name: ebwm.pt

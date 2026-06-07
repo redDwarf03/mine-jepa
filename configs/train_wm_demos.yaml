@@ -1,0 +1,32 @@
+# World model retrained on MineRL human demos (Zenodo, 453k frames)
+# Coherent trajectories: the WM finally learns action → consequence
+
+data:
+  path: data/minerl_goal/episodes.npz
+
+encoder:
+  checkpoint: checkpoints/encoder_demos.pt
+
+model:
+  embed_dim: 128
+  n_actions: 17
+  action_dim: 32
+  hidden_dim: 256
+
+training:
+  epochs: 30
+  batch_size: 256
+  lr: 3.0e-4
+  weight_decay: 1.0e-5
+  num_workers: 0
+
+logging:
+  log_every: 20
+
+checkpoint:
+  dir: checkpoints/
+  name: wm_demos.pt
+
+eval:
+  max_k: 10
+  n_sequences: 1000

@@ -1,0 +1,10 @@
+env: minerl
+minerl_env: MineRLTreechop-v0
+episodes: 10
+max_steps_per_episode: 9000
+seed: 42
+out_dir: data/minerl
+save_gif: true
+gif_episodes: 3
+frame_size: [64, 64]
+actions_config: configs/minerl_actions.yaml

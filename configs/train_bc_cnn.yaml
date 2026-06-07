@@ -1,0 +1,26 @@
+# End-to-end BC: CNN pixel → action, no JEPA encoder
+# Classic DQN architecture (Nature DQN 2015)
+# Data: 453k frames + discretized actions (17 classes)
+
+data:
+  path: data/minerl_goal/episodes.npz
+  val_fraction: 0.1
+
+model:
+  n_actions: 17
+  frame_size: 64     # frames are already 64x64
+
+training:
+  epochs: 20
+  batch_size: 128
+  lr: 3.0e-4
+  weight_decay: 1.0e-5
+  num_workers: 0
+  use_class_weights: true
+
+logging:
+  log_every: 5
+
+checkpoint:
+  dir: checkpoints/
+  name: bc_cnn.pt

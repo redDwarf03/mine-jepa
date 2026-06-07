@@ -25,3 +25,13 @@ configs/local/
 
 # OS
 .DS_Store
+Thumbs.db
+
+# Logs runtime (training, play — éphémères)
+logs/
+
+# Gradle (build MineRL — généré, ~100Mo)
+.gradle/
+
+# Claude Code internal
+.claude/

@@ -1,0 +1,30 @@
+# Hyperparameters — Phase 4: JEPA encoder training on MineRL frames
+# Same architecture as Phase 1 (Crafter) — only data and checkpoint change.
+
+data:
+  path: data/minerl/episodes.npz
+
+model:
+  embed_dim: 128
+  hidden_dim: 64
+  predictor_hidden: 256
+
+training:
+  epochs: 30
+  batch_size: 256
+  lr: 3.0e-4
+  weight_decay: 1.0e-5
+  ema_decay: 0.99
+  num_workers: 0
+
+vicreg:
+  std_coeff: 1.0
+  cov_coeff: 0.04
+
+logging:
+  log_every: 10
+  collapse_threshold: 1.0e-4
+
+checkpoint:
+  dir: checkpoints/
+  name: encoder_minerl.pt

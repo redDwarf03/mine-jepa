@@ -1,0 +1,21 @@
+# End-to-end BC CNN agent — Phase 4b
+# No JEPA encoder: pixels → CNN → action directly
+
+env: minerl
+minerl_env: MineRLTreechop-v0
+actions_config: configs/minerl_actions.yaml
+
+policy:
+  type: bc_cnn
+  checkpoint: checkpoints/bc_cnn.pt
+
+agent:
+  episodes: 20
+  max_steps: 3000
+  seed: 0
+
+logging:
+  print_every: 5
+  save_gif: true
+  gif_episodes: 3
+  gif_path: assets/agent_play_bc_cnn.gif

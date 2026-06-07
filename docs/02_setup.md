@@ -1,20 +1,20 @@
-# Installation & premiers pas
+# Installation & Getting Started
 
-> Ce guide suppose macOS ou Linux, Python 3.12, et une carte GPU (NVIDIA recommandé,
-> CPU possible pour les tests mais trop lent pour l'entraînement).
+> This guide assumes macOS or Linux, Python 3.12, and a GPU (NVIDIA recommended,
+> CPU possible for testing but too slow for training).
 
 ---
 
-## Prérequis
+## Prerequisites
 
 - Python 3.12+
-- [uv](https://docs.astral.sh/uv/getting-started/installation/) (gestionnaire de packages)
+- [uv](https://docs.astral.sh/uv/getting-started/installation/) (package manager)
 - Git
-- GPU NVIDIA (RTX 3080+ recommandé pour entraîner en temps raisonnable)
+- NVIDIA GPU (RTX 3080+ recommended for training in reasonable time)
 
 ---
 
-## Installation en 3 commandes
+## Installation in 3 commands
 
 ```bash
 git clone https://github.com/redDwarf03/mine-jepa.git
@@ -22,109 +22,108 @@ cd mine-jepa
 uv pip install -e ".[dev]"
 ```
 
-Ça installe : PyTorch, Crafter, timm, einops, et toutes les dépendances du projet.
+This installs: PyTorch, Crafter, timm, einops, and all project dependencies.
 
-> **Pourquoi `uv` ?** C'est l'outil de packaging Python le plus rapide en 2026 (Rust-based).
-> Il gère un virtualenv local dans `.venv/`. Toujours préfixer les commandes avec `uv run`.
+> **Why `uv`?** It's the fastest Python packaging tool in 2026 (Rust-based).
+> It manages a local virtualenv in `.venv/`. Always prefix commands with `uv run`.
 
 ---
 
-## Vérifier l'installation
+## Verify installation
 
 ```bash
 uv run python -c "import crafter, timm, einops, torch; print('OK', torch.__version__)"
 ```
 
-Attendu : `OK 2.x.x`
+Expected: `OK 2.x.x`
 
 ---
 
-## Collecter des données (Phase 0)
+## Collect data (Phase 0)
 
-Lance un agent aléatoire dans Crafter et sauvegarde les trajectoires :
+Run a random agent in Crafter and save trajectories:
 
 ```bash
 uv run python scripts/collect.py
 ```
 
-Outputs :
-- `data/crafter/episodes.npz` — dataset `(frames, actions)`, ~4 Mo pour 200 épisodes
-- `assets/random_agent.gif` — visualisation de l'agent aléatoire
+Outputs:
+- `data/crafter/episodes.npz` — `(frames, actions)` dataset, ~4 MB for 200 episodes
+- `assets/random_agent.gif` — random agent visualization
 
-Options :
+Options:
 ```bash
 uv run python scripts/collect.py --episodes 500 --out data/crafter
 ```
 
 ---
 
-## Vérifier le gate de la phase courante
+## Check the current phase gate
 
 ```bash
-# Dans une session Claude Code (après avoir relancé) :
+# In a Claude Code session (after restarting):
 /gate-check
 ```
 
-Ou manuellement :
+Or manually:
 ```bash
 uv run python -c "import numpy as np; d = np.load('data/crafter/episodes.npz'); print(d['frames'].shape, d['actions'].shape)"
 ```
 
 ---
 
-## Structure du projet
+## Project structure
 
 ```
 mine-jepa/
-├── mine_jepa/              ← code Python du projet
-│   ├── eb_jepa/            ← briques officielles Meta (JEPA, CEM, VICReg)
-│   ├── encoder/            ← adaptations encoder pour Crafter/MineRL
-│   ├── predictor/          ← predictor action-conditionné discret
-│   ├── planning/           ← agent MPC
-│   └── agent/              ← boucle agent complète
+├── mine_jepa/              ← Python source code
+│   ├── eb_jepa/            ← Official Meta building blocks (JEPA, CEM, VICReg)
+│   ├── encoder/            ← Encoder adaptations for Crafter/MineRL
+│   ├── predictor/          ← Discrete action-conditioned predictor
+│   ├── planning/           ← MPC agent
+│   └── agent/              ← Full agent loop
 ├── scripts/
-│   ├── collect.py          ← collecter des trajectoires (Phase 0)
-│   ├── probe.py            ← linear-probe (gate Phase 1)
-│   ├── eval_wm.py          ← évaluer le world model (gate Phase 2)
-│   └── play.py             ← lancer l'agent (gate Phase 3)
-├── configs/                ← hyperparamètres YAML
-├── docs/                   ← pédagogie (tu es ici)
-├── assets/                 ← GIFs et vidéos pour le README
-├── data/                   ← datasets (gitignored)
-└── checkpoints/            ← poids des modèles (gitignored → HuggingFace)
+│   ├── collect.py          ← Collect trajectories (Phase 0)
+│   ├── probe.py            ← Linear-probe (Phase 1 gate)
+│   ├── eval_wm.py          ← Evaluate world model (Phase 2 gate)
+│   └── play.py             ← Run the agent (Phase 3 gate)
+├── configs/                ← YAML hyperparameters
+├── docs/                   ← Pedagogy (you are here)
+├── assets/                 ← GIFs and videos for the README
+├── data/                   ← Datasets (gitignored)
+└── checkpoints/            ← Model weights (gitignored → HuggingFace)
 ```
 
 ---
 
-## Référence des commandes
+## Command reference
 
-| Commande | Description | Phase |
+| Command | Description | Phase |
 |---|---|---|
-| `uv run python scripts/collect.py` | Collecter des trajectoires | 0 |
-| `uv run python scripts/probe.py` | Linear-probe sur les embeddings | 1 |
-| `uv run python scripts/eval_wm.py` | Évaluer le world model | 2 |
-| `uv run python scripts/play.py` | Lancer l'agent qui joue | 3 |
-| `uv run pytest` | Tests unitaires | toutes |
-| `/gate-check` *(Claude Code)* | Vérifier les gates de la phase courante | toutes |
-| `/phase-status` *(Claude Code)* | État de la phase en cours | toutes |
-| `/explain-jepa <concept>` *(Claude Code)* | Expliquer un concept JEPA | toutes |
+| `uv run python scripts/collect.py` | Collect trajectories | 0 |
+| `uv run python scripts/probe.py` | Linear-probe on embeddings | 1 |
+| `uv run python scripts/eval_wm.py` | Evaluate world model | 2 |
+| `uv run python scripts/play.py` | Run the playing agent | 3 |
+| `uv run pytest` | Unit tests | all |
+| `/gate-check` *(Claude Code)* | Check current phase gates | all |
+| `/phase-status` *(Claude Code)* | Current phase status | all |
+| `/explain-jepa <concept>` *(Claude Code)* | Explain a JEPA concept | all |
 
 ---
 
 ## FAQ
 
-**Q : Puis-je entraîner sans GPU ?**  
-Oui, mais l'encodeur ResNet5 sur Crafter prend ~10× plus de temps sur CPU. Pour les
-phases de tests, c'est praticable. Pour l'entraînement complet (~50K steps), compte
-quelques heures sur CPU vs ~20 min sur une RTX 3080.
+**Q: Can I train without a GPU?**  
+Yes, but the ResNet5 encoder on Crafter takes ~10× longer on CPU. For testing phases,
+it's feasible. For full training (~50K steps), expect a few hours on CPU vs ~20 min
+on an RTX 3080.
 
-**Q : Pourquoi Crafter et pas directement Minecraft ?**  
-Crafter est un clone Minecraft 2D (`pip install crafter`, ~1 Mo) qui tourne sans Java,
-sans MineRL, sans JDK8. On valide toute la pipeline JEPA dessus, puis on porte vers
-le vrai Minecraft (MineRL) en Phase 4 quand l'architecture est stabilisée.
+**Q: Why Crafter and not Minecraft directly?**  
+Crafter is a 2D Minecraft clone (`pip install crafter`, ~1 MB) that runs without Java,
+without MineRL, without JDK8. We validate the entire JEPA pipeline on it, then port to
+real Minecraft (MineRL) in Phase 4 once the architecture is stable.
 
-**Q : Qu'est-ce que eb_jepa dans `mine_jepa/eb_jepa/` ?**  
-C'est la bibliothèque officielle de Meta/FAIR pour JEPA, copiée en vendored dans notre
-projet (pour éviter les problèmes de compatibilité Python). Elle contient le cœur :
-`JEPA`, `JEPAProbe`, `CEMPlanner`, `MPPIPlanner`, `VICRegLoss`. On ne la modifie pas —
-on l'utilise.
+**Q: What is eb_jepa in `mine_jepa/eb_jepa/`?**  
+It's Meta/FAIR's official JEPA library, vendored into our project (to avoid Python
+compatibility issues). It contains the core: `JEPA`, `JEPAProbe`, `CEMPlanner`,
+`MPPIPlanner`, `VICRegLoss`. We don't modify it — we use it.

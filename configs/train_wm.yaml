@@ -1,17 +1,17 @@
-# Hyperparamètres — Phase 2 : world model action-conditionné
-# Tous les scripts Phase 2 lisent ce fichier.
+# Hyperparameters — Phase 2: action-conditioned world model
+# All Phase 2 scripts read this file.
 
 data:
   path: data/crafter/episodes.npz
 
 encoder:
-  checkpoint: checkpoints/encoder_phase1.pt   # encodeur gelé Phase 1
+  checkpoint: checkpoints/encoder_phase1.pt   # frozen Phase 1 encoder
 
 model:
-  embed_dim: 128      # doit correspondre à l'encodeur Phase 1
-  n_actions: 17       # Crafter : 17 actions discrètes
-  action_dim: 32      # dimension de l'embedding d'action
-  hidden_dim: 256     # canaux du MLP predictor
+  embed_dim: 128      # must match Phase 1 encoder
+  n_actions: 17       # Crafter: 17 discrete actions
+  action_dim: 32      # action embedding dimension
+  hidden_dim: 256     # predictor MLP channels
 
 training:
   epochs: 30
@@ -28,5 +28,5 @@ checkpoint:
   name: wm_phase2.pt
 
 eval:
-  max_k: 10       # longueur max du rollout latent pour l'éval multi-pas
-  n_sequences: 1000  # nombre de séquences utilisées pour l'éval
+  max_k: 10       # max latent rollout length for multi-step eval
+  n_sequences: 1000  # number of sequences used for eval
