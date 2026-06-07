@@ -1,153 +1,152 @@
-# Planning en espace latent
+# Planning in latent space
 
-> Ce doc explique comment Mine-JEPA utilise son world model pour **planifier des actions**
-> sans jamais interagir avec l'environnement réel pendant la planification.
-> C'est le moment où les deux phases précédentes s'assemblent en un agent qui agit.
-
----
-
-## Le problème du planning
-
-L'encodeur (Phase 1) sait représenter un état de jeu en latent `s_t`.
-Le world model (Phase 2) sait prédire `ŝ_{t+1} = f(s_t, a_t)`.
-
-Il manque une pièce : **comment choisir quelle action exécuter** ?
-
-La réponse de JEPA : planifier dans l'espace latent. On n'a pas besoin de générer
-des images ou d'exécuter des milliers d'actions dans le vrai jeu. On peut *imaginer*
-les conséquences en latent, comparer au but, et choisir le meilleur plan.
+> This doc explains how Mine-JEPA uses its world model to **plan actions**
+> without ever interacting with the real environment during planning.
+> This is the moment where the two previous phases assemble into an acting agent.
 
 ---
 
-## Le goal embedding
+## The planning problem
 
-Avant de planifier, il faut définir **ce qu'on veut atteindre**.
+The encoder (Phase 1) knows how to represent a game state in latent `s_t`.
+The world model (Phase 2) knows how to predict `ŝ_{t+1} = f(s_t, a_t)`.
 
-Dans Mine-JEPA, le but est un **embedding latent** `s_goal` — le centroïde des états
-latents de frames "désirables" tirées du dataset :
+One piece is missing: **how to choose which action to execute**?
+
+JEPA's answer: plan in latent space. We don't need to generate images or execute
+thousands of actions in the real game. We can *imagine* consequences in latent space,
+compare to the goal, and choose the best plan.
+
+---
+
+## The goal embedding
+
+Before planning, we need to define **what we want to reach**.
+
+In Mine-JEPA, the goal is a **latent embedding** `s_goal` — the centroid of latent
+states of "desirable" frames drawn from the dataset:
 
 ```python
-# Frames où food >= 7 (le joueur a mangé récemment = bon état de survie)
-good_frames = frames[food >= 7]          # ~16 000 frames sur 32 000
-goal = encoder(good_frames).mean(dim=0)  # [D] — centroïde
+# Frames where food >= 7 (player has eaten recently = good survival state)
+good_frames = frames[food >= 7]          # ~16,000 frames out of 32,000
+goal = encoder(good_frames).mean(dim=0)  # [D] — centroid
 ```
 
-L'agent essaie de ramener son état latent vers ce centroïde. Il n'a jamais vu
-d'étiquettes pendant l'entraînement — le goal est construit *après coup* à partir
-des données collectées.
+The agent tries to bring its latent state toward this centroid. It never saw
+labels during training — the goal is built *after the fact* from collected data.
 
 ---
 
-## Random-shooting MPC (l'algorithme)
+## Random-shooting MPC (the algorithm)
 
-Mine-JEPA utilise le **random-shooting MPC** (Model Predictive Control) :
+Mine-JEPA uses **random-shooting MPC** (Model Predictive Control):
 
 ```
-Pour chaque step :
-  1. Encoder l'état courant  →  s_t
-  2. Tirer N=512 séquences d'actions aléatoires de longueur H=12
-  3. Pour chaque séquence : dérouler le world model sur H pas → ŝ_{t+H}
-  4. Scorer : score_i = -MSE(ŝ_{t+H,i}, s_goal)
-  5. Exécuter la première action de la séquence avec le meilleur score
-  6. Recommencer (horizon glissant)
+For each step:
+  1. Encode current state  →  s_t
+  2. Sample N=512 random action sequences of length H=12
+  3. For each sequence: unroll world model for H steps → ŝ_{t+H}
+  4. Score: score_i = -MSE(ŝ_{t+H,i}, s_goal)
+  5. Execute the first action of the highest-scoring sequence
+  6. Repeat (receding horizon)
 ```
 
-**Pourquoi horizon glissant (receding horizon) ?** Le world model accumule des erreurs
-sur des rollouts longs. En replanifiant à chaque step depuis l'état réel observé, on
-corrige ces erreurs et l'agent reste robuste.
+**Why receding horizon?** The world model accumulates errors on long rollouts.
+By re-planning every step from the actually observed state, we correct these errors
+and the agent stays robust.
 
-**Pourquoi 512 candidats suffisent ?** Avec 17 actions et horizon 12, l'espace de
-séquences est `17^12 ≈ 600 milliards`. Mais la plupart des actions ont un effet
-similaire à court terme (ex: bouger dans n'importe quelle direction). 512 séquences
-couvrent bien les directions importantes. Sur GPU, le rollout de 512×12 prend < 5 ms.
+**Why 512 candidates suffice?** With 17 actions and horizon 12, the sequence space
+is `17^12 ≈ 600 billion`. But most actions have similar short-term effects (e.g. moving
+in any direction). 512 sequences cover the important directions well. On GPU, the
+rollout of 512×12 takes < 5 ms.
 
 ---
 
-## Le code du planner
+## The planner code
 
 ```python
 class LatentMPCPlanner:
     @torch.no_grad()
     def plan(self, s_current, s_goal):
-        # N copies de l'état courant : [N, D]
+        # N copies of current state: [N, D]
         s = s_current.expand(self.n_candidates, -1).clone()
 
-        # N séquences d'actions aléatoires : [N, H]
+        # N random action sequences: [N, H]
         actions = torch.randint(0, self.n_actions, (self.n_candidates, self.horizon))
 
-        # Rollout world model
+        # World model rollout
         for h in range(self.horizon):
             s = self.predictor(s, actions[:, h])  # [N, D]
 
-        # Scorer et retourner la meilleure première action
+        # Score and return best first action
         scores = -(s - s_goal).pow(2).mean(dim=1)  # [N]
         return actions[scores.argmax(), 0].item()
 ```
 
-Tout tient en 10 lignes. C'est la puissance de JEPA : une fois le world model entraîné,
-le planning est trivial à implémenter.
+It all fits in 10 lines. That's the power of JEPA: once the world model is trained,
+planning is trivial to implement.
 
 ---
 
-## Résultats observés (run réel Phase 3)
+## Observed results (real Phase 3 run)
 
-Agent JEPA-MPC vs baseline aléatoire, 50 épisodes dans Crafter :
+JEPA-MPC agent vs random baseline, 50 episodes in Crafter:
 
-| Métrique | Agent JEPA-MPC | Random baseline |
+| Metric | JEPA-MPC Agent | Random baseline |
 |----------|---------------|-----------------|
-| Reward moyen | ~2.1 | ~1.5 |
-| Achievements/épisode | ~3.0 | ~2.4 |
+| Mean reward | ~2.1 | ~1.5 |
+| Achievements/episode | ~3.0 | ~2.4 |
 | Success rate (≥1 achievement) | ~100% | ~98% |
 | FPS (steps/sec) | ~150 | — |
 
-Le premier épisode de l'agent décroche 3 achievements : `wake_up`, `collect_wood`,
-`place_table`. C'est non trivial — le jeu exige de trouver un arbre, s'en approcher,
-frapper, et ensuite poser une table.
+The first episode of the agent gets 3 achievements: `wake_up`, `collect_wood`,
+`place_table`. That's non-trivial — the game requires finding a tree, approaching it,
+hitting it, then placing a table.
 
 ---
 
-## Pourquoi ça marche (intuition)
+## Why it works (intuition)
 
-Le world model a été entraîné à prédire l'effet des actions sur les états latents.
-Les états latents capturent la structure du jeu (position, objets proches, santé…).
+The world model was trained to predict the effect of actions on latent states.
+Latent states capture game structure (position, nearby objects, health…).
 
-Quand le planner imagine "si je bouge à droite 3 fois", le world model prédit un
-état latent "légèrement déplacé vers la droite". Quand le goal est "état où food est
-élevé", le planner naturellement séquence des actions qui amènent vers des états
-alimentaires — trouver une plante, s'en approcher, manger.
+When the planner imagines "if I move right 3 times", the world model predicts a
+latent state "slightly shifted to the right". When the goal is "state where food is
+high", the planner naturally sequences actions that lead toward food-related states —
+find a plant, approach it, eat.
 
-Ce n'est pas parfait. Le world model fait des erreurs sur les horizons longs.
-Mais même un modèle imparfait guide mieux qu'une politique aléatoire.
-
----
-
-## Limites et perspectives
-
-**Limite principale** : le goal embedding est un centroïde — il n'indique pas *comment*
-atteindre le but, juste *à quoi il ressemble*. L'agent peut se retrouver dans un état
-proche en latent mais visuellement différent (ambiguïté de l'espace latent).
-
-**Phase 4** : brancher la même pipeline sur MineRL (vrai Minecraft) — mêmes encodeur,
-world model et planner, sur des frames 64×64 du vrai jeu.
-
-**Extension future** : CEM (Cross-Entropy Method) pour affiner la distribution
-d'actions sur plusieurs itérations — meilleures performances sur des tâches longues.
-Implémenté dans `mine_jepa/eb_jepa/planning.py` (pour actions continues).
+It's not perfect. The world model makes errors on long horizons.
+But even an imperfect model guides better than a random policy.
 
 ---
 
-## La boucle complète Mine-JEPA
+## Limitations and next steps
+
+**Main limitation**: the goal embedding is a centroid — it doesn't indicate *how*
+to reach the goal, just *what it looks like*. The agent can end up in a latent-close
+state that's visually different (latent space ambiguity).
+
+**Phase 4**: plug the same pipeline into MineRL (real Minecraft) — same encoder,
+world model and planner, on real 64×64 game frames.
+
+**Future extension**: CEM (Cross-Entropy Method) to refine the action distribution
+over several iterations — better performance on long tasks.
+Implemented in `mine_jepa/eb_jepa/planning.py` (for continuous actions).
+
+---
+
+## The complete Mine-JEPA loop
 
 ```
-Frames 64×64  →  [Encodeur Phase 1]  →  s_t  [D=128]
+64×64 Frames  →  [Phase 1 Encoder]  →  s_t  [D=128]
                                           │
                                     s_t + a_t
                                           │
-                                [WM Phase 2]  →  ŝ_{t+1}
+                                [Phase 2 WM]  →  ŝ_{t+1}
                                           │
-                            512 séquences imaginées
+                            512 imagined sequences
                                           │
-                              [Scorer vs s_goal]
+                              [Score vs s_goal]
                                           │
                                      best_action
                                           │
@@ -156,9 +155,9 @@ Frames 64×64  →  [Encodeur Phase 1]  →  s_t  [D=128]
                                    obs_{t+1}  ←─ (loop)
 ```
 
-Tout est dans l'espace latent sauf les deux bouts : l'entrée pixels et l'action finale.
+Everything is in latent space except the two endpoints: the pixel input and the final action.
 
 ---
 
-*Concepts suivants : `docs/06_minecraft_port.md` (Phase 4 — vrai Minecraft avec MineRL),
-`docs/01_jepa.md` (l'architecture globale).*
+*Next concepts: `docs/06_minecraft_port.md` (Phase 4 — real Minecraft with MineRL),
+`docs/01_jepa.md` (global architecture).*

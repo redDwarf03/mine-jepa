@@ -1,12 +1,12 @@
-Explique le concept JEPA suivant de façon pédagogique, pour quelqu'un qui découvre le domaine : $ARGUMENTS
+Explain the following JEPA concept in a pedagogical way, for someone discovering the field: $ARGUMENTS
 
-Contexte du projet (pour ancrer l'explication dans Mine-JEPA) :
+Project context (to ground the explanation in Mine-JEPA):
 !`head -60 PLAN.md`
 
-Format de la réponse :
-- **C'est quoi** : 2-3 phrases simples, analogie concrète si possible
-- **Pourquoi c'est important dans Mine-JEPA** : lien direct au projet (Crafter, Minecraft, l'agent)
-- **Le piège à éviter** : l'erreur classique sur ce concept
-- **Le code correspondant** : si déjà implémenté, pointer le fichier/fonction ; sinon décrire à quoi il ressemblera
+Response format:
+- **What it is**: 2-3 simple sentences, concrete analogy if possible
+- **Why it matters in Mine-JEPA**: direct link to the project (Crafter, Minecraft, the agent)
+- **The trap to avoid**: the classic mistake on this concept
+- **The corresponding code**: if already implemented, point to the file/function; otherwise describe what it will look like
 
-Concepts valides : encoder, target-encoder, EMA, predictor, collapse, VICReg, action-conditioning, latent-rollout, CEM, MPC, image-goal, linear-probe, world-model.
+Valid concepts: encoder, target-encoder, EMA, predictor, collapse, VICReg, action-conditioning, latent-rollout, CEM, MPC, image-goal, linear-probe, world-model.

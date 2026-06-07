@@ -1,93 +1,91 @@
-# Collapse et anti-collapse en JEPA
+# Collapse and anti-collapse in JEPA
 
-> Ce doc explique le problème n°1 de JEPA : le **collapse de représentation**.
-> Tu apprendras pourquoi ça arrive, comment l'EMA et VICReg l'empêchent,
-> et comment lire les courbes de ton propre entraînement pour détecter un collapse.
+> This doc explains JEPA's #1 problem: **representation collapse**.
+> You'll learn why it happens, how EMA and VICReg prevent it,
+> and how to read your own training curves to detect a collapse.
 
 ---
 
-## Le problème : apprendre à tricher
+## The problem: learning to cheat
 
-Imagine que tu donnes cet objectif à un réseau de neurones :
+Imagine giving a neural network this objective:
 
-> « Encode des frames de jeu vidéo de façon à ce que l'embedding de la frame *t*
-> puisse prédire l'embedding de la frame *t+1*. »
+> "Encode video game frames such that the embedding of frame *t*
+> can predict the embedding of frame *t+1*."
 
-La solution *honnête* : l'encodeur apprend à représenter la structure du jeu (position
-du joueur, objets proches, santé…) de sorte que la dynamique soit prévisible en latent.
+The *honest* solution: the encoder learns to represent game structure (player position,
+nearby objects, health…) so that dynamics are predictable in latent space.
 
-La solution *malhonnête* : l'encodeur mappe **toutes les frames vers le même vecteur**,
-par exemple `[0, 0, 0, …, 0]`. La loss de prédiction tombe à 0 immédiatement — le
-prédictor n'a rien à faire. Le modèle a "gagné" sans rien apprendre.
+The *dishonest* solution: the encoder maps **all frames to the same vector**,
+e.g. `[0, 0, 0, …, 0]`. Prediction loss immediately drops to 0 — the predictor
+has nothing to do. The model has "won" without learning anything.
 
-C'est ça le **collapse** : convergence vers une solution triviale et constante.
+This is **collapse**: convergence toward a trivial, constant solution.
 
 ```
-Frames  →  Encoder  →  s = [0, 0, 0, ..., 0]  (toujours)
+Frames  →  Encoder  →  s = [0, 0, 0, ..., 0]  (always)
                                     ↓
            Predictor →  ŝ = [0, 0, 0, ..., 0]  (trivial)
                                     ↓
-               Loss = ‖ŝ - s_y‖² = 0  ✓ (mais rien appris)
+               Loss = ‖ŝ - s_y‖² = 0  ✓ (but nothing learned)
 ```
 
 ---
 
-## Comment détecter le collapse : `batch_var`
+## How to detect collapse: `batch_var`
 
-L'indicateur principal est la **variance moyenne des embeddings sur un batch** :
+The primary indicator is the **mean embedding variance over a batch**:
 
 ```python
 batch_var = embeddings.var(dim=0).mean()
 ```
 
-- `batch_var` élevée (~1.0) → les embeddings sont dispersés → le modèle encode
-  des informations différentes selon les frames → **bonne santé**
-- `batch_var` → 0 → tous les embeddings convergent vers le même point → **collapse**
+- High `batch_var` (~1.0) → embeddings are spread out → the model encodes different
+  information per frame → **healthy**
+- `batch_var` → 0 → all embeddings converge to the same point → **collapse**
 
-Seuil d'alerte dans Mine-JEPA : `batch_var < 1e-4`.
-
----
-
-## Pourquoi JEPA collapse facilement (vs. BERT, etc.)
-
-Les architectures comme BERT évitent le collapse par construction : elles travaillent
-en **espace pixel/token** avec de la reconstruction. Il est impossible de reconstruire
-une image à partir d'un vecteur constant.
-
-JEPA travaille en **espace latent** : l'encodeur ET le décodeur (predictor) sont
-libres d'apprendre ensemble n'importe quelle solution, y compris la triviale.
-
-Le modèle contrastif classique (SimCLR) évite ça en **comparant des exemples négatifs**
-(push repulsif entre embeddings différents). Mais ça requiert de gros batchs et une
-définition explicite de "quelles paires sont différentes".
-
-JEPA veut éviter tout ça (pas de négatifs, pas de reconstruction pixel) — ce qui le
-rend puissant *mais* plus vulnérable au collapse.
+Alert threshold in Mine-JEPA: `batch_var < 1e-4`.
 
 ---
 
-## Parade n°1 : le Target Encoder EMA
+## Why JEPA collapses easily (vs. BERT, etc.)
 
-La cause profonde du collapse joint-embedding : si context encoder et target encoder
-se mettent à jour ensemble par gradient, rien n'empêche les deux de converger vers
-la même constante. La loss reste nulle et les gradients ne voient aucun problème.
+Architectures like BERT avoid collapse by construction: they work in **pixel/token
+space** with reconstruction. It's impossible to reconstruct an image from a constant vector.
 
-**Solution** : couper le gradient du target encoder et le mettre à jour lentement
-via une **Exponential Moving Average (EMA)** du context encoder :
+JEPA works in **latent space**: the encoder AND predictor are free to learn any solution
+together, including the trivial one.
+
+Classic contrastive models (SimCLR) avoid this by **comparing negative examples**
+(repulsive push between different embeddings). But that requires large batches and an
+explicit definition of "which pairs are different".
+
+JEPA wants to avoid all that (no negatives, no pixel reconstruction) — which makes it
+powerful *but* more vulnerable to collapse.
+
+---
+
+## Countermeasure #1: EMA Target Encoder
+
+The root cause of joint-embedding collapse: if context encoder and target encoder
+update together via gradient, nothing prevents both from converging to the same constant.
+Loss stays zero and gradients see no problem.
+
+**Solution**: cut the target encoder's gradient and update it slowly via an
+**Exponential Moving Average (EMA)** of the context encoder:
 
 ```
 θ̄_{t+1} ← 0.99 · θ̄_t + 0.01 · θ_t
 ```
 
-- `θ` = poids du context encoder (mis à jour par backprop normalement)
-- `θ̄` = poids du target encoder (jamais de gradient direct — uniquement via EMA)
+- `θ` = context encoder weights (updated normally by backprop)
+- `θ̄` = target encoder weights (never direct gradient — EMA only)
 
-**Pourquoi ça aide** : le target encoder évolue *lentement*. Sa sortie `s_y` est
-une cible non-triviale qui change peu, mais assez pour que le predictor ne puisse
-pas "dormir" sur une solution constante. C'est une forme de **momentum knowledge
-distillation**.
+**Why it helps**: the target encoder evolves *slowly*. Its output `s_y` is a
+non-trivial target that changes little, but enough that the predictor can't "sleep"
+on a constant solution. It's a form of **momentum knowledge distillation**.
 
-Dans le code (`mine_jepa/encoder/crafter_encoder.py:54`) :
+In the code (`mine_jepa/encoder/crafter_encoder.py:54`):
 
 ```python
 class EMATargetEncoder(nn.Module):
@@ -97,60 +95,57 @@ class EMATargetEncoder(nn.Module):
             ema_p.data.mul_(self.decay).add_(src_p.data, alpha=1.0 - self.decay)
 ```
 
-Le `@torch.no_grad()` est crucial : aucun gradient ne traverse jamais ce chemin.
+The `@torch.no_grad()` is critical: no gradient ever flows through this path.
 
 ---
 
-## Parade n°2 : VICReg (Variance-Invariance-Covariance Regularization)
+## Countermeasure #2: VICReg (Variance-Invariance-Covariance Regularization)
 
-EMA seul ne suffit pas. On ajoute une **régularisation explicite** qui interdit
-directement le collapse.
+EMA alone is not enough. We add **explicit regularization** that directly forbids collapse.
 
-### La pénalité de variance (anti-collapse)
+### Variance penalty (anti-collapse)
 
 ```
 L_std = mean( max(0, 1 - std(s_x, dim=0)) )
 ```
 
-Cette loss est nulle si toutes les dimensions de l'embedding ont une std ≥ 1.
-Si la variance chute (collapse en cours), la loss monte et repousse l'encodeur.
+This loss is zero if all embedding dimensions have std ≥ 1.
+If variance drops (collapse in progress), the loss rises and pushes the encoder back.
 
-*Intuition* : on "force" l'encodeur à utiliser tout l'espace latent, pas juste un
-point.
+*Intuition*: we "force" the encoder to use all of latent space, not just one point.
 
-### La pénalité de covariance (anti-redondance)
+### Covariance penalty (anti-redundancy)
 
 ```
 L_cov = mean( off_diagonal( cov(s_x)² ) )
 ```
 
-Cette loss pénalise les corrélations entre les dimensions de l'embedding. Si deux
-dimensions encodent la même information, elles sont corrélées → pénalité.
+This loss penalizes correlations between embedding dimensions. If two dimensions
+encode the same information, they are correlated → penalty.
 
-*Pourquoi* : un embedding où toutes les dimensions disent la même chose est presque
-aussi mauvais qu'un embedding constant. VICReg force la **décorrélation** pour que
-chaque dimension encode quelque chose de différent.
+*Why*: an embedding where all dimensions say the same thing is almost as bad as a
+constant embedding. VICReg forces **decorrelation** so each dimension encodes something different.
 
-### La loss totale de Mine-JEPA Phase 1
+### Mine-JEPA Phase 1 total loss
 
 ```
 L = L_JEPA  +  λ_std · L_std  +  λ_cov · L_cov
 
-avec λ_std = 1.0  (configs/train_encoder.yaml)
+with λ_std = 1.0  (configs/train_encoder.yaml)
      λ_cov = 0.04
 ```
 
-`λ_cov` est petit (0.04) car la décorrélation est moins critique que la variance.
-`λ_std = 1.0` est fort pour vraiment interdire le collapse.
+`λ_cov` is small (0.04) because decorrelation is less critical than variance.
+`λ_std = 1.0` is strong to truly forbid collapse.
 
 ---
 
-## Ce qu'on observe dans Mine-JEPA (run réel)
+## What we observe in Mine-JEPA (real run)
 
-Voici les métriques des premières epochs de l'entraînement Phase 1 sur RTX 5060 Ti,
-dataset Crafter 32 676 transitions :
+Here are the metrics from the first epochs of Phase 1 training on RTX 5060 Ti,
+Crafter dataset 32,676 transitions:
 
-| Epoch | loss total | jepa | std_loss | cov_loss | batch_var | val_loss |
+| Epoch | total loss | jepa | std_loss | cov_loss | batch_var | val_loss |
 |------:|----------:|-----:|---------:|---------:|----------:|---------:|
 | 1     | 0.190      | 0.134 | 0.040   | 0.434    | **1.057** | 0.250    |
 | 2     | 0.119      | 0.101 | 0.001   | 0.405    | **1.124** | 0.191    |
@@ -158,61 +153,60 @@ dataset Crafter 32 676 transitions :
 | 4     | 0.094      | 0.081 | 0.001   | 0.303    | **1.133** | 0.114    |
 | 5     | 0.084      | 0.073 | 0.001   | 0.271    | **1.150** | 0.098    |
 
-**Lecture** :
+**Reading**:
 
-- `batch_var` **monte** de 1.06 à 1.15 → le modèle utilise de plus en plus l'espace
-  latent. Opposé du collapse.
-- `std_loss` chute rapidement à ~0.001 → la contrainte de variance est satisfaite
-  dès epoch 2. VICReg a fait son travail.
-- `cov_loss` décroît (0.43 → 0.27) → les dimensions se décorrèlent progressivement.
-- `jepa_loss` divisée par ~2 en 5 epochs → le predictor apprend.
-
----
-
-## À quoi ressemble un collapse (pour comparaison)
-
-Si on désactivait VICReg et l'EMA, voici ce qu'on verrait typiquement :
-
-```
-Epoch  1 | batch_var=1.05  (normal au début)
-Epoch  5 | batch_var=0.12  (chute)
-Epoch 10 | batch_var=0.003 (collapse en cours)
-Epoch 15 | batch_var=8e-7  ← ALERTE
-Epoch 20 | batch_var=1e-9  (collapse total — le modèle ne sert à rien)
-```
-
-La loss jepa tombe aussi à ~0, ce qui *semble* bien au premier coup d'œil.
-C'est le signe trompeur le plus dangereux : **une loss très basse sans variance
-= collapse, pas succès**.
+- `batch_var` **rises** from 1.06 to 1.15 → the model uses more and more of latent
+  space. Opposite of collapse.
+- `std_loss` drops quickly to ~0.001 → variance constraint satisfied by epoch 2.
+  VICReg did its job.
+- `cov_loss` decreases (0.43 → 0.27) → dimensions progressively decorrelate.
+- `jepa_loss` halved in 5 epochs → the predictor is learning.
 
 ---
 
-## Résumé : les 3 signaux à surveiller
+## What a collapse looks like (for comparison)
 
-| Signal | Valeur saine | Alerte |
+If we disabled VICReg and EMA, we'd typically see:
+
+```
+Epoch  1 | batch_var=1.05  (normal at start)
+Epoch  5 | batch_var=0.12  (dropping)
+Epoch 10 | batch_var=0.003 (collapse in progress)
+Epoch 15 | batch_var=8e-7  ← ALERT
+Epoch 20 | batch_var=1e-9  (total collapse — model is useless)
+```
+
+The jepa loss also drops toward ~0, which *seems* good at first glance.
+That's the most dangerous misleading signal: **a very low loss without variance
+= collapse, not success**.
+
+---
+
+## Summary: the 3 signals to watch
+
+| Signal | Healthy value | Alert |
 |--------|-------------|--------|
-| `batch_var` | > 0.1, idéalement ~1 | < 1e-4 |
-| `std_loss` | proche de 0 (variance OK) | monte → collapse passif |
-| `jepa_loss` | décroît régulièrement | reste haute → predictor trop faible |
+| `batch_var` | > 0.1, ideally ~1 | < 1e-4 |
+| `std_loss` | close to 0 (variance OK) | rising → passive collapse |
+| `jepa_loss` | decreasing steadily | staying high → predictor too weak |
 
-Si `batch_var < 1e-4` : augmenter `std_coeff` dans `configs/train_encoder.yaml`
-(ex. 1.0 → 5.0) et relancer.
-
----
-
-## La visualisation qui prouve que ça marche
-
-Le meilleur test n'est pas numérique : c'est la **projection PCA/t-SNE des embeddings**
-colorée par un état du jeu (santé, objets proches…).
-
-Si le modèle a appris quelque chose d'utile, des clusters apparaissent — des zones de
-l'espace latent correspondent à des situations de jeu similaires, *sans aucun label
-pendant l'entraînement*.
-
-→ C'est ce que valide `scripts/probe.py` : un classifieur linéaire sur ces embeddings
-gelés doit dépasser la baseline aléatoire (~33 %) pour que le gate Phase 1 soit validé.
+If `batch_var < 1e-4`: increase `std_coeff` in `configs/train_encoder.yaml`
+(e.g. 1.0 → 5.0) and restart.
 
 ---
 
-*Concepts suivants : `docs/04_world_model.md` (le predictor action-conditionné),
-`docs/01_jepa.md` (l'architecture complète).*
+## The visualization that proves it works
+
+The best test isn't numerical: it's the **PCA/t-SNE projection of embeddings**
+colored by a game state (health, nearby objects…).
+
+If the model learned something useful, clusters appear — regions of latent space
+correspond to similar game situations, *without any labels during training*.
+
+→ This is what `scripts/probe.py` validates: a linear classifier on these frozen
+embeddings must exceed the random baseline (~33%) for the Phase 1 gate to pass.
+
+---
+
+*Next concepts: `docs/04_world_model.md` (action-conditioned predictor),
+`docs/01_jepa.md` (full architecture).*

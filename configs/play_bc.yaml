@@ -1,0 +1,24 @@
+# Behavioral Cloning agent — Phase 4b
+# Plays MineRL by directly imitating human demos (no MPC).
+
+env: minerl
+minerl_env: MineRLTreechop-v0
+actions_config: configs/minerl_actions.yaml
+
+policy:
+  type: bc
+  checkpoint: checkpoints/bc_policy.pt
+
+encoder:
+  checkpoint: checkpoints/encoder_demos.pt
+
+agent:
+  episodes: 20
+  max_steps: 3000
+  seed: 0
+
+logging:
+  print_every: 5
+  save_gif: true
+  gif_episodes: 3
+  gif_path: assets/agent_play_bc.gif

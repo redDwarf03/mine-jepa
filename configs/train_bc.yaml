@@ -1,0 +1,30 @@
+# Behavioral Cloning — direct imitation of Zenodo human demos
+# Frozen encoder (encoder_demos.pt) + trainable action head
+# Data: 453k frames + discretized actions (17 classes)
+
+data:
+  path: data/minerl_goal/episodes.npz
+  val_fraction: 0.1          # 90/10 train/val
+
+encoder:
+  checkpoint: checkpoints/encoder_demos.pt
+  frozen: true               # frozen encoder, only training the head
+
+model:
+  input_dim: 128             # encoder embed_dim
+  hidden_dim: 128            # 0 = linear, >0 = MLP with one hidden layer
+  n_actions: 17
+
+training:
+  epochs: 20
+  batch_size: 256
+  lr: 1.0e-3
+  weight_decay: 1.0e-5
+  num_workers: 0
+
+logging:
+  log_every: 5
+
+checkpoint:
+  dir: checkpoints/
+  name: bc_policy.pt

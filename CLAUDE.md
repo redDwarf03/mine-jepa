@@ -1,123 +1,139 @@
-# Mine-JEPA — Instructions pour Claude Code
+# Mine-JEPA — Instructions for Claude Code
 
-## Ce qu'est ce projet (1 ligne)
-Agent JEPA qui joue à Minecraft depuis les pixels — packaging spectaculaire de briques
-open-source existantes, pas de recherche from-scratch. Plan complet : `PLAN.md`.
+## What this project is (1 line)
+A JEPA agent that plays Minecraft from pixels — spectacular packaging of existing
+open-source building blocks, not from-scratch research. Full plan: `PLAN.md`.
 
-## Règles d'architecture — NE PAS déroger sans discussion
-- **Backbone** : JEPA léger ~15M params entraîné *sur le jeu* (style LeWorldModel / eb_jepa).
-  **NE PAS** utiliser V-JEPA 2 gelé comme primaire (lourd, OOD sur Minecraft, pas clonable
-  sur GPU grand public).
-- **Env** : **Crafter d'abord** (léger, pip install, valide la pipeline), **MineRL ensuite**
-  (Phase 4, le visuel Minecraft = la marque).
-- **Briques à réutiliser** (ne pas réinventer) :
-  - `facebookresearch/eb_jepa` — action-conditioned + planning officiel JEPA
-  - `facebookresearch/vjepa2` via torch.hub — secondaire/comparaison seulement
-  - LeWorldModel (arXiv 2603.19312) — vérifier dispo en Phase 0
-  - Anti-collapse VICReg : recette dans `ES2025-19.pdf` (ESANN 2025, dans le repo)
+## Architecture rules — DO NOT deviate without discussion
+- **Backbone**: lightweight JEPA ~15M params trained *on the game* (LeWorldModel / eb_jepa style).
+  **DO NOT** use frozen V-JEPA 2 as primary (heavy, OOD on Minecraft, not clonable
+  on consumer GPU).
+- **Env**: **Crafter first** (lightweight, pip install, validates the pipeline), **MineRL second**
+  (Phase 4, real Minecraft visuals = the brand).
+- **Building blocks to reuse** (do not reinvent):
+  - `facebookresearch/eb_jepa` — action-conditioned + official JEPA planning
+  - `facebookresearch/vjepa2` via torch.hub — secondary/comparison only
+  - LeWorldModel (arXiv 2603.19312) — check availability in Phase 0
+  - Anti-collapse VICReg: recipe in `ES2025-19.pdf` (ESANN 2025, in the repo)
 
-## Risque n°1 : le COLLAPSE
-JEPA est **prone au collapse** (tous les embeddings → constante, variance → 0, loss → 0
-mais le modèle n'a rien appris). **Toujours** :
-- target-encoder en EMA (θ̄ ← 0.99·θ̄ + 0.01·θ), gradient bloqué
-- régularisation VICReg sur la variance des embeddings
-- monitorer `batch_var` à chaque epoch — si < 1e-6 : collapse en cours
+## Risk #1: COLLAPSE
+JEPA is **prone to collapse** (all embeddings → constant, variance → 0, loss → 0
+but the model learned nothing). **Always**:
+- target-encoder via EMA (θ̄ ← 0.99·θ̄ + 0.01·θ), gradient blocked
+- VICReg regularization on embedding variance
+- monitor `batch_var` each epoch — if < 1e-6: collapse in progress
 
-## Phase courante
-**PHASE 4 — Port vers le vrai Minecraft (MineRL)** (voir PLAN.md §4). Phases 0→3 complètes ✅.
+## Current phase
+**PHASE 4 — Port to real Minecraft (MineRL)** (see PLAN.md §4). Phases 0→3 complete ✅.
 
-Phase 0 — gates validés :
-- [x] Env Python tourne + Crafter installé
-- [x] `scripts/collect.py` → 33 406 transitions (frames, actions, health, food, drink, energy) + GIF
-- [x] `mine_jepa/eb_jepa/` — code Meta vendored, importable, smoke test OK
-- [x] `docs/01_jepa.md` + `docs/02_setup.md` rédigés
+Phase 0 — gates validated:
+- [x] Python env running + Crafter installed
+- [x] `scripts/collect.py` → 33,406 transitions (frames, actions, health, food, drink, energy) + GIF
+- [x] `mine_jepa/eb_jepa/` — Meta code vendored, importable, smoke test OK
+- [x] `docs/01_jepa.md` + `docs/02_setup.md` written
 
-Phase 1 — gates validés ✅ :
+Phase 1 — gates validated ✅:
 - [x] `scripts/train_encoder.py` → 30 epochs GPU RTX 5060 Ti — val_loss=0.080, batch_var=1.13
-- [x] `batch_var` > 1e-4 — mesuré 1.178 au probe (pas de collapse)
-- [x] `scripts/probe.py` → linear-probe health : 90.8% vs baseline 86.9% (+3.8%) ✅
-- [x] `docs/03_representation_collapse.md` rédigé
+- [x] `batch_var` > 1e-4 — measured 1.178 at probe (no collapse)
+- [x] `scripts/probe.py` → linear-probe health: 90.8% vs baseline 86.9% (+3.8%) ✅
+- [x] `docs/03_representation_collapse.md` written
 
-Phase 2 — gates validés ✅ :
+Phase 2 — gates validated ✅:
 - [x] `scripts/train_wm.py` → 30 epochs GPU — val_pred=0.033 vs val_copy=0.086 (ratio=0.38)
-- [x] erreur latente 1-pas < baseline : ratio 0.367 ✅
-- [x] `scripts/eval_wm.py` → multi-pas 10/10 k sous baseline (ratio ~0.38 stable) ✅
-- [x] `docs/04_world_model.md` rédigé
+- [x] 1-step latent error < baseline: ratio 0.367 ✅
+- [x] `scripts/eval_wm.py` → multi-step 10/10 k below baseline (ratio ~0.38 stable) ✅
+- [x] `docs/04_world_model.md` written
 
-Phase 3 — gates validés ✅ :
-- [x] `scripts/play.py` → agent MPC latent dans Crafter (random-shooting, horizon=12, N=512)
+Phase 3 — gates validated ✅:
+- [x] `scripts/play.py` → MPC latent agent in Crafter (random-shooting, horizon=12, N=512)
 - [x] 100% success rate, 2.56 achievements/ep vs 2.38 random (+7.5%), reward +14%
-- [x] GIF sauvegardé : `assets/agent_play.gif`
-- [x] `docs/05_planning.md` rédigé
+- [x] GIF saved: `assets/agent_play.gif`
+- [x] `docs/05_planning.md` written
 
-Gates à valider avant Phase 5 :
-- [ ] MineRL installé et env tourne (`import minerl` OK)
-- [ ] `scripts/collect.py --env minerl` → dataset Minecraft réel
-- [ ] Ré-entraîner encoder + WM sur frames MineRL
-- [ ] `scripts/play.py --env minerl` → agent joue au vrai Minecraft
-- [ ] `docs/06_minecraft_port.md` rédigé
+Phase 4 gates:
+- [x] MineRL installed and env running (`import minerl` OK, 33 envs including MineRLTreechop-v0) ✅
+- [x] `docs/06_minecraft_port.md` written ✅
+- [x] `scripts/collect_minerl_multi.py --shards 15` → 119,852 MineRL transitions ✅
+- [x] JEPA encoder retrained on MineRL: val_loss=0.0528, batch_var=1.168 (no collapse) ✅
+- [x] World model retrained on MineRL: val_pred=0.0329 < val_copy=0.0334 (ratio=0.983) ✅
+- [x] **4 approaches tested, only eb-JEPA works: 50% success, reward 0.75/ep** ✅
+  - Approach 1-2: MPC + 1-step WM (ratio ≈0.96) → reward 0 (planner blind on static frames)
+  - Approach 3: BC frozen encoder + head → reward 0 (covariate shift, agent frozen on 1 action)
+  - Approach 4: BC CNN end-to-end → reward 0 (no memory, no sustained attack possible)
+  - **Approach 5: eb-JEPA action-conditioned MPC → 50% success, reward 0.75/ep ✅**
+- [ ] `scripts/play_minerl_multi.py --episodes 20` → agent plays real Minecraft (MALMOBUSY bug workaround)
+  - ⚠️ DO NOT use `scripts/play.py --env minerl` with episodes > 1 (blocks on reset)
 
-⚠️  Phase 4 sur **PC NVIDIA uniquement**. MineRL nécessite Java 8.
-Commande install : `uv pip install minerl` (peut prendre 10+ min)
+⚠️ Phase 4 on **NVIDIA PC only**. MineRL requires Java 8.
+Installation: DO NOT use `uv pip install minerl` directly.
+See complete procedure below (patches gym + minerl + Gradle).
 
-Notes PC Windows :
-- Toujours utiliser `run.bat <script>` (wrapper PYTHONUTF8=1 + PYTHONUNBUFFERED=1)
-- torch CUDA 12.8 installé manuellement (uv sync installe CPU par défaut)
+MineRL installation notes (Windows/Python 3.12):
+- `gym==0.19.0`: patch `opencv-python>=3.0` in setup.py (download source, patch, install)
+- `minerl`: build from patched source `C:\tmp\minerl_src\minerl-0.4.4\`
+  - `setup.py`: `shell=True` for gradlew.bat + copy pre-built JAR
+  - `build.gradle`: replace MixinGradle JitPack with `org.spongepowered:mixingradle:0.6-SNAPSHOT`
+  - Initial Gradle build: run via `C:\tmp\run_gradle.bat` (Java 8 required)
+- Java 8: `choco install temurin8` (admin) → `C:\Program Files\Eclipse Adoptium\jdk-8.0.472.8-hotspot`
 
-## Conventions de code
+Windows PC notes:
+- Always use `run.bat <script>` (wrapper PYTHONUTF8=1 + PYTHONUNBUFFERED=1)
+- torch CUDA 12.8 installed manually (uv sync installs CPU by default)
+
+## Code conventions
 - Python 3.11+, PyTorch 2.x, timm, einops
-- `uv` pour le package management (lockfile dans `uv.lock`)
-- Configs en YAML dans `configs/` (pas de hardcode de hyperparams dans le code)
-- Scripts standalone dans `scripts/` (chaque script = un livrable vérifiable)
-- Type hints partout, pas de commentaires évidents
+- `uv` for package management (lockfile in `uv.lock`)
+- Configs in YAML in `configs/` (no hardcoded hyperparams in code)
+- Standalone scripts in `scripts/` (each script = one verifiable deliverable)
+- Type hints everywhere, no obvious comments
 
-## Pédagogie embarquée (objectif d'apprentissage)
-L'utilisateur **découvre JEPA** — il ne connaît pas le sujet. Pour chaque nouveau concept
-introduit dans le code : expliquer le *pourquoi* en conversation et pointer vers le doc
-`docs/0X_*.md` correspondant. Les docs pédago = aussi le contenu marketing du projet.
+## Embedded pedagogy (learning objective)
+The user is **discovering JEPA** — they don't know the subject. For each new concept
+introduced in the code: explain the *why* in conversation and point to the corresponding
+`docs/0X_*.md` doc. The pedagogical docs = also the project's marketing content.
 
 ## Hardware
-- **Dev** : MacBook Air M1, 16 Go RAM, **pas de GPU NVIDIA** → OK pour écrire du code,
-  collecter des données, tester des imports. Trop lent pour entraîner.
-- **Training** : PC avec **GPU NVIDIA 8 Go VRAM**, 32 Go RAM → basculer AVANT de lancer
+- **Dev**: MacBook Air M1, 16 GB RAM, **no NVIDIA GPU** → OK for writing code,
+  collecting data, testing imports. Too slow for training.
+- **Training**: PC with **NVIDIA GPU 8 GB VRAM**, 32 GB RAM → switch BEFORE running
   `train_encoder.py` (Phase 1), `train_wm.py` (Phase 2), `play.py` (Phase 3+).
-- **Transfert** : `git push` depuis Mac → `git clone` + `uv pip install -e .` sur PC.
+- **Transfer**: `git push` from Mac → `git clone` + `uv pip install -e .` on PC.
 
-## Environnement Python
-Toujours préfixer avec `uv run` (utilise le venv géré par uv) :
+## Python environment
+Always prefix with `uv run` (uses the uv-managed venv):
 ```bash
 uv run python scripts/collect.py ...
 uv run pytest
 ```
 
-## Commandes utiles
+## Useful commands
 ```bash
-# Collecter des trajectoires (frames + actions) depuis Crafter
+# Collect trajectories (frames + actions) from Crafter
 uv run python scripts/collect.py --env crafter --episodes 100 --out data/crafter/
 
-# Linear-probe (gate Phase 1)
+# Linear-probe (Phase 1 gate)
 uv run python scripts/probe.py --data data/crafter/ --checkpoint checkpoints/encoder.pt
 
-# Évaluer le world model (gate Phase 2)
+# Evaluate world model (Phase 2 gate)
 uv run python scripts/eval_wm.py --checkpoint checkpoints/wm.pt --steps 10
 
-# Lancer l'agent (gate Phase 3)
+# Run the agent (Phase 3 gate)
 uv run python scripts/play.py --env crafter --task reach_plant --episodes 50
 ```
 
-## Structure du repo
+## Repo structure
 ```
-mine_jepa/        ← code source Python (encodeur, predictor, planner, agent)
-scripts/          ← scripts standalone vérifiables (collect, probe, eval_wm, play)
-configs/          ← hyperparams YAML
-docs/             ← pédagogie + marketing
-  01_jepa.md      ← C'est quoi JEPA (pour apprendre + pour le README)
-  02_setup.md     ← Comment installer et lancer
+mine_jepa/        ← Python source code (encoder, predictor, planner, agent)
+scripts/          ← standalone verifiable scripts (collect, probe, eval_wm, play)
+configs/          ← YAML hyperparams
+docs/             ← pedagogy + marketing
+  01_jepa.md      ← What is JEPA (to learn + for the README)
+  02_setup.md     ← How to install and run
   03_representation_collapse.md
   04_world_model.md
   05_planning.md
   06_minecraft_port.md
 data/             ← datasets (gitignore)
-checkpoints/      ← poids (gitignore, puis HuggingFace)
-assets/           ← GIFs, vidéos pour le README
+checkpoints/      ← weights (gitignore, then HuggingFace)
+assets/           ← GIFs, videos for the README
 ```

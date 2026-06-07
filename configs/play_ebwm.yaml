@@ -1,0 +1,31 @@
+# Phase 4c — MPC agent with action-conditioned world model (eb_jepa)
+
+minerl_env: MineRLTreechop-v0
+actions_config: configs/minerl_actions.yaml
+
+model:
+  checkpoint: checkpoints/ebwm.pt
+
+planner:
+  n_actions: 17
+  horizon: 12
+  n_candidates: 512
+
+goal:
+  data_path: data/minerl_goal/episodes.npz
+  threshold: 0.5
+  min_frames: 10
+  mode: centroid        # centroid (50%, forces movement) | nearest (freezes agent)
+  n_prototypes: 256     # used only if mode: nearest
+
+agent:
+  episodes: 20
+  max_steps: 3000
+  action_repeat: 4      # re-plan every 4 steps → 4× faster + sustained attack
+  seed: 0
+
+logging:
+  print_every: 1
+  save_gif: true
+  gif_episodes: 3
+  gif_path: assets/agent_play_ebwm.gif

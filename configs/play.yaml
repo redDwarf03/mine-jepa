@@ -1,4 +1,4 @@
-# Hyperparamètres — Phase 3 : agent MPC en latent dans Crafter
+# Hyperparameters — Phase 3: latent MPC agent in Crafter
 
 encoder:
   checkpoint: checkpoints/encoder_phase1.pt
@@ -7,25 +7,25 @@ world_model:
   checkpoint: checkpoints/wm_phase2.pt
 
 planner:
-  n_candidates: 512   # séquences d'actions candidates par step
-  horizon: 12         # nombre de pas imaginés en avant
-  n_actions: 17       # Crafter : 17 actions discrètes
+  n_candidates: 512   # candidate action sequences per step
+  horizon: 12         # number of steps imagined ahead
+  n_actions: 17       # Crafter: 17 discrete actions
 
 goal:
-  # Frames du dataset dont food >= 7 servent à construire le goal embedding.
-  # "food élevé" ≈ l'agent a mangé une plante récemment = bon état de survie.
+  # Dataset frames with food >= 7 are used to build the goal embedding.
+  # "high food" ≈ agent has eaten a plant recently = good survival state.
   data_path: data/crafter/episodes.npz
-  label: food         # label utilisé pour sélectionner les frames "goal"
-  threshold: 7        # valeur min pour qualifier de "bon état"
-  min_frames: 50      # au moins N frames pour calculer le centroïde
+  label: food         # label used to select "goal" frames
+  threshold: 7        # min value to qualify as "good state"
+  min_frames: 50      # at least N frames to compute the centroid
 
 agent:
   episodes: 50
-  max_steps: 500      # steps max par épisode (limite Crafter par défaut)
+  max_steps: 500      # max steps per episode (Crafter default limit)
   seed: 0
 
 logging:
-  print_every: 10     # afficher stats tous les N épisodes
+  print_every: 10     # print stats every N episodes
   save_gif: true
-  gif_episodes: 3     # nombre d'épisodes à enregistrer en GIF
+  gif_episodes: 3     # number of episodes to record as GIF
   gif_path: assets/agent_play.gif

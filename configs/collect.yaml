@@ -4,5 +4,5 @@ max_steps_per_episode: 500
 seed: 42
 out_dir: data/crafter
 save_gif: true
-gif_episodes: 3        # nombre d'épisodes à enregistrer en GIF
-frame_size: [64, 64]   # resize pour l'entraînement JEPA
+gif_episodes: 3        # number of episodes to record as GIF
+frame_size: [64, 64]   # resize for JEPA training

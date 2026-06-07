@@ -1,12 +1,12 @@
-# Hyperparamètres — Phase 1 : entraînement encodeur JEPA sur Crafter
-# Tous les scripts Phase 1 lisent ce fichier. Ne hardcoder aucune valeur dans le code.
+# Hyperparameters — Phase 1: JEPA encoder training on Crafter
+# All Phase 1 scripts read this file. Never hardcode values in code.
 
 data:
   path: data/crafter/episodes.npz
 
 model:
-  embed_dim: 128       # dimension de l'espace latent
-  hidden_dim: 64       # canaux intermédiaires du ResNet5
+  embed_dim: 128       # latent space dimension
+  hidden_dim: 64       # intermediate channels in ResNet5
   predictor_hidden: 256
 
 training:
@@ -18,12 +18,12 @@ training:
   num_workers: 0
 
 vicreg:
-  std_coeff: 1.0       # poids de la pénalité de variance (anti-collapse)
-  cov_coeff: 0.04      # poids de la pénalité de covariance (décorrélation)
+  std_coeff: 1.0       # weight of variance penalty (anti-collapse)
+  cov_coeff: 0.04      # weight of covariance penalty (decorrelation)
 
 logging:
-  log_every: 10        # loguer toutes les N batches
-  collapse_threshold: 1.0e-4  # batch_var < seuil → alerte collapse
+  log_every: 10        # log every N batches
+  collapse_threshold: 1.0e-4  # batch_var < threshold → collapse alert
 
 checkpoint:
   dir: checkpoints/

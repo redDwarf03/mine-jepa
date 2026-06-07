@@ -1,0 +1,32 @@
+# Discrétisation de l'action space MineRL → 17 entiers
+#
+# MineRL utilise un dict par action (forward:0/1, camera:[pitch,yaw]…).
+# On le mappe sur 17 actions discrètes pour rester compatible avec
+# l'ActionConditionedPredictor entraîné sur Crafter.
+#
+# Chaque entrée = dict partiel appliqué sur env.action_space.noop().
+# Les clés absentes restent à 0.
+
+n_actions: 17
+
+actions:
+  0:   {}                                          # noop
+  1:   {forward: 1}                                # avancer
+  2:   {back: 1}                                   # reculer
+  3:   {left: 1}                                   # straf gauche
+  4:   {right: 1}                                  # straf droite
+  5:   {jump: 1}                                   # sauter
+  6:   {attack: 1}                                 # attaquer / frapper
+  7:   {forward: 1, attack: 1}                     # avancer + frapper
+  8:   {forward: 1, jump: 1}                       # sauter en avançant
+  9:   {camera: [-10, 0]}                          # regarder en haut
+  10:  {camera: [10, 0]}                           # regarder en bas
+  11:  {camera: [0, -10]}                          # pivoter gauche
+  12:  {camera: [0, 10]}                           # pivoter droite
+  13:  {sprint: 1, forward: 1}                     # sprint
+  14:  {sprint: 1, forward: 1, attack: 1}          # sprint + frapper
+  15:  {forward: 1, camera: [0, -5]}               # avancer + virer gauche
+  16:  {forward: 1, camera: [0, 5]}                # avancer + virer droite
+
+# Environnement recommandé pour Phase 4 (simple, visuellement parlant)
+env: MineRLTreechop-v0

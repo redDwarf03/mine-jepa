@@ -1,0 +1,14 @@
+# MineRL re-collection to build a quality goal embedding.
+# Goal: obtain frames where reward > 0 (tree chopped) to guide the planner.
+# Separate destination: data/minerl_goal/ (does not touch data/minerl/).
+
+env: minerl
+minerl_env: MineRLTreechop-v0
+episodes: 1
+max_steps_per_episode: 9000
+seed: 42
+out_dir: data/minerl_goal
+save_gif: false
+gif_episodes: 0
+frame_size: [64, 64]
+actions_config: configs/minerl_actions.yaml

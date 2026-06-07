@@ -1,0 +1,32 @@
+# Hyperparameters — Phase 4: world model on MineRL frames
+# Same architecture as train_wm.yaml, adapted for MineRL.
+
+data:
+  path: data/minerl/episodes.npz
+
+encoder:
+  checkpoint: checkpoints/encoder_minerl.pt   # Phase 4 encoder (trained on MineRL frames)
+
+model:
+  embed_dim: 128
+  n_actions: 17       # discretized mapping defined in configs/minerl_actions.yaml
+  action_dim: 32
+  hidden_dim: 256
+
+training:
+  epochs: 30
+  batch_size: 256
+  lr: 3.0e-4
+  weight_decay: 1.0e-5
+  num_workers: 0
+
+logging:
+  log_every: 20
+
+checkpoint:
+  dir: checkpoints/
+  name: wm_minerl.pt
+
+eval:
+  max_k: 10
+  n_sequences: 1000

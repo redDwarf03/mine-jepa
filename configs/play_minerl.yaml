@@ -1,0 +1,34 @@
+# Hyperparameters — Phase 4: MPC agent in MineRL Treechop
+# Same planner as Phase 3 — MineRL checkpoints (trained on Minecraft frames).
+
+env: minerl
+minerl_env: MineRLTreechop-v0
+actions_config: configs/minerl_actions.yaml
+
+encoder:
+  checkpoint: checkpoints/encoder_demos.pt
+
+world_model:
+  checkpoint: checkpoints/wm_demos.pt
+
+planner:
+  n_candidates: 512
+  horizon: 12
+  n_actions: 17       # 17 discrete actions (configs/minerl_actions.yaml)
+
+goal:
+  data_path: data/minerl_goal/episodes.npz
+  label: rewards       # frames where reward > 0 = tree chopped = good goal
+  threshold: 0.5       # reward >= 0.5 (= at least 1 wood collected)
+  min_frames: 10       # fallback to all frames if not enough reward>0
+
+agent:
+  episodes: 20
+  max_steps: 3000
+  seed: 0
+
+logging:
+  print_every: 5
+  save_gif: true
+  gif_episodes: 3
+  gif_path: assets/agent_play_minerl.gif
