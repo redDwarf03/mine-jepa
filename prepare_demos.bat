@@ -1,5 +1,5 @@
 @echo off
-cd /d C:\SSe\app\mine-jepa
+cd /d "%~dp0"
 set PYTHONUTF8=1
 set PYTHONUNBUFFERED=1
 

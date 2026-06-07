@@ -11,8 +11,11 @@
 ::   run.bat scripts/probe.py --label health
 ::   run.bat -m pytest
 
+cd /d "%~dp0"
 set PYTHONUTF8=1
 set PYTHONUNBUFFERED=1
-set JAVA_HOME=C:\Program Files\Eclipse Adoptium\jdk-8.0.472.8-hotspot
+:: JAVA_HOME: respected if already set; fallback = Temurin 8 default install path
+:: To override: set JAVA_HOME=C:\path\to\your\jdk8  before calling this script
+if not defined JAVA_HOME set "JAVA_HOME=C:\Program Files\Eclipse Adoptium\jdk-8.0.472.8-hotspot"
 set PATH=%JAVA_HOME%\bin;%PATH%
 uv run python %*

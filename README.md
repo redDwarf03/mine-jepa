@@ -31,8 +31,8 @@ A **Joint-Embedding Predictive Architecture** (LeCun, 2022) learns visual repres
 
 ```
 frame_t  ──[Encoder f]──►  s_t ──────────────────────────────────┐
-                                                                   │
-frame_t+1 ──[Target g]──► s_t+1  ◄── [Predictor p(s_t, a_t)]────┘
+                                                                 │
+frame_t+1 ──[Target g]──► s_t+1  ◄── [Predictor p(s_t, a_t)]─────┘
 ```
 
 - The **encoder** maps frames to compact latent vectors
