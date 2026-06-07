@@ -1,16 +1,16 @@
 """
-Mine-JEPA — Phase 2 : predictor action-conditionné.
+Mine-JEPA — Phase 2: action-conditioned predictor.
 
-Le predictor reçoit (s_t, a_t) et prédit ŝ_{t+1} dans l'espace latent.
-C'est le cœur du world model : il "imagine" la conséquence d'une action
-sans jamais toucher l'environnement réel.
+The predictor takes (s_t, a_t) and predicts ŝ_{t+1} in latent space.
+This is the core of the world model: it "imagines" the consequence of an
+action without ever touching the real environment.
 
-Architecture : action-embedding + MLP (recette ESANN 2025).
+Architecture: action-embedding + MLP (ESANN 2025 recipe).
   a_t  → Embedding(17, action_dim) → a_emb [B, action_dim]
   s_t  ──────────────────────────────────── [B, embed_dim]
-  concat([s_t, a_emb])  →  MLP(3 couches)  →  ŝ_{t+1} [B, embed_dim]
+  concat([s_t, a_emb])  →  MLP(3 layers)  →  ŝ_{t+1} [B, embed_dim]
 
-Pédagogie : voir docs/04_world_model.md.
+Pedagogy: see docs/04_world_model.md.
 """
 import torch
 import torch.nn as nn
@@ -18,11 +18,11 @@ import torch.nn as nn
 
 class ActionConditionedPredictor(nn.Module):
     """
-    Prédit le prochain état latent ŝ_{t+1} = f(s_t, a_t).
+    Predicts the next latent state ŝ_{t+1} = f(s_t, a_t).
 
-    Délibérément petit (< 1M params) : on veut que l'information soit
-    dans l'ENCODEUR (Phase 1), pas dans le predictor. Un predictor
-    surdimensionné compenserait un mauvais encodeur.
+    Deliberately small (< 1M params): information should live in the
+    ENCODER (Phase 1), not the predictor. An oversized predictor would
+    compensate for a poor encoder.
     """
 
     def __init__(
@@ -45,8 +45,8 @@ class ActionConditionedPredictor(nn.Module):
     def forward(self, s: torch.Tensor, a: torch.Tensor) -> torch.Tensor:
         """
         Args:
-            s : [B, embed_dim]  — état latent courant (encodeur gelé)
-            a : [B]             — action discrète (int64)
+            s : [B, embed_dim]  — current latent state (frozen encoder)
+            a : [B]             — discrete action (int64)
         Returns:
             ŝ_{t+1} : [B, embed_dim]
         """

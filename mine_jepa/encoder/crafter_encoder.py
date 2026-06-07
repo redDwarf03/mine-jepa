@@ -1,13 +1,13 @@
 """
-Mine-JEPA — Phase 1 : encodeur JEPA pour Crafter.
+Mine-JEPA — Phase 1: JEPA encoder for Crafter.
 
-Architecture :
-  CrafterEncoder      — ResNet5 → avgpool → vecteur latent [B, D]
-  EMATargetEncoder    — copie EMA de CrafterEncoder, aucun gradient
-  FramePredictor      — MLP 2-couches : [B, D] → [B, D]
+Architecture:
+  CrafterEncoder      — ResNet5 → avgpool → latent vector [B, D]
+  EMATargetEncoder    — EMA copy of CrafterEncoder, no gradient
+  FramePredictor      — 2-layer MLP: [B, D] → [B, D]
   CrafterJEPA         — loss = L_JEPA + VICReg (variance + covariance)
 
-Pédagogie : voir docs/01_jepa.md et docs/03_representation_collapse.md.
+Pedagogy: see docs/01_jepa.md and docs/03_representation_collapse.md.
 """
 import copy
 
@@ -21,11 +21,11 @@ from mine_jepa.eb_jepa.losses import CovarianceLoss, HingeStdLoss
 
 class CrafterEncoder(nn.Module):
     """
-    Encode une frame Crafter (64×64 RGB) en vecteur latent [B, D].
+    Encodes a Crafter frame (64×64 RGB) into a latent vector [B, D].
 
-    Utilise ResNet5 (eb_jepa) suivi d'un avg-pool global.
-    L'avg-pool est crucial : il produit un vecteur *plat* sur lequel
-    la régularisation VICReg et le linear-probe sont applicables directement.
+    Uses ResNet5 (eb_jepa) followed by global avg-pool.
+    The avg-pool is crucial: it produces a *flat* vector on which
+    VICReg regularization and linear-probe can be applied directly.
     """
 
     def __init__(self, embed_dim: int = 128, hidden_dim: int = 64):
@@ -37,7 +37,7 @@ class CrafterEncoder(nn.Module):
             s1=2,
             s2=2,
             s3=2,
-            avg_pool=True,  # → sortie [B, embed_dim] (pas de dims spatiales)
+            avg_pool=True,  # → output [B, embed_dim] (no spatial dims)
         )
         self.embed_dim = embed_dim
 
@@ -53,26 +53,26 @@ class CrafterEncoder(nn.Module):
 
 class EMATargetEncoder(nn.Module):
     """
-    Copie EMA (Exponential Moving Average) de l'encodeur de contexte.
+    EMA (Exponential Moving Average) copy of the context encoder.
 
-    Les poids ne sont JAMAIS mis à jour par backprop — seulement via update().
-    C'est la parade n°1 contre le collapse : si les poids du target bougent
-    doucement, la cible de prédiction reste non-triviale.
+    Weights are NEVER updated by backprop — only via update().
+    This is countermeasure #1 against collapse: if target weights move
+    slowly, the prediction target remains non-trivial.
 
-    Formule EMA : θ̄ ← decay · θ̄ + (1 - decay) · θ
+    EMA formula: θ̄ ← decay · θ̄ + (1 - decay) · θ
     """
 
     def __init__(self, source: CrafterEncoder, decay: float = 0.99):
         super().__init__()
         self.decay = decay
         self.net = copy.deepcopy(source)
-        # Aucun gradient : le target encoder est gelé entre les updates EMA
+        # No gradient: target encoder is frozen between EMA updates
         for p in self.net.parameters():
             p.requires_grad_(False)
 
     @torch.no_grad()
     def update(self, source: CrafterEncoder) -> None:
-        """Met à jour les poids EMA depuis l'encodeur de contexte."""
+        """Updates EMA weights from the context encoder."""
         for ema_p, src_p in zip(self.net.parameters(), source.parameters()):
             ema_p.data.mul_(self.decay).add_(src_p.data, alpha=1.0 - self.decay)
 
@@ -83,12 +83,11 @@ class EMATargetEncoder(nn.Module):
 
 class FramePredictor(nn.Module):
     """
-    MLP 2-couches qui prédit l'embedding de la frame suivante.
+    2-layer MLP that predicts the next frame's embedding.
 
-    Reçoit s_x (embedding de la frame courante) → prédit ŝ_{t+1}.
-    Volontairement petit : on veut que l'information soit dans l'encodeur,
-    pas dans le predictor. (Si le predictor est trop gros, il peut compenser
-    un mauvais encodeur.)
+    Receives s_x (current frame embedding) → predicts ŝ_{t+1}.
+    Intentionally small: information should be in the encoder, not the
+    predictor. (An oversized predictor can compensate for a weak encoder.)
     """
 
     def __init__(self, embed_dim: int = 128, hidden_dim: int = 256):
@@ -105,15 +104,15 @@ class FramePredictor(nn.Module):
 
 class CrafterJEPA(nn.Module):
     """
-    Modèle JEPA complet pour Phase 1 (sans action conditioning).
+    Complete JEPA model for Phase 1 (no action conditioning).
 
-    Loss totale = L_JEPA + λ_std · L_std + λ_cov · L_cov
+    Total loss = L_JEPA + λ_std · L_std + λ_cov · L_cov
 
-    - L_JEPA : MSE entre prédiction et cible EMA (stop-gradient)
-    - L_std  : pénalise la variance trop faible des embeddings (anti-collapse)
-    - L_cov  : pénalise les corrélations entre dimensions (décorrélation)
+    - L_JEPA: MSE between prediction and EMA target (stop-gradient)
+    - L_std : penalizes too-low embedding variance (anti-collapse)
+    - L_cov : penalizes inter-dimension correlations (decorrelation)
 
-    Après chaque batch, appeler update_ema() pour propager les poids.
+    Call update_ema() after each batch to propagate weights.
     """
 
     def __init__(
@@ -130,14 +129,14 @@ class CrafterJEPA(nn.Module):
         self.target_encoder = EMATargetEncoder(self.encoder, decay=ema_decay)
         self.predictor = FramePredictor(embed_dim, predictor_hidden)
 
-        # Anti-collapse : variance + covariance sur les embeddings
+        # Anti-collapse: variance + covariance on embeddings
         self.std_loss_fn = HingeStdLoss(std_margin=1.0)
         self.cov_loss_fn = CovarianceLoss()
         self.std_coeff = std_coeff
         self.cov_coeff = cov_coeff
 
     def update_ema(self) -> None:
-        """À appeler après chaque step d'optimisation."""
+        """Call after each optimization step."""
         self.target_encoder.update(self.encoder)
 
     def forward(
@@ -145,31 +144,31 @@ class CrafterJEPA(nn.Module):
     ) -> dict[str, torch.Tensor]:
         """
         Args:
-            x_context : [B, 3, H, W] — frame courante, float [0,1]
-            x_target  : [B, 3, H, W] — frame suivante (cible)
+            x_context : [B, 3, H, W] — current frame, float [0,1]
+            x_target  : [B, 3, H, W] — next frame (target)
         Returns:
-            dict avec total_loss, jepa_loss, std_loss, cov_loss, batch_var
+            dict with total_loss, jepa_loss, std_loss, cov_loss, batch_var
         """
-        # Encode la frame courante (gradient propagé)
+        # Encode current frame (gradient flows through)
         s_x = self.encoder(x_context)  # [B, D]
 
-        # Encode la frame suivante via EMA (pas de gradient)
+        # Encode next frame via EMA (no gradient)
         s_y = self.target_encoder(x_target)  # [B, D]
 
-        # Prédit l'état suivant en latent
+        # Predict next state in latent space
         s_hat = self.predictor(s_x)  # [B, D]
 
-        # L_JEPA : on prédit s_y, mais s_y est stop-gradient
-        # (le target encoder ne reçoit JAMAIS de gradient direct)
+        # L_JEPA: predicts s_y, but s_y is stop-gradient
+        # (target encoder NEVER receives direct gradient)
         jepa_loss = F.mse_loss(s_hat, s_y.detach())
 
-        # VICReg : anti-collapse sur les embeddings du context encoder
-        std_loss = self.std_loss_fn(s_x)  # pénalise var < 1
-        cov_loss = self.cov_loss_fn(s_x)  # pénalise corrélations
+        # VICReg: anti-collapse on context encoder embeddings
+        std_loss = self.std_loss_fn(s_x)  # penalizes var < 1
+        cov_loss = self.cov_loss_fn(s_x)  # penalizes correlations
 
         total_loss = jepa_loss + self.std_coeff * std_loss + self.cov_coeff * cov_loss
 
-        # Indicateur de collapse : si batch_var < 1e-6, le modèle collapse
+        # Collapse indicator: if batch_var < 1e-6, model is collapsing
         batch_var = s_x.var(dim=0).mean().item()
 
         return {
