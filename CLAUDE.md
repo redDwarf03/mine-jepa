@@ -56,6 +56,7 @@ Phase 4 gates:
 - [x] `scripts/collect_minerl_multi.py --shards 15` → 119,852 MineRL transitions ✅
 - [x] JEPA encoder retrained on MineRL: val_loss=0.0528, batch_var=1.168 (no collapse) ✅
 - [x] World model retrained on MineRL: val_pred=0.0329 < val_copy=0.0334 (ratio=0.983) ✅
+- [x] eb-JEPA WM v2 retrained on human demos (453k Zenodo): best ratio=0.890 @ epoch 25, batch_var=1.26 (no collapse) ✅
 - [x] **4 approaches tested, only eb-JEPA works: 50% success, reward 0.75/ep** ✅
   - Approach 1-2: MPC + 1-step WM (ratio ≈0.96) → reward 0 (planner blind on static frames)
   - Approach 3: BC frozen encoder + head → reward 0 (covariate shift, agent frozen on 1 action)

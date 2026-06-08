@@ -19,7 +19,7 @@ The agent trains a Joint-Embedding Predictive Architecture entirely on raw gamep
 | 2 — World Model | Crafter 1-step prediction | pred/copy ratio | **0.38** (< 1 = beats baseline) |
 | 3 — Planner | Crafter MPC agent | Achievements vs random | **+7.5%** (+14% reward) |
 | 4 — Minecraft | MineRL Treechop eb-JEPA | Success rate | **50%** (reward 0.75/ep) |
-| 4 — WM v2 | Action-conditioned on human demos | Best ratio (epoch 16) | **0.919**, batch_var 1.28 |
+| 4 — WM v2 | Action-conditioned on human demos | Best ratio (epoch 25) | **0.890**, batch_var 1.26 |
 
 **No collapse across all runs.** `batch_var > 1` throughout — embeddings are diverse and informative.
 
