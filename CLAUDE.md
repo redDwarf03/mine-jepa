@@ -56,14 +56,26 @@ Phase 4 gates:
 - [x] `scripts/collect_minerl_multi.py --shards 15` → 119,852 MineRL transitions ✅
 - [x] JEPA encoder retrained on MineRL: val_loss=0.0528, batch_var=1.168 (no collapse) ✅
 - [x] World model retrained on MineRL: val_pred=0.0329 < val_copy=0.0334 (ratio=0.983) ✅
-- [x] eb-JEPA WM v2 retrained on human demos (453k Zenodo): best ratio=0.890 @ epoch 25, batch_var=1.26 (no collapse) ✅
-- [x] **4 approaches tested, only eb-JEPA works: 50% success, reward 0.75/ep** ✅
+- [x] **4 approaches tested, only eb-JEPA works** ✅ (1-4 = reward 0)
   - Approach 1-2: MPC + 1-step WM (ratio ≈0.96) → reward 0 (planner blind on static frames)
   - Approach 3: BC frozen encoder + head → reward 0 (covariate shift, agent frozen on 1 action)
   - Approach 4: BC CNN end-to-end → reward 0 (no memory, no sustained attack possible)
-  - **Approach 5: eb-JEPA action-conditioned MPC → 50% success, reward 0.75/ep ✅**
-- [ ] `scripts/play_minerl_multi.py --episodes 20` → agent plays real Minecraft (MALMOBUSY bug workaround)
+  - **Approach 5: eb-JEPA action-conditioned MPC (embed_dim=64, 664K) → agent chops trees ✅**
+- [x] **Ablation — what drives agent success (4 training runs on demos):**
+  - Original (T=8, 20ep, ratio 0.929): 50% — checkpoint LOST (overwritten by v2)
+  - WM v2 (embed=128, T=12, 25ep, ratio 0.890): 5% ❌
+  - v1-retrain (embed=64, T=12, 25ep, ratio 0.882): ~0% ❌ → disproves "bigger latent breaks it"
+  - v1-restored (embed=64, T=8, 20ep, ratio 0.927): **25%** ✅ (released ckpt, 1 ep chopped 2 logs)
+  - **LESSON: the TRAINING RECIPE (not latent size) is the lever. T=8/20ep → ratio ~0.93 = sweet
+    spot. Over-training (T=12/25ep → ratio ~0.88) breaks the agent at any embed_dim (planner copies
+    static a6-attack pose instead of the a14 move+attack gesture). Lower ratio ≠ better.**
+  - **LESSON: high run-to-run variance (50% vs 25% at same recipe+ratio). Training is UNSEEDED →
+    different latent geometry each draw; planning success weakly coupled to prediction ratio.
+    → SEED training before claiming reproducibility. Released number = 25% (honest), best seen = 50%.**
+- [x] `play_ebwm.bat` (= play_minerl_multi.py) → agent plays real Minecraft, 25% success ✅
+  - GIF fix: play_minerl_multi.py keeps the BEST-success episode GIF (not the last/failing one)
   - ⚠️ DO NOT use `scripts/play.py --env minerl` with episodes > 1 (blocks on reset)
+  - ⚠️ train_eb_jepa.py OVERWRITES checkpoints/ebwm.pt — back up a good checkpoint before retraining
 
 ⚠️ Phase 4 on **NVIDIA PC only**. MineRL requires Java 8.
 Installation: DO NOT use `uv pip install minerl` directly.

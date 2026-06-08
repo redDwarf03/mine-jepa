@@ -6,7 +6,7 @@ The agent trains a Joint-Embedding Predictive Architecture entirely on raw gamep
 
 ![eb-JEPA agent playing MineRL Treechop](assets/agent_play_ebwm.gif)
 
-*eb-JEPA MPC agent on MineRLTreechop-v0 — 50% success rate (tree chopped), reward 0.75/ep*
+*eb-JEPA MPC agent on MineRLTreechop-v0 — chops trees autonomously, up to 2 logs/episode. 25% success on the released checkpoint (varies 25–50% across training draws).*
 
 ---
 
@@ -18,10 +18,16 @@ The agent trains a Joint-Embedding Predictive Architecture entirely on raw gamep
 | 1 — Probe | Linear health probe | Accuracy vs majority baseline | **90.8% vs 86.9% (+3.9pp)** |
 | 2 — World Model | Crafter 1-step prediction | pred/copy ratio | **0.38** (< 1 = beats baseline) |
 | 3 — Planner | Crafter MPC agent | Achievements vs random | **+7.5%** (+14% reward) |
-| 4 — Minecraft | MineRL Treechop eb-JEPA | Success rate | **50%** (reward 0.75/ep) |
-| 4 — WM v2 | Action-conditioned on human demos | Best ratio (epoch 25) | **0.890**, batch_var 1.26 |
+| 4 — Minecraft | MineRL Treechop eb-JEPA (v1, 664K) | Success rate | **25–50%** (draw-dependent; released ckpt 25%) |
 
 **No collapse across all runs.** `batch_var > 1` throughout — embeddings are diverse and informative.
+
+> **On the MineRL number, honestly:** the eb-JEPA agent chops trees in real Minecraft,
+> but the success rate varies **25–50% between training runs** at the same prediction
+> ratio (~0.93). Training is not seeded, and downstream planning performance is only
+> weakly coupled to the world-model prediction metric. The released checkpoint scores
+> 25% (5/20, one episode chopping 2 logs); the best run we observed reached 50%. See
+> [`docs/06_minecraft_port.md`](docs/06_minecraft_port.md) for the full ablation.
 
 ---
 

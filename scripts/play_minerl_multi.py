@@ -15,11 +15,13 @@ Usage:
 import argparse
 import os
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 import numpy as np
+import yaml
 
 
 def parse_args():
@@ -28,6 +30,19 @@ def parse_args():
     p.add_argument("--config", default="configs/play_minerl.yaml")
     p.add_argument("--script", default="scripts/play.py", help="play script to run per episode")
     return p.parse_args()
+
+
+def read_gif_path(config: str) -> Path | None:
+    """Read logging.gif_path from the config, if GIF saving is enabled."""
+    try:
+        with open(config) as f:
+            cfg = yaml.safe_load(f)
+        log = cfg.get("logging", {})
+        if log.get("save_gif"):
+            return Path(log["gif_path"])
+    except (OSError, KeyError, yaml.YAMLError):
+        pass
+    return None
 
 
 def kill_stray_java():
@@ -160,6 +175,13 @@ def main():
     print(f"{'='*60}", flush=True)
     print("MALMOBUSY workaround: 1 Minecraft per episode", flush=True)
 
+    # The per-episode GIF is overwritten by each subprocess. To produce a
+    # representative hero GIF, keep the GIF of the BEST successful episode
+    # (highest reward) rather than whatever the last episode happened to be.
+    gif_path = read_gif_path(args.config)
+    best_gif = gif_path.with_name(gif_path.stem + ".best.gif") if gif_path else None
+    best_gif_reward = 0.0
+
     results = []
     for i in range(1, n + 1):
         r = _run_and_capture(i, args.config, Path(f"logs/play_ep_{i:03d}.txt"), args.script)
@@ -173,9 +195,22 @@ def main():
                 f"fps={r['fps']:.1f}",
                 flush=True,
             )
+            # Preserve the GIF of the best success seen so far.
+            if best_gif and r["reward"] > best_gif_reward and gif_path.exists():
+                shutil.copy(gif_path, best_gif)
+                best_gif_reward = r["reward"]
+                print(f"[ep {i:03d}/{n}] kept GIF (reward={r['reward']:.3f})", flush=True)
         else:
             print(f"\n[ep {i:03d}/{n}] FAILED — skipped", flush=True)
         kill_stray_java()
+
+    # Restore the best successful GIF over the canonical path (last episode
+    # would otherwise win, often a failure).
+    if best_gif and best_gif.exists():
+        shutil.move(str(best_gif), str(gif_path))
+        print(f"\nHero GIF = best success (reward={best_gif_reward:.3f}) → {gif_path}", flush=True)
+    elif gif_path:
+        print(f"\n⚠️  No successful episode — GIF left as last episode ({gif_path})", flush=True)
 
     # --- Aggregated results ---
     print(f"\n{'='*60}", flush=True)

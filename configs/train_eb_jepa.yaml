@@ -4,25 +4,32 @@
 
 data:
   path: data/minerl_goal/episodes.npz
-  num_frames: 12          # longer sequences (8→12): better captures attack dynamics
-  subsample: 2            # 4→2: 2× more training data
+  num_frames: 8           # ORIGINAL recipe (50% agent). T=12 over-trained the WM → 0%
+  subsample: 4            # ORIGINAL. subsample=2 (2× data) lowered ratio but broke the agent
   val_fraction: 0.1
 
-model:                     # muscled WM (v1 had 664K params / ratio 0.929)
-  embed_dim: 128          # 64→128: richer latent maps [128, 8, 8]
-  encoder_hidden: 48      # 32→48
+model:                     # v1 architecture: 664K params → ratio ~0.929 → 50% success
+  embed_dim: 64           # v2 (128) regressed to 5%; bigger latent breaks MPC coverage
+  encoder_hidden: 32
   n_actions: 17
-  action_embed_dim: 32    # 16→32
-  predictor_hidden: 256   # 128→256: more expressive predictor
+  action_embed_dim: 16
+  predictor_hidden: 128
 
 regularizer:               # anti-collapse (risk #1, see CLAUDE.md)
   std_coeff: 10.0          # VICReg variance (hinge std) — strong to counter collapse
   cov_coeff: 1.0           # VICReg covariance (decorrelation)
   sim_coeff_t: 0.0         # temporal similarity (0 = OFF, otherwise worsens collapse)
 
+# ⚠️ COUNTERINTUITIVE: lower WM ratio = WORSE agent here. Over-training the WM
+# (more epochs / more data / longer T) makes the planner copy the STATIC pose of
+# success frames (a6=attack-only, 76% of reward>0 frames) instead of the GESTURE
+# that earns reward (a14=move+attack). Sweet spot: ratio ~0.929, NOT lower.
+#   ratio 0.929 (T=8,  20ep) → 50%   ✅
+#   ratio 0.890 (T=12, 25ep, embed128) → 5%
+#   ratio 0.882 (T=12, 25ep, embed64)  → ~0%
 training:
-  epochs: 25              # 20→25
-  batch_size: 32          # 64→32: compensates VRAM (embed×2, T×1.5)
+  epochs: 20              # ORIGINAL. 25ep over-trains (ratio drops below the sweet spot)
+  batch_size: 64
   lr: 3.0e-4
   weight_decay: 1.0e-5
   num_workers: 0

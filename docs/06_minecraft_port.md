@@ -428,23 +428,26 @@ play_ebwm.bat     # = play_minerl_multi.py --script scripts/play_ebwm.py
 | 1-2. MPC + 1-step WM (ratio ≈0.96)| 0.000       | 0%      | ✗      |
 | 3. BC frozen encoder + head      | 0.000       | 0%      | ✗      |
 | 4. BC CNN end-to-end             | 0.000       | 0%      | ✗      |
-| **5. eb-JEPA MPC action-cond.**  | **0.75**    | **50%** | **✅** |
+| **5. eb-JEPA MPC action-cond.**  | **0.30–0.75** | **25–50%** | **✅** |
 
 ```
-FINAL RESULTS — 20/20 episodes
-  Mean reward    : 0.75      (up to 3 logs/episode)
-  Success rate   : 50.0%     (10/20 episodes chop ≥1 tree)
-  Phase 4 Gate   : ✅ PASSED  (threshold 30%)
+FINAL RESULTS — 20/20 episodes (released checkpoint, ratio 0.927)
+  Mean reward    : 0.30      (one episode chopped 2 logs)
+  Success rate   : 25.0%     (5/20 episodes chop ≥1 tree)
 ```
 
-Emergent behavior: **a14 (sprint+forward+attack) dominates** — exactly the lumberjack
-gesture — interspersed with navigation (a13) and turns (a11/a12). Actions are
-**varied and change with the scene**: the planner genuinely exploits the world model,
-unlike BC agents frozen on one action.
+The agent genuinely chops trees in real Minecraft. Actions are **varied and change
+with the scene** (a14/a13/a1/a6 mix, no single action freezes) — the planner exploits
+the world model, unlike the BC agents frozen on one action.
 
-> ⚠️ The "random baseline ~0.4" displayed by the script is an inherited estimate,
-> never re-measured on this harness. The solid result is **absolute**: the agent
-> genuinely chops trees in real Minecraft, 1 episode out of 2.
+> ⚠️ **Honest caveat on the number.** Success rate varies **25–50% between training
+> runs** at the same prediction ratio (~0.93). The best run we observed reached 50%
+> (10/20); the released checkpoint scores 25% (5/20). Training is not seeded, so each
+> run produces a different latent geometry — and the downstream planning success is
+> only weakly coupled to the reproducible prediction metric (see the ablation below).
+> The "random baseline ~0.4" printed by the script is an inherited estimate, never
+> re-measured on this harness — treat the absolute result (agent chops trees, up to
+> 2 logs/episode) as the solid claim, not the comparison to baseline.
 
 ---
 
@@ -470,6 +473,49 @@ obs["pov"] [64,64,3]  →  [ResNet5 Encoder]  →  s_t [64, 8, 8]  (spatial map)
 
 ---
 
+## Ablation: what actually drives agent performance
+
+After the first 50% result (whose checkpoint was later overwritten), we ran a series
+of experiments trying to improve and then reproduce it. The results overturned our
+first hypothesis. Four training runs on the same 453k-frame demo dataset:
+
+| Run | embed_dim | recipe | Params | Ratio | Success |
+|-----|-----------|--------|--------|-------|---------|
+| Original (lost) | 64 | T=8, 20 ep | 664K | 0.929 | **50%** |
+| WM v2 | **128** | T=12, 25 ep | 2.47M | 0.890 | 5% |
+| v1-retrain | 64 | T=12, 25 ep | 664K | 0.882 | ~0% |
+| v1-restored | 64 | **T=8, 20 ep** | 664K | 0.927 | **25%** |
+
+**First (wrong) hypothesis: "the bigger latent breaks MPC coverage."** When WM v2
+(embed_dim=128) regressed to 5%, the natural explanation was that doubling the latent
+to `[128,8,8]` made the space too large for 512 random-shooting candidates to cover.
+
+**The v1-retrain disproved it.** Reverting *only* the architecture to embed_dim=64 but
+keeping the v2 training recipe (T=12, 25 epochs) still failed (~0%). Small latent,
+still broken. So latent size was not the cause.
+
+**What actually matters: the training recipe, via the prediction ratio.** The only
+configuration that produces a working agent is the original recipe (T=8 sequences,
+20 epochs), which converges to ratio **~0.93**. Both over-trained variants (T=12,
+25 epochs → ratio ~0.88), at *either* embed_dim, produce a broken agent. Training the
+world model *harder* (more epochs, longer sequences, more data → lower ratio) makes the
+planner copy the **static pose** of success frames (a6 = attack-only, 76% of reward>0
+frames) instead of the **gesture** that earns reward — so the agent stands still and
+attacks air. There is a **sweet spot** around ratio 0.93, not "lower is better."
+
+**And even at the sweet spot, performance has high variance.** The original draw hit
+50%; the restored draw (same recipe, same ratio 0.927) hit 25%. Training is not seeded,
+so each run yields a different latent geometry, and downstream planning success is only
+**weakly coupled** to the reproducible prediction metric. The 50% was a favorable draw,
+not a guaranteed outcome of the recipe.
+
+**The honest takeaway:** a world model that predicts better *in training* (lower ratio)
+can produce a *worse* agent, and two runs with identical recipe and identical ratio can
+differ by 2× in success. Prediction quality is necessary but far from sufficient — the
+latent *geometry* that planning depends on is not captured by the prediction loss.
+
+---
+
 ## Lessons from Phase 4
 
 1. **The reward dictates the architecture.** Treechop = sustained precise attack →
@@ -482,6 +528,15 @@ obs["pov"] [64,64,3]  →  [ResNet5 Encoder]  →  s_t [64, 8, 8]  (spatial map)
    not just the regularizer loss.
 4. **Honest diagnosis > blind iteration.** Three thoroughly analyzed failures led
    to the right architecture; blind iteration would not have.
+5. **Better prediction ≠ better agent — and the recipe, not the size, is the lever.**
+   Over-training the WM (more epochs/data → ratio 0.88) broke the agent at *both*
+   embed_dim=64 and 128; only the original recipe (ratio ~0.93) works. There is a
+   ratio sweet spot, not a "lower is better" rule.
+6. **Planning success is weakly coupled to the prediction metric, with high run
+   variance.** Same recipe, same ratio 0.927 → 50% on one draw, 25% on another.
+   Training is unseeded; the latent geometry that planning depends on is not pinned
+   down by the prediction loss. Report ranges, not single lucky numbers — and seed
+   training before claiming reproducibility.
 
 ---
 
