@@ -1,0 +1,29 @@
+# Craft agent — WM v4 + CraftPlannerV4. Milestone: chop a log then craft planks.
+
+minerl_env: MineRLObtainIronPickaxeDense-v0
+actions_config: configs/minerl_actions_obtain.yaml
+
+model:
+  checkpoint: checkpoints/craft_wm_v4.pt
+
+planner:
+  n_actions: 22
+  horizon: 12
+  n_candidates: 512
+  w_log: 1.0               # craft objective: value logs (stepping stone)
+  w_planks: 2.0            # craft objective: value planks (the milestone)
+  log_threshold: 0.05      # normalised; >= 0.05 (=0.5 raw) means "has a log" → craft mode
+
+goal:                      # chop objective: centroid of "log obtained" frames
+  data_path: data/minerl_craft/episodes.npz
+
+agent:
+  episodes: 20
+  max_steps: 3000
+  action_repeat: 4
+  seed: 0
+
+logging:
+  save_gif: true
+  gif_episodes: 3
+  gif_path: assets/agent_play_craft.gif

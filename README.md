@@ -19,6 +19,7 @@ The agent trains a Joint-Embedding Predictive Architecture entirely on raw gamep
 | 2 — World Model | Crafter 1-step prediction | pred/copy ratio | **0.38** (< 1 = beats baseline) |
 | 3 — Planner | Crafter MPC agent | Achievements vs random | **+7.5%** (+14% reward) |
 | 4 — Minecraft | MineRL Treechop eb-JEPA (v1, 664K) | Success rate | **25–50%** (draw-dependent; released ckpt 25%) |
+| 5 — Crafting | WM v4 crafts planks in **live** Minecraft (given wood) | Craft success | **100%**, +16–20 planks/ep (rule learned: dPlanks +3.8) |
 
 **No collapse across all runs.** `batch_var > 1` throughout — embeddings are diverse and informative.
 
@@ -157,7 +158,7 @@ run.bat scripts/play.py
 ```bash
 # Requires MineRL installation — see docs/02_setup.md
 play_ebwm.bat
-# Gate: success_rate >= 30% (50% achieved)
+# Gate: success_rate >= 30% — agent chops trees (25–50% across draws; released ckpt 25%)
 ```
 
 ---
@@ -208,7 +209,7 @@ Porting from Crafter to real Minecraft (MineRL Treechop) required 5 attempts:
 | 2 | MPC + residual WM | reward = 0 — same root cause |
 | 3 | Behavioral Cloning (frozen encoder) | reward = 0 — covariate shift, agent stuck |
 | 4 | End-to-end BC CNN | reward = 0 — no memory, no sustained attack |
-| **5** | **eb-JEPA action-conditioned MPC** | **50% success, reward 0.75/ep** ✅ |
+| **5** | **eb-JEPA action-conditioned MPC** | **chops trees — 25–50% across draws (released 25%)** ✅ |
 
 **The key insight:** flat 128-d latent vectors lose spatial information (where is the trunk?). Switching to spatial latent maps `[64, 8, 8]` + action-conditioned joint training unlocked the planner.
 
@@ -228,7 +229,7 @@ Full analysis: [`docs/06_minecraft_port.md`](docs/06_minecraft_port.md)
 | Data collection (MineRL) | Any CPU + Java 8 | ~2 min / episode |
 | Encoder training (Phase 1) | RTX 5060 Ti 8 GB | ~15 min / 30 epochs |
 | World model training (Phase 2) | RTX 5060 Ti 8 GB | ~10 min / 30 epochs |
-| eb-JEPA training (Phase 4) | RTX 5060 Ti 8 GB | ~45 min / 25 epochs |
+| eb-JEPA training (Phase 4) | RTX 5060 Ti 8 GB | ~35 min / 20 epochs |
 | MPC play (Crafter) | CPU or GPU | ~1 min / episode |
 | MPC play (MineRL) | RTX 5060 Ti 8 GB | ~3 min / episode |
 
@@ -276,6 +277,7 @@ The full analysis is in [`docs/07_cua_landscape_june2026.md`](docs/07_cua_landsc
 | [`docs/05_planning.md`](docs/05_planning.md) | Random-shooting MPC, goal embedding |
 | [`docs/06_minecraft_port.md`](docs/06_minecraft_port.md) | MineRL port — 5 approaches, MALMOBUSY bug |
 | [`docs/07_cua_landscape_june2026.md`](docs/07_cua_landscape_june2026.md) | CUA landscape June 2026, JEPA positioning |
+| [`docs/08_crafting.md`](docs/08_crafting.md) | Teaching the WM to craft: v3 fails → v4 inventory-as-state → preconditions |
 | [`PLAN.md`](PLAN.md) | Full project plan with gates and phases |
 
 ---

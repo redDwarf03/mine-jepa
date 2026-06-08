@@ -1,0 +1,41 @@
+# WM v3 — inventory + reward-aware action-conditioned world model.
+# Backbone recipe = the Treechop sweet spot (T=8, 20 ep, ratio ~0.93) — over-training
+# breaks the agent (see docs/06_minecraft_port.md). Adds two auxiliary heads.
+
+data:
+  path: data/minerl_craft/episodes.npz   # built by scripts/prepare_demos_obtain.py
+  num_frames: 8
+  subsample: 4
+  val_fraction: 0.1
+
+model:                     # v1 architecture (664K) — the one that plans well
+  embed_dim: 64
+  encoder_hidden: 32
+  n_actions: 22            # 17 movement + 5 craft (configs/minerl_actions_obtain.yaml)
+  action_embed_dim: 16
+  predictor_hidden: 128
+
+regularizer:               # anti-collapse (risk #1)
+  std_coeff: 10.0
+  cov_coeff: 1.0
+  sim_coeff_t: 0.0
+
+head:                      # auxiliary task heads
+  rew_coeff: 1.0           # weight of reward-prediction MSE
+  inv_coeff: 1.0           # weight of inventory-prediction MSE
+  head_hidden: 64
+
+training:
+  epochs: 20
+  batch_size: 64
+  lr: 3.0e-4
+  weight_decay: 1.0e-5
+  num_workers: 0
+
+logging:
+  log_every: 1
+  collapse_threshold: 1.0e-4
+
+checkpoint:
+  dir: checkpoints/
+  name: craft_wm.pt

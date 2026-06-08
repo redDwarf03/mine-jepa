@@ -1,0 +1,32 @@
+# Craft DEMO — isolate the learned craft loop. MineRLObtainTest-v0 (debug env) starts
+# the agent WITH inventory (log=5, planks=3) on a flat world. The agent should switch to
+# craft mode and turn its logs into planks live — proving the WM+planner craft end-to-end,
+# independent of the (hard) cold-start chopping.
+
+minerl_env: MineRLObtainTest-v0
+actions_config: configs/minerl_actions_obtain.yaml
+
+model:
+  checkpoint: checkpoints/craft_wm_v4.pt
+
+planner:
+  n_actions: 22
+  horizon: 12
+  n_candidates: 512
+  w_log: 1.0
+  w_planks: 2.0
+  log_threshold: 0.05
+
+goal:
+  data_path: data/minerl_craft/episodes.npz
+
+agent:
+  episodes: 3
+  max_steps: 500          # crafting 5 logs into planks happens fast
+  action_repeat: 4
+  seed: 0
+
+logging:
+  save_gif: true
+  gif_episodes: 3
+  gif_path: assets/agent_play_craft_demo.gif

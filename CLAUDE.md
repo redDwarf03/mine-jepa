@@ -24,7 +24,7 @@ but the model learned nothing). **Always**:
 - monitor `batch_var` each epoch — if < 1e-6: collapse in progress
 
 ## Current phase
-**PHASE 4 — Port to real Minecraft (MineRL)** (see PLAN.md §4). Phases 0→3 complete ✅.
+**PHASE 5 — Crafting (MineRLObtainIronPickaxe)** — in progress. Phases 0→4 complete ✅.
 
 Phase 0 — gates validated:
 - [x] Python env running + Crafter installed
@@ -76,6 +76,38 @@ Phase 4 gates:
   - GIF fix: play_minerl_multi.py keeps the BEST-success episode GIF (not the last/failing one)
   - ⚠️ DO NOT use `scripts/play.py --env minerl` with episodes > 1 (blocks on reset)
   - ⚠️ train_eb_jepa.py OVERWRITES checkpoints/ebwm.pt — back up a good checkpoint before retraining
+
+Phase 5 gates (crafting — chop log → craft planks → … → wooden tool):
+- Goal: at least one agent that figures out crafting. ⚠️ wooden_sword is NOT craftable in
+  MineRL 0.4.4 (no handler) → wooden_pickaxe is the supported equivalent (same recipe:
+  log→planks→stick→crafting_table→tool). Env: `MineRLObtainIronPickaxeDense-v0` (dense reward + inventory obs).
+- [x] Obtain demos: `scripts/prepare_demos_obtain.py` → `data/minerl_craft` (40 demos, 84,902 frames,
+  144 craft-planks steps, 37/40 reach pickaxe). Source: Zenodo 12659939 `MineRLObtainIronPickaxe-v0.zip` (2.8 GB).
+- [x] 22-action space (17 movement + 5 craft): `configs/minerl_actions_obtain.yaml`
+- [x] WM v3 (inventory as a HEAD off the visual latent) → **FAILED for crafting**: the POV does not
+  contain the inventory → the head learns only scene correlations, the predictor copies (ratio ~0.98)
+  → planner blind to craft. Baseline only.
+- [x] **WM v4 (inventory as a STATE variable)**: visual eb-JEPA + `InventoryDynamics` MLP
+  (`inv_{t+1}=inv_t+g(inv_t,action,visual)`). **dPlanks@craft = +4.0** → the WM LEARNED the craft rule
+  (1 log → 4 planks). ✅ `checkpoints/craft_wm_v4.pt`, `scripts/train_craft_wm_v4.py`.
+- [x] **Precondition fix**: expert demos never show failed crafts → v4 first crafted on an EMPTY
+  inventory forever (a17=30%). Fix = synthetic negatives (`craft+empty→0`) + upweight rare craft
+  steps ×30 (precond at 5.0 first crushed the +4 signal → use craft_weight=30, precond_coeff=2).
+  Balanced: **dPlanks +3.8 AND precond ≈0** → agent stops crafting uselessly. ✅
+- [x] **Switching planner** (`SwitchingCraftPlanner`): no log → chop (goal-centroid, Treechop trick);
+  has log → craft (inventory gain). Mode switching correct in live play. ✅
+- [x] **Live craft demo** (`play_craft_test.bat` → `MineRLObtainTest-v0`, starts with log=5): the agent
+  switches to craft mode and crafts planks LIVE — **100% over 6+ ep, +16–20 planks/ep, reward 10**. Full
+  craft loop works end-to-end given wood. (Craft is invisible in POV → proof is inventory/reward, not a GIF.)
+- [~] **Cold-start milestone** (`play_craft.bat` → `ObtainIronPickaxeDense`): the agent **cannot chop the
+  first log cold-start** (random survival spawn, trees not in view; 0 logs over 5 ep). Treechop chopping
+  wall, harder here. Decision: **consolidate** (`docs/08_crafting.md`). Cold-start chopping = future work.
+- KEY LESSON: **crafting is a discrete-inventory-state problem, not a pixel problem.** The POV never shows
+  the inventory count → inventory MUST be part of the world-model state, not predicted from the frame.
+- KEY LESSON: **expert demos teach actions, not preconditions** (no failed-craft examples). Negatives
+  (synthetic, or via curiosity/self-play) are required.
+- Next chapter (user's hybrid choice): **curiosity** (WM prediction error as intrinsic reward) + self-play
+  → teaches the precondition from experience AND drives exploration toward trees. WM v4 is the foundation.
 
 ⚠️ Phase 4 on **NVIDIA PC only**. MineRL requires Java 8.
 Installation: DO NOT use `uv pip install minerl` directly.

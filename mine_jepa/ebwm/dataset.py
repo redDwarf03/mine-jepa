@@ -64,3 +64,43 @@ class MineRLSeqDataset(Dataset):
         actions = torch.from_numpy(self.actions[i : i + T]).unsqueeze(0)  # [1, T]
         rewards = torch.from_numpy(self.rewards[i : i + T])               # [T]
         return obs, actions, rewards
+
+
+# Inventory counts are normalised by this constant before MSE (planks~36, stick~64
+# → ~3.6, 6.4). Keeps head targets in a small range without losing the ordering.
+INV_SCALE = 10.0
+
+
+class CraftSeqDataset(MineRLSeqDataset):
+    """
+    Same temporal windows as MineRLSeqDataset, plus the INVENTORY stream needed by
+    the WM v3 auxiliary heads (reward + inventory prediction).
+
+    Output per item:
+      obs       : [3, T, H, W] float32 [0,1]
+      actions   : [1, T] int64
+      rewards   : [T] float32   (per-step item reward)
+      inventory : [T, K] float32 (counts / INV_SCALE), K = len(inventory_items)
+    """
+
+    def __init__(self, data_path: str, num_frames: int = 8, subsample: int = 1):
+        super().__init__(data_path, num_frames=num_frames, subsample=subsample)
+        data = _load_npz(data_path)
+        if "inventory" not in data:
+            raise KeyError(
+                f"{data_path} has no 'inventory' — use scripts/prepare_demos_obtain.py "
+                "(not prepare_demos.py) to build a crafting dataset."
+            )
+        self.inventory = data["inventory"].astype(np.float32)              # [N, K]
+        self.inventory_items = [str(x) for x in data.get("inventory_items", [])]
+
+    @property
+    def n_items(self) -> int:
+        return self.inventory.shape[1]
+
+    def __getitem__(self, idx: int):
+        obs, actions, rewards = super().__getitem__(idx)
+        i = int(self.starts[idx])
+        T = self.num_frames
+        inv = torch.from_numpy(self.inventory[i : i + T]) / INV_SCALE       # [T, K]
+        return obs, actions, rewards, inv

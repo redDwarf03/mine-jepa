@@ -1,0 +1,42 @@
+# WM v4 — inventory as a state variable (visual eb-JEPA + InventoryDynamics).
+# Visual backbone = the Treechop sweet-spot recipe (T=8, 20 ep). The inventory
+# dynamics MLP learns the crafting/chopping rules conditioned on the visual latent.
+
+data:
+  path: data/minerl_craft/episodes.npz   # scripts/prepare_demos_obtain.py
+  num_frames: 8
+  subsample: 4
+  val_fraction: 0.1
+
+model:
+  embed_dim: 64
+  encoder_hidden: 32
+  n_actions: 22            # 17 movement + 5 craft
+  action_embed_dim: 16
+  predictor_hidden: 128
+
+regularizer:               # anti-collapse on the visual latent (risk #1)
+  std_coeff: 10.0
+  cov_coeff: 1.0
+  sim_coeff_t: 0.0
+
+head:                      # inventory dynamics
+  inv_coeff: 5.0           # weight the inventory-dynamics loss above the visual loss
+  inv_hidden: 128
+  craft_weight: 30.0       # upweight rare craft transitions so "+4 planks" isn't drowned
+  precond_coeff: 2.0       # teach "craft on empty inventory -> nothing" (balanced vs positive)
+
+training:
+  epochs: 20
+  batch_size: 64
+  lr: 3.0e-4
+  weight_decay: 1.0e-5
+  num_workers: 0
+
+logging:
+  log_every: 1
+  collapse_threshold: 1.0e-4
+
+checkpoint:
+  dir: checkpoints/
+  name: craft_wm_v4.pt

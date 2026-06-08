@@ -1,0 +1,46 @@
+# Discretised action space for MineRLObtainIronPickaxe* — 22 actions.
+#
+# Extends the 17 Treechop movement actions (0-16, unchanged) with the 5
+# crafting-chain actions needed to go log -> planks -> stick -> table ->
+# wooden tool. Each entry = a partial dict applied on env.action_space.noop();
+# absent keys stay at 0.
+#
+# Obtain envs add these GUI-free action keys (vs Treechop's movement-only):
+#   craft        : inventory crafting, NO table needed (planks, stick, table, torch)
+#   nearbyCraft  : crafting that REQUIRES a placed crafting_table nearby (tools)
+#   place        : place a block from inventory (crafting_table, furnace, ...)
+#   equip        : equip a tool
+#
+# Milestone "craft planks" only needs action 17 (craft:planks). Actions 18-21
+# are defined now for forward-compatibility with the full wooden-pickaxe chain.
+
+n_actions: 22
+
+actions:
+  # --- Movement (identical to configs/minerl_actions.yaml) ---
+  0:   {}                                          # noop
+  1:   {forward: 1}                                # forward
+  2:   {back: 1}                                   # back
+  3:   {left: 1}                                   # strafe left
+  4:   {right: 1}                                  # strafe right
+  5:   {jump: 1}                                   # jump
+  6:   {attack: 1}                                 # attack / mine
+  7:   {forward: 1, attack: 1}                     # forward + attack
+  8:   {forward: 1, jump: 1}                       # jump forward
+  9:   {camera: [-10, 0]}                          # look up
+  10:  {camera: [10, 0]}                           # look down
+  11:  {camera: [0, -10]}                          # turn left
+  12:  {camera: [0, 10]}                           # turn right
+  13:  {sprint: 1, forward: 1}                     # sprint
+  14:  {sprint: 1, forward: 1, attack: 1}          # sprint + attack (lumberjack)
+  15:  {forward: 1, camera: [0, -5]}               # forward + veer left
+  16:  {forward: 1, camera: [0, 5]}                # forward + veer right
+
+  # --- Crafting chain (Obtain only) ---
+  17:  {craft: planks}                             # log -> planks   (no table) ← planks milestone
+  18:  {craft: stick}                              # planks -> sticks (no table)
+  19:  {craft: crafting_table}                     # planks -> table  (no table)
+  20:  {place: crafting_table}                     # put the table down
+  21:  {nearbyCraft: wooden_pickaxe}               # near table: planks + sticks -> wooden_pickaxe
+
+env: MineRLObtainIronPickaxeDense-v0
