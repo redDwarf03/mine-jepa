@@ -1,0 +1,32 @@
+# Phase 5 — Disagreement ensemble for Plan2Explore curiosity bonus
+# Trains on FROZEN eb-JEPA latents from the released 25% checkpoint.
+# ebwm.pt is NEVER overwritten — ensemble saved to curiosity_ensemble.pt.
+
+seed: 42
+
+model:
+  checkpoint: checkpoints/ebwm.pt   # frozen, read-only
+
+data:
+  path: data/minerl_goal/episodes.npz
+  num_frames: 8       # match the WM training window (T=8)
+  subsample: 4        # same stride as train_eb_jepa to avoid too-similar windows
+  val_fraction: 0.1
+
+ensemble:
+  n_heads: 5          # k=5 is the Plan2Explore default; enough for variance signal
+  head_hidden: 64     # hidden channels per head (~0.3M params each)
+
+training:
+  epochs: 15          # short — latents already structured, heads converge fast
+  batch_size: 64
+  lr: 3.0e-4
+  weight_decay: 1.0e-5
+  num_workers: 0
+
+logging:
+  log_every: 1
+
+checkpoint:
+  dir: checkpoints/
+  name: curiosity_ensemble.pt

@@ -24,6 +24,7 @@ import yaml
 logging.getLogger("minerl").setLevel(logging.CRITICAL)
 
 from mine_jepa.ebwm import build_ac_jepa
+from mine_jepa.ebwm.curiosity import DisagreementEnsemble
 from mine_jepa.ebwm.dataset import _load_npz
 from mine_jepa.ebwm.planner import DiscreteLatentPlanner
 from scripts.play import (
@@ -129,11 +130,26 @@ def main():
     print(f"  ebwm.pt loaded (training ratio={ratio:.3f})")
 
     p_cfg = cfg["planner"]
+    novelty_coeff = float(p_cfg.get("novelty_coeff", 0.0))
+    ensemble = None
+    ens_path = p_cfg.get("ensemble_checkpoint", "")
+    if novelty_coeff > 0.0 and ens_path:
+        print(f"\nLoading curiosity ensemble from {ens_path}...")
+        ensemble = DisagreementEnsemble.load(ens_path, device=device)
+        ensemble.eval()
+        print(f"  Ensemble loaded ({ensemble.n_heads} heads, novelty_coeff={novelty_coeff})")
+    elif novelty_coeff > 0.0:
+        print("  WARNING: novelty_coeff > 0 but no ensemble_checkpoint — curiosity disabled.")
+        novelty_coeff = 0.0
+
     planner = DiscreteLatentPlanner(
         model, n_actions=p_cfg["n_actions"], horizon=p_cfg["horizon"],
-        n_candidates=p_cfg["n_candidates"], device=device,
+        n_candidates=p_cfg["n_candidates"],
+        novelty_coeff=novelty_coeff, ensemble=ensemble,
+        device=device,
     )
-    print(f"Planner: horizon={p_cfg['horizon']}, candidates={p_cfg['n_candidates']}")
+    mode_label = f"novelty λ={novelty_coeff}" if novelty_coeff > 0.0 else "goal-centroid only"
+    print(f"Planner: horizon={p_cfg['horizon']}, candidates={p_cfg['n_candidates']}, mode={mode_label}")
 
     print("\nBuilding goal prototypes...")
     goal = build_goal_latents(model, cfg, device)

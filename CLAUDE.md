@@ -109,6 +109,23 @@ Phase 5 gates (crafting — chop log → craft planks → … → wooden tool):
 - Next chapter (user's hybrid choice): **curiosity** (WM prediction error as intrinsic reward) + self-play
   → teaches the precondition from experience AND drives exploration toward trees. WM v4 is the foundation.
 
+Phase 5+ — Curiosity for cold-start, attempt #1 (`docs/09_curiosity_coldstart.md`):
+- Built a **3-agent dev loop** in `.claude/`: `jepa-explorer` (read-only, proposes from verified refs),
+  `jepa-developer` (implements + fixes, guardrailed), `jepa-tester` (runs gates + play, honest on variance),
+  orchestrated by `/jepa-loop`. The agents encode the project's lessons (recipe=lever, seed, anti-collapse,
+  proxy-ratio-lies). ⚠️ `.claude/agents/` only register on session RESTART.
+- Bibliography: `docs/references/index.md` — **all arXiv IDs verified** (6/8 of an earlier draft were wrong);
+  §3 = exploration refs (Plan2Explore 2005.05960, ICM 1705.05363, RND 1810.12894) for cold-start.
+- **Experiment #1 — Plan2Explore offline novelty bonus → FAILED.** A/B on Treechop, 20 ep: OFF (goal-centroid)
+  30% / 0.40 reward; ON (novelty λ=1.0) 25% / 0.25 / **fps 63→25**. Difference NOT significant at N=20.
+- ROOT CAUSE: the k=5 ensemble **collapsed during training** (`val_disagree` 0.061→0.0005 by epoch 3) →
+  all heads agree → novelty signal flat everywhere → ON≈OFF. **LESSON: we reproduced Plan2Explore's FORM
+  without its CONDITION** — it trains the ensemble ONLINE on diverse self-gathered data; we trained OFFLINE
+  on narrow frozen Treechop demos, which destroys head diversity. Offline-frozen-ensemble curiosity is a
+  dead end on expert demos. Next: RND (immune — fixed random target), or diversity reg, or online self-play.
+- Code (config-gated, WM never touched): `mine_jepa/ebwm/curiosity.py`, `scripts/train_curiosity.py`,
+  `DiscreteLatentPlanner(novelty_coeff)`, `configs/{train_curiosity,play_explore}.yaml`. `ebwm.pt` intact.
+
 ⚠️ Phase 4 on **NVIDIA PC only**. MineRL requires Java 8.
 Installation: DO NOT use `uv pip install minerl` directly.
 See complete procedure below (patches gym + minerl + Gradle).
@@ -120,6 +137,20 @@ MineRL installation notes (Windows/Python 3.12):
   - `build.gradle`: replace MixinGradle JitPack with `org.spongepowered:mixingradle:0.6-SNAPSHOT`
   - Initial Gradle build: run via `C:\tmp\run_gradle.bat` (Java 8 required)
 - Java 8: `choco install temurin8` (admin) → `C:\Program Files\Eclipse Adoptium\jdk-8.0.472.8-hotspot`
+- ⚠️ `minerl/env/malmo.py`: 2 `.decode(mine_log_encoding)` calls (lines ~511 `launch` and ~579
+  `log_to_file`) crash on Minecraft's § colour byte (0xa7/0x82) because PYTHONUTF8=1 forces utf-8
+  as the locale encoding. Patch both with `errors="replace"` (lost on minerl reinstall). Surfaces
+  on MULTI-instance launches (more log output → hits a bad byte).
+
+Multi-agent (shared world) — attempted, see `mine_jepa/envs/__init__.py` (`MineRLTreechopMulti-v0`,
+agent_count=2) + `scripts/smoke_multiagent.py`:
+- MineRL supports it natively (`EnvSpec(agent_count=N)`, dict step/reset). Both clients LAUNCH and
+  reach DORMANT, but `reset()→_peek_obs` TIMES OUT: the 2-client mission sync fails (Malmo MALMOBUSY
+  family, never solved here). Shared-world multi-agent = BLOCKED on this setup.
+- WORKAROUND that works: `scripts/play_parallel.py` (`play_parallel.bat --agents 2`) runs N
+  single-agent Minecraft worlds CONCURRENTLY (the stable path) and stitches their videos side by
+  side → `assets/agent_play_parallel.gif`. 2 agents run at ~40 fps each on the 8 GB machine. Delivers
+  "multiple JEPA agents playing at once" without the shared-world sync wall.
 
 Windows PC notes:
 - Always use `run.bat <script>` (wrapper PYTHONUTF8=1 + PYTHONUNBUFFERED=1)

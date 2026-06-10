@@ -11,18 +11,40 @@ actions. We write a random-shooting MPC that:
 Key difference vs the old LatentMPCPlanner: here states are spatial maps
 [D, H', W'] (not a vector), and the WM is action-conditioned and jointly trained
 → the rollout genuinely reflects the effect of actions.
+
+Phase 5 novelty extension (Plan2Explore):
+  DiscreteLatentPlanner accepts an optional DisagreementEnsemble and a
+  novelty_coeff λ.  Score = goal_score + λ · novelty_score, where
+  novelty_score = mean disagreement over the H rollout steps.
+  novelty_coeff=0.0 (default) reproduces the original behaviour exactly.
 """
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import torch
+
+if TYPE_CHECKING:
+    from mine_jepa.ebwm.curiosity import DisagreementEnsemble
 
 
 class DiscreteLatentPlanner:
-    def __init__(self, model, n_actions=17, horizon=12, n_candidates=512, device=None):
+    def __init__(
+        self,
+        model,
+        n_actions: int = 17,
+        horizon: int = 12,
+        n_candidates: int = 512,
+        novelty_coeff: float = 0.0,
+        ensemble: "DisagreementEnsemble | None" = None,
+        device=None,
+    ):
         self.model = model
         self.n_actions = n_actions
         self.horizon = horizon
         self.n_candidates = n_candidates
+        self.novelty_coeff = novelty_coeff
+        self.ensemble = ensemble
         self.device = device or next(model.parameters()).device
 
     @torch.no_grad()
@@ -38,12 +60,17 @@ class DiscreteLatentPlanner:
         CLOSEST success prototype (min over K), not a blurry average centroid. The
         planner thus seeks "the most reachable success scene" → more reactive behavior
         (orienting/stopping toward a specific trunk).
+
+        When novelty_coeff > 0 and an ensemble is supplied, the score blends in
+        Plan2Explore disagreement:  score = goal_score + λ · novelty_score
+        Both terms are z-score normalised across candidates before blending so
+        that the relative weight is controlled by λ alone (not by raw magnitudes).
         """
         N, H = self.n_candidates, self.horizon
         obs = obs_init.expand(N, -1, -1, -1, -1).contiguous()       # [N,3,1,64,64]
         actions = torch.randint(0, self.n_actions, (N, 1, H), device=self.device)  # [N,1,H]
 
-        # Autoregressive rollout: unroll H steps, keep final state
+        # Autoregressive rollout: unroll H steps, keep all predicted states
         predicted, _ = self.model.unroll(
             obs, actions, nsteps=H, unroll_mode="autoregressive",
             ctxt_window_time=1, compute_loss=False,
@@ -58,7 +85,25 @@ class DiscreteLatentPlanner:
         goals_sq = (goals_flat ** 2).sum(dim=1).unsqueeze(0)         # [1, K]
         cross = final_flat @ goals_flat.t()                         # [N, K]
         dist = (final_sq - 2 * cross + goals_sq) / F                # [N, K]
-        scores = -dist.min(dim=1).values                           # [N]: distance to nearest
+        goal_scores = -dist.min(dim=1).values                       # [N]: dist to nearest
+
+        if self.novelty_coeff > 0.0 and self.ensemble is not None:
+            # Compute disagreement over the H predicted steps (skip context step 0)
+            # predicted: [N, D, 1+H, H', W'] → rollout states [N, D, H, H', W']
+            rollout_states = predicted[:, :, 1:]                    # [N, D, H, H', W']
+            # action_enc: [N, E, H]
+            action_enc = self.model.action_encoder(actions)
+            # disagreement: [N, H] → mean over H → [N]
+            dis = self.ensemble.disagreement(rollout_states, action_enc)  # [N, H]
+            novelty_scores = dis.mean(dim=1)                        # [N]
+
+            # z-score normalise both terms (std-safe: add 1e-8)
+            g_mu, g_std = goal_scores.mean(), goal_scores.std().clamp(min=1e-8)
+            n_mu, n_std = novelty_scores.mean(), novelty_scores.std().clamp(min=1e-8)
+            scores = (goal_scores - g_mu) / g_std + self.novelty_coeff * (novelty_scores - n_mu) / n_std
+        else:
+            scores = goal_scores
+
         best = scores.argmax()
         return int(actions[best, 0, 0].item())
 

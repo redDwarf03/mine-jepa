@@ -1,0 +1,36 @@
+# Phase 5 — Plan2Explore: goal-centroid + curiosity (novelty) bonus
+# Curiosity ON: novelty_coeff > 0, ensemble_checkpoint set.
+# To A/B: set novelty_coeff: 0.0 (or omit ensemble_checkpoint) for pure goal-centroid.
+
+minerl_env: MineRLTreechop-v0
+actions_config: configs/minerl_actions.yaml
+
+model:
+  checkpoint: checkpoints/ebwm.pt   # released 25% checkpoint (frozen at play time)
+
+planner:
+  n_actions: 17
+  horizon: 12
+  n_candidates: 512
+  novelty_coeff: 1.0                # λ — weight of disagreement in mixed score
+                                    # set to 0.0 to reproduce pure goal-centroid (OFF)
+  ensemble_checkpoint: checkpoints/curiosity_ensemble.pt
+
+goal:
+  data_path: data/minerl_goal/episodes.npz
+  threshold: 0.5
+  min_frames: 10
+  mode: centroid                    # blurry centroid forces movement (best empirically)
+  n_prototypes: 256
+
+agent:
+  episodes: 20
+  max_steps: 3000
+  action_repeat: 4
+  seed: 0
+
+logging:
+  print_every: 1
+  save_gif: true
+  gif_episodes: 3
+  gif_path: assets/agent_play_explore.gif

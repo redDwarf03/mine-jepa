@@ -236,7 +236,14 @@ prediction error → it teaches the precondition. Exploring toward surprising st
 an agent finds trees without a forest handed to it. WM v4 is the foundation that makes
 this loop possible; building it is the next chapter.
 
+> **Update — we built it and ran the first experiment.** A 3-agent dev loop
+> (explore/develop/test) implemented a Plan2Explore-style novelty bonus for cold-start
+> chopping. It **failed**: the offline ensemble collapsed (all heads agreed → no novelty
+> signal), so curiosity-ON ≈ OFF. The full diagnosed negative result and what it teaches
+> about offline-vs-online curiosity is in [`docs/09_curiosity_coldstart.md`](09_curiosity_coldstart.md).
+
 ---
 
 *Previous: `docs/06_minecraft_port.md` (chopping, eb-JEPA, the 25–50% result).*
+*Next: `docs/09_curiosity_coldstart.md` (curiosity for cold-start — attempt #1).*
 *Architecture: `docs/01_jepa.md`. Planning: `docs/05_planning.md`.*

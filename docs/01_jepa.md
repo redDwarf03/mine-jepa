@@ -160,3 +160,5 @@ level), JEPA does **how** to do it (low-level reactive).
 
 *Next concepts: `docs/03_representation_collapse.md` (collapse in detail),
 `docs/04_world_model.md` (the action-conditioned predictor).*
+
+*Full bibliography (papers implemented, read, rejected): [`docs/references/index.md`](references/index.md)*

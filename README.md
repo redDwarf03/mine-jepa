@@ -278,17 +278,25 @@ The full analysis is in [`docs/07_cua_landscape_june2026.md`](docs/07_cua_landsc
 | [`docs/06_minecraft_port.md`](docs/06_minecraft_port.md) | MineRL port — 5 approaches, MALMOBUSY bug |
 | [`docs/07_cua_landscape_june2026.md`](docs/07_cua_landscape_june2026.md) | CUA landscape June 2026, JEPA positioning |
 | [`docs/08_crafting.md`](docs/08_crafting.md) | Teaching the WM to craft: v3 fails → v4 inventory-as-state → preconditions |
+| [`docs/09_curiosity_coldstart.md`](docs/09_curiosity_coldstart.md) | Curiosity for cold-start (attempt #1): a 3-agent loop + a diagnosed negative result |
+| [`docs/references/index.md`](docs/references/index.md) | Curated bibliography — papers implemented, read, or explicitly rejected |
 | [`PLAN.md`](PLAN.md) | Full project plan with gates and phases |
 
 ---
 
 ## Key papers
 
-- **JEPA** — LeCun, Y. (2022). *A Path Towards Autonomous Machine Intelligence.* [openreview](https://openreview.net/forum?id=BZ5a1r-kVsf)
-- **V-JEPA 2** — Assran et al. (2025). *V-JEPA 2: Self-Supervised Video Models Enable Understanding, Prediction and Planning.* arXiv:2506.09985
-- **eb_jepa** — Meta FAIR. *Action-conditioned JEPA for embodied planning.* [github](https://github.com/facebookresearch/eb_jepa)
-- **VICReg** — Bardes et al. (2022). *VICReg: Variance-Invariance-Covariance Regularization.* arXiv:2105.04906
-- **LeWorldModel** — arXiv:2603.19312
+Full annotated bibliography (with implementation notes and rejection reasons): [`docs/references/index.md`](docs/references/index.md).
+
+| Paper | Role in mine-jepa |
+|---|---|
+| LeCun 2022 — *A Path Towards Autonomous Machine Intelligence* | Original JEPA concept |
+| Assran et al. CVPR 2023 — I-JEPA | Encoder architecture |
+| Bardes et al. 2022 — VICReg | Anti-collapse regularization |
+| Meta FAIR — eb_jepa | **Our backbone** (vendored, action-conditioned) |
+| Maes et al. 2026 — LeWorldModel (arXiv:2603.19312) | World model design + ratio metric |
+| Terver et al. 2025 — *What Drives Success in Physical Planning with Joint-Embedding Predictive World Models?* ([code](https://github.com/facebookresearch/jepa-wms)) | MPC planning design |
+| Assran et al. 2025 — V-JEPA 2 | Studied; **not used** (OOD on Minecraft, 600 M params) |
 
 ---
 
