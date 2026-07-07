@@ -26,6 +26,10 @@ but the model learned nothing). **Always**:
 ## Current phase
 **PHASE 5 — Crafting (MineRLObtainIronPickaxe)** — in progress. Phases 0→4 complete ✅.
 
+▶ **RESUMING ON THE PC? Read `HANDOFF_PC.md` first** — cold-start attempt #2 (sticky
+sampling + scan macro) is coded and smoke-tested on the Mac, awaiting calibration +
+A/B eval on the NVIDIA PC. It contains the exact procedure and failure routing.
+
 Phase 0 — gates validated:
 - [x] Python env running + Crafter installed
 - [x] `scripts/collect.py` → 33,406 transitions (frames, actions, health, food, drink, energy) + GIF
@@ -125,6 +129,24 @@ Phase 5+ — Curiosity for cold-start, attempt #1 (`docs/09_curiosity_coldstart.
   dead end on expert demos. Next: RND (immune — fixed random target), or diversity reg, or online self-play.
 - Code (config-gated, WM never touched): `mine_jepa/ebwm/curiosity.py`, `scripts/train_curiosity.py`,
   `DiscreteLatentPlanner(novelty_coeff)`, `configs/{train_curiosity,play_explore}.yaml`. `ebwm.pt` intact.
+
+Phase 5+ — Cold-start attempt #2: engineering fixes (`docs/10_coldstart_engineering.md`) — CODE DONE,
+awaiting PC eval:
+- Diagnosis (Fable): the cold-start failure is partly REPRESENTATIONAL, not just exploratory —
+  (1) i.i.d. uniform candidate sampling never proposes sustained gestures ("turn 6 steps then walk"
+  ≈ (1/17)⁶); (2) "no tree in view" is detectable for free: std of goal_scores across the 512
+  candidates ≈ 0 ("the argmax picks among lottery tickets").
+- [x] **Sticky sampling (iCEM-lite, arXiv:2008.06389)**: `_sample_actions()` in planner.py, used by
+  `DiscreteLatentPlanner` + `SwitchingCraftPlanner`. `planner.sticky_prob` YAML key (0.0 default =
+  bit-for-bit original, verified; 0.7 → repeat rate 72% vs 7% i.i.d., smoke-tested on Mac).
+- [x] **Scan macro**: `plan(..., return_info=True)` → `goal_score_std`; play_ebwm.py + play_craft.py
+  (chop mode only) force camera-yaw a12 after `patience` flat replans until std recovers. Config
+  block `scan:` (enabled:false default). ⚠️ `flat_threshold` MUST be calibrated first on the PC:
+  `scan.log_std=true`, 2-3 Treechop episodes, read std tree-visible vs lost.
+- [ ] Gate (PC): Treechop N=20 seeded sticky+scan vs baseline → target ≥50% (variance band 25-50%);
+  cold-start ObtainIronPickaxeDense N=5 → ≥1 log (current 0/5). Report with variance, no best-run claim.
+- Next after gate: **online RND** (novelty that DECAYS with experience, predictor updated during play —
+  RND offline on demos would repeat mistake #1: novelty never decays, agent stares at the sky).
 
 ⚠️ Phase 4 on **NVIDIA PC only**. MineRL requires Java 8.
 Installation: DO NOT use `uv pip install minerl` directly.

@@ -120,10 +120,19 @@ def main():
     planner = SwitchingCraftPlanner(
         wm, chop_goal=chop_goal, item_weights=item_weights, log_idx=log_idx,
         n_actions=p["n_actions"], horizon=p["horizon"], n_candidates=p["n_candidates"],
-        log_threshold=float(p.get("log_threshold", 0.05)), device=device,
+        log_threshold=float(p.get("log_threshold", 0.05)),
+        sticky_prob=float(p.get("sticky_prob", 0.0)), device=device,
     )
     print(f"Planner: switching (no log→chop / log→craft), horizon={p['horizon']}, "
-          f"candidates={p['n_candidates']}")
+          f"candidates={p['n_candidates']}, sticky_prob={planner.sticky_prob}")
+
+    scan_cfg = cfg.get("scan", {}) or {}
+    scan_enabled = bool(scan_cfg.get("enabled", False))
+    if scan_enabled:
+        print(f"Scan macro: ON (chop mode only, flat_threshold={scan_cfg['flat_threshold']}, "
+              f"patience={scan_cfg.get('patience', 3)}, "
+              f"turn_action=a{scan_cfg.get('turn_action', 12)}, "
+              f"max_replans={scan_cfg.get('max_replans', 40)})")
 
     a_cfg = cfg["agent"]
     n_episodes = args.episodes or a_cfg["episodes"]
@@ -152,11 +161,34 @@ def main():
         gif_frames = [pov] if record else []
         t0 = time.perf_counter()
 
+        # Scan macro state (docs/10): only meaningful in chop mode — a flat
+        # goal-score std means no tree in view → force a camera-yaw sweep.
+        flat_count, scanning, scan_replans, scan_triggers = 0, False, 0, 0
         while step < a_cfg["max_steps"]:
             obs_t = preprocess(pov, device)
             inv_t = inv_vector(inv, items, device)
-            action, mode = planner.plan(obs_t, inv_t)
+            action, mode, info = planner.plan(obs_t, inv_t, return_info=True)
             mode_counts[mode] += 1
+            std = info["goal_score_std"]
+            if scan_cfg.get("log_std", False) and mode == "chop":
+                print(f"    [scan] step={step:4d} goal_score_std={std:.6f}"
+                      f"{'  SCANNING' if scanning else ''}")
+            if scan_enabled and mode == "chop":
+                flat = std < float(scan_cfg["flat_threshold"])
+                if not scanning:
+                    flat_count = flat_count + 1 if flat else 0
+                    if flat_count >= int(scan_cfg.get("patience", 3)):
+                        scanning, scan_replans = True, 0
+                        scan_triggers += 1
+                if scanning:
+                    if not flat or scan_replans >= int(scan_cfg.get("max_replans", 40)):
+                        scanning, flat_count = False, 0
+                    else:
+                        action = int(scan_cfg.get("turn_action", 12))
+                        scan_replans += 1
+            elif scanning:
+                # left chop mode (got a log) → drop the scan state
+                scanning, flat_count = False, 0
             for _ in range(repeat):
                 if step >= a_cfg["max_steps"]:
                     break
@@ -189,7 +221,8 @@ def main():
               f"steps={step}  fps={fps:.1f}  [{acts}]")
         print(f"   start log={start_log} planks={start_planks}  |  planks crafted: "
               f"{'YES (+' + str(planks_gain) + ')' if got_planks else 'no'}"
-              f"  |  plans: chop={mode_counts['chop']} craft={mode_counts['craft']}")
+              f"  |  plans: chop={mode_counts['chop']} craft={mode_counts['craft']}"
+              + (f"  |  scan triggers={scan_triggers}" if scan_enabled else ""))
 
         if record and save_gif:
             gp = Path(cfg["logging"]["gif_path"])

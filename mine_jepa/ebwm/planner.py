@@ -17,6 +17,13 @@ Phase 5 novelty extension (Plan2Explore):
   novelty_coeff λ.  Score = goal_score + λ · novelty_score, where
   novelty_score = mean disagreement over the H rollout steps.
   novelty_coeff=0.0 (default) reproduces the original behaviour exactly.
+
+Phase 5+ cold-start extension (docs/10_coldstart_engineering.md):
+  - sticky_prob: temporally correlated candidate sampling (see _sample_actions).
+  - plan(..., return_info=True): exposes the goal-score std across candidates,
+    the "am I lost?" signal driving the scan macro in the play scripts.
+  Defaults (sticky_prob=0.0, return_info=False) reproduce the original
+  behaviour exactly.
 """
 from __future__ import annotations
 
@@ -28,6 +35,31 @@ if TYPE_CHECKING:
     from mine_jepa.ebwm.curiosity import DisagreementEnsemble
 
 
+def _sample_actions(
+    n_candidates: int, horizon: int, n_actions: int,
+    sticky_prob: float, device,
+) -> torch.Tensor:
+    """
+    Sample [N, 1, H] candidate action sequences.
+
+    sticky_prob=0.0 → i.i.d. uniform (the original behaviour, bit-for-bit).
+    sticky_prob>0.0 → temporally correlated (iCEM-lite, arXiv:2008.06389): at each
+    step the previous action is repeated with probability sticky_prob, else a fresh
+    uniform draw. I.i.d. sequences almost never contain sustained gestures like
+    "turn for 6 steps then walk" — sticky sampling puts them in the candidate pool,
+    which is what lets MPC *consider* searching/approaching behaviours at all.
+    """
+    if sticky_prob <= 0.0:
+        return torch.randint(0, n_actions, (n_candidates, 1, horizon), device=device)
+    actions = torch.empty(n_candidates, 1, horizon, dtype=torch.long, device=device)
+    actions[:, 0, 0] = torch.randint(0, n_actions, (n_candidates,), device=device)
+    for h in range(1, horizon):
+        fresh = torch.randint(0, n_actions, (n_candidates,), device=device)
+        keep = torch.rand(n_candidates, device=device) < sticky_prob
+        actions[:, 0, h] = torch.where(keep, actions[:, 0, h - 1], fresh)
+    return actions
+
+
 class DiscreteLatentPlanner:
     def __init__(
         self,
@@ -37,6 +69,7 @@ class DiscreteLatentPlanner:
         n_candidates: int = 512,
         novelty_coeff: float = 0.0,
         ensemble: "DisagreementEnsemble | None" = None,
+        sticky_prob: float = 0.0,
         device=None,
     ):
         self.model = model
@@ -45,16 +78,23 @@ class DiscreteLatentPlanner:
         self.n_candidates = n_candidates
         self.novelty_coeff = novelty_coeff
         self.ensemble = ensemble
+        self.sticky_prob = sticky_prob
         self.device = device or next(model.parameters()).device
 
     @torch.no_grad()
-    def plan(self, obs_init: torch.Tensor, goal_latents: torch.Tensor) -> int:
+    def plan(self, obs_init: torch.Tensor, goal_latents: torch.Tensor,
+             return_info: bool = False):
         """
         Args:
             obs_init     : [1, 3, 1, 64, 64] — current frame (T=1 context)
             goal_latents : [K, D, H', W'] — K success-scene prototypes (reward>0 frames)
+            return_info  : if True, also return {"goal_score_std": float} — the std of
+                           the goal scores across the N candidates. Near-zero std means
+                           every imagined future looks equally (un)promising, i.e. no
+                           goal is in view — the signal the scan macro triggers on.
         Returns:
             action (int) — 1st action of the best sequence
+            (action, info) when return_info=True
 
         Nearest-neighbor scoring: each sequence is scored by its distance to the
         CLOSEST success prototype (min over K), not a blurry average centroid. The
@@ -68,7 +108,7 @@ class DiscreteLatentPlanner:
         """
         N, H = self.n_candidates, self.horizon
         obs = obs_init.expand(N, -1, -1, -1, -1).contiguous()       # [N,3,1,64,64]
-        actions = torch.randint(0, self.n_actions, (N, 1, H), device=self.device)  # [N,1,H]
+        actions = _sample_actions(N, H, self.n_actions, self.sticky_prob, self.device)
 
         # Autoregressive rollout: unroll H steps, keep all predicted states
         predicted, _ = self.model.unroll(
@@ -105,7 +145,10 @@ class DiscreteLatentPlanner:
             scores = goal_scores
 
         best = scores.argmax()
-        return int(actions[best, 0, 0].item())
+        action = int(actions[best, 0, 0].item())
+        if return_info:
+            return action, {"goal_score_std": float(goal_scores.std().item())}
+        return action
 
 
 class CraftPlanner:
@@ -228,7 +271,8 @@ class SwitchingCraftPlanner:
     """
 
     def __init__(self, model, chop_goal, item_weights, log_idx, n_actions=22,
-                 horizon=12, n_candidates=512, log_threshold=0.05, device=None):
+                 horizon=12, n_candidates=512, log_threshold=0.05,
+                 sticky_prob=0.0, device=None):
         self.model = model
         self.chop_goal = chop_goal              # [1, D, H', W'] visual latent centroid
         self.item_weights = item_weights        # {idx: weight} for the craft objective
@@ -237,14 +281,18 @@ class SwitchingCraftPlanner:
         self.horizon = horizon
         self.n_candidates = n_candidates
         self.log_threshold = log_threshold      # normalised; 0.05 ≈ 0.5 raw logs
+        self.sticky_prob = sticky_prob
         self.device = device or next(model.parameters()).device
 
     @torch.no_grad()
-    def plan(self, obs_init: torch.Tensor, inv_init: torch.Tensor) -> tuple[int, str]:
-        """Returns (action, mode) where mode ∈ {'chop','craft'}."""
+    def plan(self, obs_init: torch.Tensor, inv_init: torch.Tensor,
+             return_info: bool = False):
+        """Returns (action, mode) where mode ∈ {'chop','craft'} —
+        or (action, mode, {"goal_score_std": float}) when return_info=True.
+        The std is only meaningful for the scan macro in chop mode."""
         N, H = self.n_candidates, self.horizon
         obs = obs_init.expand(N, -1, -1, -1, -1).contiguous()
-        actions = torch.randint(0, self.n_actions, (N, 1, H), device=self.device)
+        actions = _sample_actions(N, H, self.n_actions, self.sticky_prob, self.device)
         predicted, _ = self.model.jepa.unroll(
             obs, actions, nsteps=H, unroll_mode="autoregressive",
             ctxt_window_time=1, compute_loss=False,
@@ -258,16 +306,20 @@ class SwitchingCraftPlanner:
             ff = final.reshape(N, Fdim)
             gf = self.chop_goal.reshape(1, Fdim)
             dist = ((ff - gf) ** 2).mean(dim=1)                      # [N]
-            best = (-dist).argmax()
-            return int(actions[best, 0, 0].item()), "chop"
+            scores = -dist
+        else:
+            # CRAFT: maximise predicted inventory gain
+            vpool = predicted.mean(dim=(3, 4)).permute(0, 2, 1)      # [N,1+H,D]
+            inv = inv_init.to(self.device).unsqueeze(0).expand(N, -1).contiguous()
+            inv0 = inv.clone()
+            for h in range(H):
+                inv = self.model.step_inventory(inv, actions[:, 0, h], vpool[:, h])
+            gain = inv - inv0
+            scores = sum(w * gain[:, idx] for idx, w in self.item_weights.items())
 
-        # CRAFT: maximise predicted inventory gain
-        vpool = predicted.mean(dim=(3, 4)).permute(0, 2, 1)          # [N,1+H,D]
-        inv = inv_init.to(self.device).unsqueeze(0).expand(N, -1).contiguous()
-        inv0 = inv.clone()
-        for h in range(H):
-            inv = self.model.step_inventory(inv, actions[:, 0, h], vpool[:, h])
-        gain = inv - inv0
-        scores = sum(w * gain[:, idx] for idx, w in self.item_weights.items())
         best = scores.argmax()
-        return int(actions[best, 0, 0].item()), "craft"
+        action = int(actions[best, 0, 0].item())
+        mode = "chop" if not has_log else "craft"
+        if return_info:
+            return action, mode, {"goal_score_std": float(scores.std().item())}
+        return action, mode

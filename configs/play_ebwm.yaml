@@ -10,6 +10,22 @@ planner:
   n_actions: 17
   horizon: 12
   n_candidates: 512
+  sticky_prob: 0.0      # 0.0 = i.i.d. uniform (original). 0.6-0.7 = iCEM-lite sticky
+                        # sampling: candidate sequences contain sustained gestures
+                        # ("turn 6 steps then walk"), which i.i.d. almost never draws.
+
+# Scan macro (cold-start, docs/10): when the goal-score std across candidates is
+# ~0, no tree is in view and the planner is picking among lottery tickets → force
+# a camera-yaw sweep until the std recovers. One scan replan = 10° × action_repeat.
+# Calibrate flat_threshold first: scan.enabled=false + log_std=true on 2-3 episodes,
+# read the std when a tree is visible vs not.
+scan:
+  enabled: false
+  flat_threshold: 0.0   # goal_score_std below this = "lost" (SET AFTER CALIBRATION)
+  patience: 3           # consecutive flat replans before the sweep triggers
+  turn_action: 12       # camera [0, +10°] — turn right (configs/minerl_actions.yaml)
+  max_replans: 40       # sweep guard; 9 replans ≈ 360° at action_repeat=4
+  log_std: false        # print goal_score_std at every replan (calibration mode)
 
 goal:
   data_path: data/minerl_goal/episodes.npz

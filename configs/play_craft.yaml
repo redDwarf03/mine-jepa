@@ -10,9 +10,22 @@ planner:
   n_actions: 22
   horizon: 12
   n_candidates: 512
+  sticky_prob: 0.0         # 0.0 = i.i.d. uniform (original). 0.6-0.7 = iCEM-lite sticky
+                           # sampling (sustained gestures in the candidate pool, docs/10)
   w_log: 1.0               # craft objective: value logs (stepping stone)
   w_planks: 2.0            # craft objective: value planks (the milestone)
   log_threshold: 0.05      # normalised; >= 0.05 (=0.5 raw) means "has a log" → craft mode
+
+# Scan macro (chop mode only, docs/10): flat goal-score std across candidates =
+# no tree in view → force a camera-yaw sweep until the std recovers.
+# Calibrate flat_threshold first (enabled=false + log_std=true, 2-3 episodes).
+scan:
+  enabled: false
+  flat_threshold: 0.0      # goal_score_std below this = "lost" (SET AFTER CALIBRATION)
+  patience: 3              # consecutive flat replans before the sweep triggers
+  turn_action: 12          # camera [0, +10°] — turn right (minerl_actions_obtain.yaml)
+  max_replans: 40          # sweep guard; 9 replans ≈ 360° at action_repeat=4
+  log_std: false           # print goal_score_std at every replan (calibration mode)
 
 goal:                      # chop objective: centroid of "log obtained" frames
   data_path: data/minerl_craft/episodes.npz
