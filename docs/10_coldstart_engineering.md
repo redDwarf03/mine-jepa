@@ -96,6 +96,19 @@ Every replan prints `goal_score_std`. Cross-check against the GIF: read the typi
 std when a tree fills the view vs. when the agent faces open grass/sky, and set
 `flat_threshold` between the two bands (closer to the lost band).
 
+**Calibration result (2026-07-07, PC, 3 Treechop episodes, 750 replans each, seed 0):**
+
+| Situation (GIF cross-check) | `goal_score_std` band |
+|---|---|
+| Lost — facing dirt walls, sky, open grass | 0.0002 – 0.002 |
+| Wandering, trees at a distance | 0.003 – 0.01 |
+| Tree/canopy fills the view (chopping moments, Ep2) | 0.02 – 0.056 |
+
+Per-episode percentiles: p10 = 0.0006–0.0016, median = 0.003–0.004, p90 = 0.009–0.011.
+The winning episode (reward 1) had the highest tail (max 0.056 at the chop). Chosen
+**`flat_threshold: 0.003`** — just above the lost band; with `patience: 3` consecutive
+flat replans, transient dips don't trigger the sweep.
+
 ## The gate (what would make this chapter a PASS)
 
 | Test | Baseline | Target |
@@ -108,6 +121,54 @@ If the first cold-start log drops, the already-validated craft loop
 Both numbers get reported with variance, per the Phase 4 lesson: no claiming the
 best run.
 
+## Results (PC eval, 2026-07-08) — VERDICT: partial
+
+**Treechop A/B** (seed 0, same `ebwm.pt`, same day):
+
+| Condition | N | Success | Mean reward | fps |
+|---|---|---|---|---|
+| OFF — original planner (fresh baseline) | 20 | 45% (9/20) | 0.50 | 65.9 |
+| sticky **0.7** + scan@0.003 | 20 | 25% (5/20) | 0.45 | 65.0 |
+| sticky **0.5** + scan@0.003 (routing case 3) | 10 | 40% (4/10) | **0.90** | 64.6 |
+
+- The ≥50% target was **missed**. No difference is statistically significant
+  (Fisher: 0.7-vs-OFF p=0.32; 0.5-vs-OFF p=1.0), but the direction is consistent:
+  **0.7 over-commits** — episodes lock onto one gesture (a14 at 71–97%) and march
+  forever; **0.5 keeps success in the variance band and ~doubles reward per success**
+  (one 5-log episode; total logs 9/10 eps vs 10/20 eps baseline). Sticky buys *depth*
+  (keep chopping the tree you reached), not *breadth* (more trees found).
+- fps unchanged (sticky and scan add no rollout cost), as designed.
+- Scan on Treechop: fired 0–26×/ep with no visible harm at 0.003 — the bands there
+  are well separated (lost ≤0.002 vs tree-visible ≥0.02, a 10× gap).
+
+**Cold-start `ObtainIronPickaxeDense`** (N=5 each): **0 logs in every configuration —
+gate FAILED.**
+
+| Config | N | Logs | Note |
+|---|---|---|---|
+| sticky 0.5 + scan@0.003 | 1 (interrupted) | 0 | agent often *inside* the forest, still no chop |
+| sticky 0.5 + scan@0.004 | 5 | 0 | **pathological**: a12 (turn) 82–92%, 15–34 scans/ep — the agent spins |
+| sticky 0.5, scan OFF | 5 | 0 | diverse actions, still no first log |
+
+Why the scan failed here: on `craft_wm_v4.pt` the std bands are **compressed**
+(lost ~0.002, tree-visible ~0.010, median 0.0047 — a 5× gap with most mass in the
+middle) vs Treechop's clean 10× gap. Any threshold either barely fires (0.003) or
+fires constantly and the sweep eats the episode (0.004: each trigger runs toward
+`max_replans=40` because the std rarely recovers above the line). The lost-state
+detector needs a *relative* signal (e.g. std percentile over a trailing window),
+not an absolute threshold — noted for a future pass.
+
+Sharpest observation: with scan@0.003 the agent was often **surrounded by trees and
+still didn't chop** — the cold-start wall is not (only) search, it's the
+approach-and-chop behaviour itself, which `craft_wm_v4.pt`'s goal-centroid
+(trained on Obtain demos, not Treechop demos) apparently doesn't drive as well as
+`ebwm.pt` does. Routing case 4 applies: chapter closed as a **documented partial**;
+next cycle is **online RND** (novelty that decays with experience — chapter 09's
+conclusion stands).
+
+Kept defaults after this eval: `play_ebwm.yaml` → sticky 0.5 + scan on (calibrated,
+harmless, deeper chops); `play_craft.yaml` → sticky 0.5, **scan off**.
+
 ---
 
 ## The lesson this chapter adds
@@ -117,6 +178,15 @@ best run.
 > all along. Curiosity (chapter 09) failed partly because it was aimed at a problem
 > that is mostly *representational*: the planner's hypothesis space did not contain
 > the solution. Fix the hypothesis space first; spend learning on what remains.
+
+And its post-eval corollary:
+
+> **A detector calibrated on one latent space does not transfer to another.** The
+> lost-state signal was real on `ebwm.pt` (10× band separation) and unusable on
+> `craft_wm_v4.pt` (5×, mass in the middle) — an absolute threshold on a
+> checkpoint-dependent statistic is not a mechanism, it's a coincidence. And a
+> recovery macro must be **bounded by budget, not by the signal it distrusts**:
+> "turn until the std recovers" spun the agent for entire episodes.
 
 *Previous: `docs/09_curiosity_coldstart.md`. Next (planned): online RND —
 novelty that decays with experience, trained during play, per chapter 09's diagnosis.*

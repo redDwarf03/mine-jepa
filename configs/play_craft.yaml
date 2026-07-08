@@ -10,8 +10,9 @@ planner:
   n_actions: 22
   horizon: 12
   n_candidates: 512
-  sticky_prob: 0.0         # 0.0 = i.i.d. uniform (original). 0.6-0.7 = iCEM-lite sticky
-                           # sampling (sustained gestures in the candidate pool, docs/10)
+  sticky_prob: 0.5         # 0.0 = i.i.d. uniform (original). iCEM-lite sticky sampling
+                           # (docs/10). 0.5 from Treechop A/B: 0.7 over-commits (25% vs
+                           # 45% baseline), 0.5 keeps success AND doubles logs/success.
   w_log: 1.0               # craft objective: value logs (stepping stone)
   w_planks: 2.0            # craft objective: value planks (the milestone)
   log_threshold: 0.05      # normalised; >= 0.05 (=0.5 raw) means "has a log" → craft mode
@@ -20,8 +21,11 @@ planner:
 # no tree in view → force a camera-yaw sweep until the std recovers.
 # Calibrate flat_threshold first (enabled=false + log_std=true, 2-3 episodes).
 scan:
-  enabled: false
-  flat_threshold: 0.0      # goal_score_std below this = "lost" (SET AFTER CALIBRATION)
+  enabled: false           # cold-start eval 2026-07-08: with the compressed std bands of
+                           # craft_wm_v4.pt the sweep dominates the episode (a12 82-92%,
+                           # agent spins) at any tested threshold — see docs/10
+  flat_threshold: 0.004    # recalibrated on craft_wm_v4.pt Ep1 (2026-07-08): bands are
+                           # compressed vs Treechop — lost ~0.002, tree-visible ~0.010
   patience: 3              # consecutive flat replans before the sweep triggers
   turn_action: 12          # camera [0, +10°] — turn right (minerl_actions_obtain.yaml)
   max_replans: 40          # sweep guard; 9 replans ≈ 360° at action_repeat=4

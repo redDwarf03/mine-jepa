@@ -143,9 +143,19 @@ awaiting PC eval:
   (chop mode only) force camera-yaw a12 after `patience` flat replans until std recovers. Config
   block `scan:` (enabled:false default). ⚠️ `flat_threshold` MUST be calibrated first on the PC:
   `scan.log_std=true`, 2-3 Treechop episodes, read std tree-visible vs lost.
-- [ ] Gate (PC): Treechop N=20 seeded sticky+scan vs baseline → target ≥50% (variance band 25-50%);
-  cold-start ObtainIronPickaxeDense N=5 → ≥1 log (current 0/5). Report with variance, no best-run claim.
-- Next after gate: **online RND** (novelty that DECAYS with experience, predictor updated during play —
+- [x] **Gate (PC, 2026-07-08): PARTIAL — full results in `docs/10` results section.**
+  - Treechop A/B (seed 0): OFF 45% (9/20, rw 0.50); sticky 0.7+scan 25% (5/20) — over-commits;
+    **sticky 0.5+scan 40% (4/10, rw 0.90)** — success in band, ~2× reward/success (depth not breadth).
+    ≥50% target missed; no diff significant (Fisher p=0.32/1.0). fps unchanged.
+  - Cold-start: **0 logs in all configs (gate FAILED)** — scan@0.004 pathological (agent spins,
+    a12 82-92%: std bands COMPRESSED on craft_wm_v4.pt, lost~0.002 vs tree~0.010 vs Treechop's
+    0.002/0.02); sticky-only 0/5. Sharpest fact: agent often INSIDE the forest without chopping →
+    the wall is the approach/chop behaviour under craft_wm_v4's goal-centroid, not just search.
+  - LESSON: an absolute threshold on a checkpoint-dependent statistic doesn't transfer; a recovery
+    macro must be bounded by budget, not by the signal it distrusts.
+  - Kept defaults: play_ebwm.yaml sticky 0.5 + scan on (flat_threshold 0.003 calibrated);
+    play_craft.yaml sticky 0.5, scan OFF.
+- Next cycle: **online RND** (novelty that DECAYS with experience, predictor updated during play —
   RND offline on demos would repeat mistake #1: novelty never decays, agent stares at the sky).
 
 ⚠️ Phase 4 on **NVIDIA PC only**. MineRL requires Java 8.
