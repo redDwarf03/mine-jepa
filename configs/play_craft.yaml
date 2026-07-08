@@ -31,8 +31,24 @@ scan:
   max_replans: 40          # sweep guard; 9 replans ≈ 360° at action_repeat=4
   log_std: false           # print goal_score_std at every replan (calibration mode)
 
+# Two-brain mode (docs/10 follow-up): ebwm.pt (the proven Treechop lumberjack) plans
+# the chop phase over the 17 shared movement actions; craft_wm_v4 takes over at the
+# first log. Comment the block out to restore single-brain (craft_wm_v4 everywhere).
+chop_model:
+  checkpoint: checkpoints/ebwm.pt
+  n_actions: 17
+  goal:
+    data_path: data/minerl_goal/episodes.npz
+    threshold: 0.5
+    min_frames: 10
+    mode: centroid
+
 goal:                      # chop objective: centroid of "log obtained" frames
   data_path: data/minerl_craft/episodes.npz
+  # chop_data_path: data/minerl_goal/episodes.npz  # optional: Treechop reward>=thr frames
+                           # as chop compass, encoded by this WM. Tested 2026-07-08:
+                           # still 0/5 cold-start logs (docs/10) — left available, off.
+  chop_reward_threshold: 0.5
 
 agent:
   episodes: 20

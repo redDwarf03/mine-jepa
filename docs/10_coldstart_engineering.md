@@ -166,8 +166,36 @@ approach-and-chop behaviour itself, which `craft_wm_v4.pt`'s goal-centroid
 next cycle is **online RND** (novelty that decays with experience — chapter 09's
 conclusion stands).
 
+**Follow-up micro-experiment — swap the chop compass.** The "inside the
+forest, not chopping" observation suggested the culprit was the *goal*, not the
+planner: the v4 chop centroid comes from Obtain-demo "log obtained" frames (players
+doing many things), while `ebwm.pt`'s proven compass comes from Treechop reward
+frames. Added `goal.chop_data_path` (config-gated, `scripts/play_craft.py`): use the
+12,056 Treechop reward≥0.5 frames, encoded by *craft_wm_v4's own encoder*, as the
+chop goal. Result: **still 0/5 logs** (sticky 0.5, scan off; two episodes also died
+early — random survival spawns are hazardous). So the compass alone doesn't rescue
+cold-start either: the remaining suspects are the *world model itself* (craft_wm_v4's
+visual dynamics vs ebwm's — different training recipe and action space) and the
+*environment* (Treechop spawns you inside a forest; ObtainIronPickaxe spawns you
+anywhere, sometimes lethally). The option stays in the code; the config default
+reverts to the Obtain centroid.
+
+**Follow-up — the two-brain agent** (`chop_model:` block in `configs/play_craft.yaml`,
+config-gated): `ebwm.pt` — the proven Treechop lumberjack — plans the chop phase over
+the 17 movement actions shared by both action maps; `craft_wm_v4` takes over at the
+first log (inventory dynamics is its actual strength). Result: **still 0/5 logs, but
+the behaviour is transformed** — the action profile becomes the lumberjack gesture
+(a14 sprint+attack 30–52%, a6/a7 attack) instead of the diffuse wandering seen with
+the v4 brain. GIF inspection of the last episode (a6 at 85%): the agent spawned in a
+**treeless rocky ravine and ground its axe on stone** — plus two of five episodes died
+early. The remaining wall is neither the gesture nor the compass: it is the
+`ObtainIronPickaxe` random spawn (biomes without trees in reach) and the search
+radius. That is precisely the problem online RND is for; a cheaper first lever is
+re-enabling the scan in two-brain mode, where the chop std comes from `ebwm.pt` again
+and the 0.003 calibration is valid.
+
 Kept defaults after this eval: `play_ebwm.yaml` → sticky 0.5 + scan on (calibrated,
-harmless, deeper chops); `play_craft.yaml` → sticky 0.5, **scan off**.
+harmless, deeper chops); `play_craft.yaml` → sticky 0.5, **scan off**, two-brain on.
 
 ---
 

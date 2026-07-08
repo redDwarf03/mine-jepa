@@ -26,7 +26,7 @@ logging.getLogger("minerl").setLevel(logging.CRITICAL)
 
 from mine_jepa.ebwm.craft_wm import build_craft_wm_v4
 from mine_jepa.ebwm.dataset import INV_SCALE
-from mine_jepa.ebwm.planner import SwitchingCraftPlanner
+from mine_jepa.ebwm.planner import DiscreteLatentPlanner, SwitchingCraftPlanner
 from scripts.play import load_action_map, make_minerl_env
 
 
@@ -61,22 +61,34 @@ def inv_vector(obs_inv: dict, items: list, device) -> torch.Tensor:
 
 
 @torch.no_grad()
-def build_chop_goal(wm, data_path: str, device, log_idx: int) -> torch.Tensor:
+def build_chop_goal(wm, goal_cfg: dict, device, log_idx: int) -> torch.Tensor:
     """Visual-latent centroid of 'log obtained' frames → [1, D, H', W'] chop goal.
 
     Frames where the log count increased = "facing a tree, chopping" scenes. Steering
     the visual latent toward this centroid drives the lumberjack gesture (the Treechop
-    trick), far better than the weak per-step inventory signal."""
-    d = np.load(data_path)
-    frames, inv, dones = d["frames"], d["inventory"], d["dones"].astype(bool)
-    log = inv[:, log_idx].astype(np.int64)
-    inc = np.zeros(len(frames), dtype=bool)
-    inc[1:] = (log[1:] > log[:-1]) & (~dones[:-1])         # log went up, same episode
-    good = frames[inc]
-    if len(good) < 10:
-        print(f"  ⚠️  only {len(good)} log-gain frames — using all frames for chop goal")
-        good = frames
-    print(f"  Chop goal: centroid of {len(good)} 'log obtained' frames")
+    trick), far better than the weak per-step inventory signal.
+
+    `chop_data_path` (optional) swaps the frame source for a Treechop-format npz
+    (frames + rewards): the reward>=threshold frames are the proven Treechop compass
+    (docs/10 cold-start finding: the Obtain-demos centroid leaves the agent passive
+    inside the forest), still encoded by THIS wm so the centroid lives in its space."""
+    chop_path = goal_cfg.get("chop_data_path")
+    if chop_path:
+        d = np.load(chop_path)
+        thr = float(goal_cfg.get("chop_reward_threshold", 0.5))
+        good = d["frames"][d["rewards"].astype(np.float32) >= thr]
+        print(f"  Chop goal: centroid of {len(good)} reward>={thr} frames ({chop_path})")
+    else:
+        d = np.load(goal_cfg["data_path"])
+        frames, inv, dones = d["frames"], d["inventory"], d["dones"].astype(bool)
+        log = inv[:, log_idx].astype(np.int64)
+        inc = np.zeros(len(frames), dtype=bool)
+        inc[1:] = (log[1:] > log[:-1]) & (~dones[:-1])     # log went up, same episode
+        good = frames[inc]
+        if len(good) < 10:
+            print(f"  ⚠️  only {len(good)} log-gain frames — using all frames for chop goal")
+            good = frames
+        print(f"  Chop goal: centroid of {len(good)} 'log obtained' frames")
     lat_sum, n = None, 0
     for i in range(0, len(good), 256):
         obs = torch.from_numpy(good[i:i + 256]).float() / 255.0
@@ -113,7 +125,7 @@ def main():
     log_idx = items.index("log")
 
     print("\nBuilding chop goal...")
-    chop_goal = build_chop_goal(wm, cfg["goal"]["data_path"], device, log_idx)
+    chop_goal = build_chop_goal(wm, cfg["goal"], device, log_idx)
 
     p = cfg["planner"]
     item_weights = {log_idx: float(p.get("w_log", 1.0)), planks_idx: float(p.get("w_planks", 2.0))}
@@ -125,6 +137,24 @@ def main():
     )
     print(f"Planner: switching (no log→chop / log→craft), horizon={p['horizon']}, "
           f"candidates={p['n_candidates']}, sticky_prob={planner.sticky_prob}")
+
+    # Two-brain mode (docs/10 follow-up): the proven Treechop world model drives the
+    # CHOP phase (movement actions 0-16, identical in both action maps); WM v4 keeps
+    # the CRAFT phase, where its inventory dynamics is the whole point. Config-gated:
+    # no `chop_model` block = single-brain SwitchingCraftPlanner, unchanged.
+    chop_planner, chop_goals = None, None
+    chop_cfg = cfg.get("chop_model") or {}
+    if chop_cfg:
+        from scripts.play_ebwm import build_goal_latents, load_model as load_ebwm
+        ebwm, ratio = load_ebwm(chop_cfg["checkpoint"], device)
+        chop_goals = build_goal_latents(ebwm, {"goal": chop_cfg["goal"]}, device)
+        chop_planner = DiscreteLatentPlanner(
+            ebwm, n_actions=int(chop_cfg.get("n_actions", 17)),
+            horizon=p["horizon"], n_candidates=p["n_candidates"],
+            sticky_prob=float(p.get("sticky_prob", 0.0)), device=device,
+        )
+        print(f"Two-brain chop: {chop_cfg['checkpoint']} (ratio={ratio:.3f}), "
+              f"{chop_planner.n_actions} movement actions")
 
     scan_cfg = cfg.get("scan", {}) or {}
     scan_enabled = bool(scan_cfg.get("enabled", False))
@@ -167,7 +197,12 @@ def main():
         while step < a_cfg["max_steps"]:
             obs_t = preprocess(pov, device)
             inv_t = inv_vector(inv, items, device)
-            action, mode, info = planner.plan(obs_t, inv_t, return_info=True)
+            has_log = float(inv_t[log_idx]) >= planner.log_threshold
+            if chop_planner is not None and not has_log:
+                action, info = chop_planner.plan(obs_t, chop_goals, return_info=True)
+                mode = "chop"
+            else:
+                action, mode, info = planner.plan(obs_t, inv_t, return_info=True)
             mode_counts[mode] += 1
             std = info["goal_score_std"]
             if scan_cfg.get("log_std", False) and mode == "chop":

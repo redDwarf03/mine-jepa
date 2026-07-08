@@ -153,6 +153,15 @@ awaiting PC eval:
     the wall is the approach/chop behaviour under craft_wm_v4's goal-centroid, not just search.
   - LESSON: an absolute threshold on a checkpoint-dependent statistic doesn't transfer; a recovery
     macro must be bounded by budget, not by the signal it distrusts.
+  - Compass swap tested (`goal.chop_data_path`, config-gated): Treechop reward-frames
+    centroid encoded by v4 → **still 0/5**. Remaining suspects: craft_wm_v4's visual dynamics
+    itself, and the env (Treechop spawns in-forest; Obtain spawns anywhere, sometimes lethal).
+  - **Two-brain agent tested** (`chop_model:` config block): ebwm.pt plans chop (17 shared
+    movement actions), v4 takes over at first log. Still 0/5 BUT behaviour transformed
+    (lumberjack profile a14/a6/a7). GIF: last ep spawned in a TREELESS rocky ravine, ground
+    its axe on stone → remaining wall = random spawn without trees + search radius, not the
+    gesture. Next levers: scan re-enable in two-brain mode (chop std comes from ebwm.pt →
+    0.003 calibration valid again), then online RND. See HANDOFF_PC.md.
   - Kept defaults: play_ebwm.yaml sticky 0.5 + scan on (flat_threshold 0.003 calibrated);
     play_craft.yaml sticky 0.5, scan OFF.
 - Next cycle: **online RND** (novelty that DECAYS with experience, predictor updated during play —
