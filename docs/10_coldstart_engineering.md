@@ -197,6 +197,43 @@ and the 0.003 calibration is valid.
 Kept defaults after this eval: `play_ebwm.yaml` → sticky 0.5 + scan on (calibrated,
 harmless, deeper chops); `play_craft.yaml` → sticky 0.5, **scan off**, two-brain on.
 
+**Follow-up — coverage fine-tune (attempt #3, PC, 2026-07-20).** Hypothesis (jepa-explorer
+audit): the compressed std bands on `craft_wm_v4.pt` (5× vs Treechop's 10×) are a
+training-data-coverage artifact, not a metric problem — the 40 expert Obtain demos almost
+never show "lost, no tree in view" frames, because experts reach wood fast. A value-guided
+distance calibration (arXiv:2601.00844) was considered and set aside first: it would train
+on the same narrow data and inherit the same blind spot, so coverage had to be ruled out
+before touching the metric.
+
+Fix tested: ~20 short (400-step) random-policy episodes on `ObtainIronPickaxeDense-v0`
+(random spawn = biome diversity for free), merged with the 40 expert demos (coverage
+episodes zero-filled on inventory/reward — visual diversity only, no craft signal), then a
+4-epoch low-LR fine-tune resumed from a backup of `craft_wm_v4.pt`
+(`checkpoints/craft_wm_v4_coverage.pt`). No collapse (`bvar` stayed 1.24–1.27), no
+craft-precondition regression (`dPlanks@craft` stayed +1.22 to +1.35 across epochs).
+
+**VERDICT: the signal improved; the outcome did not.**
+
+| | backup (original) | coverage (fine-tuned) |
+|---|---|---|
+| Logs chopped (N=3) | 0/3 | 0/3 |
+| Planks crafted (N=3) | 0/3 | 0/3 |
+| `goal_score_std` median | 0.0034 | 0.0126 (×3.7) |
+| p90/p10 ratio (lost-vs-promising proxy) | ×3.2 | ×5.4 |
+| Episode length | 3000/3000/3000 | 2295/3000/1070 (2 early deaths) |
+
+The std band separation did widen (×3.2 → ×5.4, moving toward Treechop's ×10x) — the
+coverage-gap hypothesis is directionally correct as a mechanism. But it changed nothing
+behaviorally: identical 0/3 logs on both checkpoints, and the fine-tuned checkpoint died
+earlier in 2 of 3 episodes (more exploratory movement into more danger, not more chopping).
+
+LESSON: **sharpening the "am I lost" signal does not by itself fix the search-and-approach
+behaviour that is supposed to act on it.** The diagnosis from the two-brain experiment above
+stands: this is a behavioural gap (search/approach), not a purely perceptual one. Coverage
+data helps the model represent "lost" more distinctly; it does not teach the planner what to
+*do* about it. Online RND — reward for novelty *during play*, shaping behaviour rather than
+perception — remains the next concrete step, not a fourth perception-side patch.
+
 ---
 
 ## The lesson this chapter adds

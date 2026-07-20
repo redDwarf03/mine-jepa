@@ -2,6 +2,8 @@
 # Visual backbone = the Treechop sweet-spot recipe (T=8, 20 ep). The inventory
 # dynamics MLP learns the crafting/chopping rules conditioned on the visual latent.
 
+seed: 42
+
 data:
   path: data/minerl_craft/episodes.npz   # scripts/prepare_demos_obtain.py
   num_frames: 8
@@ -36,7 +38,9 @@ training:
 logging:
   log_every: 1
   collapse_threshold: 1.0e-4
+  dplanks_regression_tol: 1.5   # only used when checkpoint.resume_from is set
 
 checkpoint:
   dir: checkpoints/
   name: craft_wm_v4.pt
+  # resume_from: checkpoints/craft_wm_v4_backup.pt   # unset = train from scratch (default)

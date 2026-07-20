@@ -1,52 +1,59 @@
-# HANDOFF — état de la session PC (éval cold-start, chapitre docs/10)
+# HANDOFF — clôturé (cold-start, chapitre docs/10, attempt #3)
 
-**Où on en est : le chapitre "attempt #2" est évalué et documenté (voir `docs/10` section
-Results, déjà commité pour la partie sticky/scan). Deux pistes de suivi ont été testées
-depuis ce commit — les changements sont dans l'arbre de travail, NON COMMITÉS.**
+**Cycle clos : l'expérience "coverage fine-tune" (attempt #3) est évaluée, documentée
+(`docs/10_coldstart_engineering.md`, `CLAUDE.md`) et commitée. Verdict : signal amélioré,
+comportement inchangé — voir détails ci-dessous. Le prochain cycle (attempt #4, RND en
+ligne + tweak de longueur d'engagement du MPC) est scopé (proposal jepa-explorer) et en
+cours d'implémentation — ce fichier sera réouvert/réécrit à son tour une fois ce cycle
+évalué.**
 
-## Ce qui est acquis (commité)
+## Ce qui est acquis (documenté dans docs/10)
 
-- Sticky **0.5** = réglage retenu (0.7 sur-engage). Treechop : 40 % à N=10, reward ×1.8.
-- Scan calibré sur ebwm.pt (`flat_threshold: 0.003`) mais **non transférable** à
-  craft_wm_v4 (bandes compressées → l'agent toupille). Scan OFF dans play_craft.yaml.
-- Cold-start `ObtainIronPickaxeDense` : 0 log partout avec le cerveau v4 seul.
+- Sticky **0.5** + scan calibré = réglage retenu sur Treechop (40% à N=10, reward ×1.8).
+- Deux cerveaux (ebwm.pt chop / craft_wm_v4 craft) : comportement transformé (profil
+  bûcheron) mais toujours 0/5 logs en cold-start. Diagnostic : spawns sans arbre + rayon
+  de recherche insuffisant, pas le geste ni la boussole.
+- **Attempt #3 (coverage fine-tune, cette session)** : fine-tuning court de `craft_wm_v4`
+  sur des frames de biomes variés (spawn aléatoire, sans label de craft) pour tester si le
+  manque de données "perdu, pas d'arbre visible" explique les bandes de `goal_score_std`
+  compressées. Résultat : la séparation du signal s'élargit (×3.2 → ×5.4 sur le ratio
+  p90/p10) mais **0/3 logs sur les deux checkpoints (backup et fine-tuné)** — aucun
+  changement comportemental. Checkpoint fine-tuné = `checkpoints/craft_wm_v4_coverage.pt`
+  (ne remplace pas `craft_wm_v4.pt` ni `craft_wm_v4_backup.pt`, tous deux intacts).
 
-## Testé depuis (dans l'arbre de travail, à commiter)
+## LE diagnostic à retenir
 
-1. **Boussole Treechop pour le chop v4** (`goal.chop_data_path`, `scripts/play_craft.py`)
-   → **0/5, éliminé** (option laissée dans le code, OFF par défaut). Documenté dans docs/10.
-2. **Deux cerveaux** (`chop_model:` dans `configs/play_craft.yaml`, config-gated) :
-   ebwm.pt (le bûcheron Treechop, ratio 0.927) planifie le mode chop sur les 17 actions
-   mouvement communes ; craft_wm_v4 reprend au premier log. Smoke test OK.
-   → **N=5 : 0 log ENCORE, MAIS le comportement est transformé** : profil bûcheron
-   (a14 30-52 %, a6/a7 attaque) au lieu du a1 diffus. Log : `logs/coldstart_twobrain.log`.
+Le mur n'est ni la perception (le modèle "sait" maintenant mieux quand il est perdu) ni la
+boussole (testée et éliminée) ni le geste (le mode deux-cerveaux le corrige). C'est le
+**comportement de recherche/approche** lui-même qui manque : rien dans l'architecture
+actuelle n'apprend à couvrir du terrain efficacement à partir d'un spawn inconnu. Améliorer
+le signal "je suis perdu" ne suffit pas si rien n'agit différemment quand ce signal se
+déclenche.
 
-## LE diagnostic à retenir (vu dans le GIF du dernier épisode)
+## Prochaine action concrète : online RND
 
-L'Ep5 (a6=85 %) a spawné dans un **biome rocheux/ravin sans aucun arbre visible** —
-l'agent broyait de la pierre. Frames vérifiées sur toute la durée : pierre, gravier,
-terre, eau, zéro arbre. Plus 2 épisodes sur 5 morts prématurément (spawns dangereux).
-**Le mur restant n'est plus le geste (réglé par les deux cerveaux) ni la boussole :
-c'est le spawn `ObtainIronPickaxe` qui lâche l'agent dans des biomes sans arbres, et
-un rayon d'exploration trop court pour en sortir.** À confirmer sur les GIFs des autres
-épisodes avant de conclure définitivement (un seul épisode inspecté).
-
-## Prochaines actions (dans l'ordre suggéré)
-
-1. Confirmer le diagnostic : inspecter les frames des épisodes 1-4 (les GIFs des
-   sous-processus s'écrasent — relancer 2-3 épisodes avec `gif_episodes` élevé si besoin).
-2. **Réactiver le scan en mode deux-cerveaux** : le std du chop vient maintenant
-   d'ebwm.pt → la calibration 0.003 redevient valable (c'était le point mort du scan
-   sur v4). Scan + sticky + deux cerveaux = toute la chaîne enfin cohérente.
-3. Si les spawns sans arbres se confirment : le problème devient "couvrir du terrain"
-   → c'est exactement le cas d'usage du **RND online** (cycle pré-convenu, docs/09) —
-   ou, plus simple, allonger `max_steps` pour donner un rayon de recherche réaliste.
+- Objectif : une récompense de nouveauté calculée et mise à jour **pendant le jeu** (pas sur
+  des démos figées comme l'expérience #1 de `docs/09`, qui avait échoué par collapse de
+  l'ensemble hors-ligne). La nouveauté doit décroître avec l'expérience — c'est ce qui doit
+  pousser l'agent à couvrir du terrain plutôt que refaire les mêmes gestes.
+- Base de code existante à réutiliser : `mine_jepa/ebwm/curiosity.py`
+  (`DisagreementEnsemble`), `DiscreteLatentPlanner(novelty_coeff)` — déjà config-gated,
+  déjà branché pour la version *offline* (échouée). Le travail restant est de rendre
+  l'entraînement de l'ensemble/predictor **online**, pas de repartir de zéro.
+- Ne pas retoucher `ebwm.pt` / `craft_wm_v4.pt` / `craft_wm_v4_backup.pt` /
+  `craft_wm_v4_coverage.pt` — tous des points de comparaison désormais utiles.
 
 ## Rappels d'exploitation
 
-- Runs longs : fenêtre PowerShell VISIBLE + `Tee-Object` vers `logs/` (préférence user).
-  ⚠️ Tee-Object écrit en UTF-16 → `iconv -f UTF-16LE` avant tout grep.
-- Marqueur de fin du wrapper multi-process : `FINAL RESULTS` (chaque épisode imprime
-  son propre résumé — ne pas s'arrêter au premier `Success rate`).
+- Runs longs : fenêtre PowerShell VISIBLE + `Tee-Object` vers `logs/`. ⚠️ `Tee-Object`
+  écrit en UTF-16LE — mais les scripts Python qui écrivent directement dans un fichier
+  (ex. `logs/play_ep_NNN.txt`) sont en UTF-8 normal. Vérifier l'encodage réel avant de
+  décoder (`file <nom>` ou `xxd` sur les premiers octets) plutôt que de supposer.
+- ⚠️ **Ne jamais tuer un process sans avoir confirmé sa command line** (`Get-CimInstance
+  Win32_Process -Filter "ProcessId=..."`) — un run legitime peut porter un PID qui a
+  l'air suspect dans un listing brut.
+- ⚠️ Les fichiers `logs/play_ep_NNN.txt` sont **réécrits à chaque run** (même noms) — copier
+  ailleurs avant de lancer un second run si on veut comparer après coup.
+- Marqueur de fin du wrapper multi-process : `FINAL RESULTS` (chaque épisode imprime son
+  propre résumé — ne pas s'arrêter au premier `Success rate`).
 - Pas de notions de durée dans les commentaires/docs (préférence user).
-- `ebwm.pt` et `craft_wm_v4.pt` intacts — rien n'a été réentraîné.

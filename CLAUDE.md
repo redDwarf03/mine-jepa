@@ -167,6 +167,28 @@ awaiting PC eval:
 - Next cycle: **online RND** (novelty that DECAYS with experience, predictor updated during play —
   RND offline on demos would repeat mistake #1: novelty never decays, agent stares at the sky).
 
+Phase 5+ — Cold-start attempt #3: coverage fine-tune (PC, 2026-07-20, `docs/10` follow-up
+section) — **signal improved, outcome unchanged**:
+- Hypothesis: `craft_wm_v4.pt`'s compressed `goal_score_std` bands (5x vs Treechop's 10x) are
+  a training-data-coverage artifact — the 40 expert Obtain demos rarely show "lost, no tree
+  in view" frames. Fix: ~20 short random-policy coverage episodes merged with the demos, then
+  a 4-epoch low-LR fine-tune from a backup (`checkpoints/craft_wm_v4_coverage.pt`, seeded, no
+  collapse, no craft-precondition regression).
+- Result: std band separation widened (p90/p10 ratio ×3.2 → ×5.4) — the coverage-gap
+  mechanism is real — but **0/3 logs chopped on BOTH the backup and fine-tuned checkpoints**,
+  identical craft outcome, and the fine-tuned checkpoint died early in 2/3 episodes (more
+  movement, more danger, not more chopping).
+  - **LESSON: sharpening the "am I lost" signal does not by itself fix the search/approach
+    behaviour that acts on it.** This confirms attempt #2's two-brain diagnosis: the wall is
+    behavioural (search/approach), not perceptual. Coverage data made the model *know* it's
+    lost more clearly; it did not teach it what to *do* about it.
+- `ebwm.pt`, `craft_wm_v4.pt`, `craft_wm_v4_backup.pt` all intact — `craft_wm_v4_coverage.pt`
+  is a new, separate comparison checkpoint, not a replacement.
+- Next: **online RND** — behaviour-shaping (reward computed and the predictor updated
+  during play), not another perception-side patch. See HANDOFF_PC.md for the concrete
+  reuse plan (`mine_jepa/ebwm/curiosity.py`, `DisagreementEnsemble`, already config-gated
+  for the offline version that failed in chapter 09).
+
 ⚠️ Phase 4 on **NVIDIA PC only**. MineRL requires Java 8.
 Installation: DO NOT use `uv pip install minerl` directly.
 See complete procedure below (patches gym + minerl + Gradle).

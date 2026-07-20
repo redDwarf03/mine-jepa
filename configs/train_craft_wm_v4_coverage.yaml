@@ -1,0 +1,47 @@
+# Cold-start attempt #3 (docs/10 follow-up): short fine-tune of craft_wm_v4 on the
+# expert demos + self-supervised coverage frames merged dataset. NOT a from-scratch
+# retrain — resumes craft_wm_v4_backup.pt, low epochs, low lr, same craft_weight/
+# precond_coeff as the released recipe (only the visual distribution changes).
+
+seed: 43
+
+data:
+  path: data/minerl_craft_v2/episodes.npz   # scripts/merge_craft_coverage.py
+  num_frames: 8
+  subsample: 4
+  val_fraction: 0.1
+
+model:
+  embed_dim: 64
+  encoder_hidden: 32
+  n_actions: 22
+  action_embed_dim: 16
+  predictor_hidden: 128
+
+regularizer:
+  std_coeff: 10.0
+  cov_coeff: 1.0
+  sim_coeff_t: 0.0
+
+head:
+  inv_coeff: 5.0
+  inv_hidden: 128
+  craft_weight: 30.0
+  precond_coeff: 2.0
+
+training:
+  epochs: 4
+  batch_size: 64
+  lr: 3.0e-5              # ~10x lower than the from-scratch recipe — short fine-tune
+  weight_decay: 1.0e-5
+  num_workers: 0
+
+logging:
+  log_every: 1
+  collapse_threshold: 1.0e-4
+  dplanks_regression_tol: 1.5
+
+checkpoint:
+  dir: checkpoints/
+  name: craft_wm_v4_coverage.pt
+  resume_from: checkpoints/craft_wm_v4_backup.pt

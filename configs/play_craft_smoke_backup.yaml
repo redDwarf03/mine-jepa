@@ -1,0 +1,55 @@
+# Smoke test (developer, cold-start coverage fine-tune): single-brain craft_wm_v4
+# checkpoint under test drives BOTH chop and craft, so goal_score_std in chop mode
+# reflects THIS checkpoint's own bands (two-brain mode would source std from ebwm.pt
+# instead — see HANDOFF_PC.md). chop_model block intentionally omitted.
+
+minerl_env: MineRLObtainIronPickaxeDense-v0
+actions_config: configs/minerl_actions_obtain.yaml
+
+model:
+  checkpoint: checkpoints/craft_wm_v4_backup.pt
+
+planner:
+  n_actions: 22
+  horizon: 12
+  n_candidates: 512
+  sticky_prob: 0.5         # 0.0 = i.i.d. uniform (original). iCEM-lite sticky sampling
+                           # (docs/10). 0.5 from Treechop A/B: 0.7 over-commits (25% vs
+                           # 45% baseline), 0.5 keeps success AND doubles logs/success.
+  w_log: 1.0               # craft objective: value logs (stepping stone)
+  w_planks: 2.0            # craft objective: value planks (the milestone)
+  log_threshold: 0.05      # normalised; >= 0.05 (=0.5 raw) means "has a log" → craft mode
+
+# Scan macro (chop mode only, docs/10): flat goal-score std across candidates =
+# no tree in view → force a camera-yaw sweep until the std recovers.
+# Calibrate flat_threshold first (enabled=false + log_std=true, 2-3 episodes).
+scan:
+  enabled: false           # cold-start eval 2026-07-08: with the compressed std bands of
+                           # craft_wm_v4.pt the sweep dominates the episode (a12 82-92%,
+                           # agent spins) at any tested threshold — see docs/10
+  flat_threshold: 0.004    # recalibrated on craft_wm_v4.pt Ep1 (2026-07-08): bands are
+                           # compressed vs Treechop — lost ~0.002, tree-visible ~0.010
+  patience: 3              # consecutive flat replans before the sweep triggers
+  turn_action: 12          # camera [0, +10°] — turn right (minerl_actions_obtain.yaml)
+  max_replans: 40          # sweep guard; 9 replans ≈ 360° at action_repeat=4
+  log_std: true            # print goal_score_std at every replan (calibration mode)
+
+# Two-brain mode intentionally OFF for this smoke test — see header note.
+
+goal:                      # chop objective: centroid of "log obtained" frames
+  data_path: data/minerl_craft/episodes.npz
+  # chop_data_path: data/minerl_goal/episodes.npz  # optional: Treechop reward>=thr frames
+                           # as chop compass, encoded by this WM. Tested 2026-07-08:
+                           # still 0/5 cold-start logs (docs/10) — left available, off.
+  chop_reward_threshold: 0.5
+
+agent:
+  episodes: 3
+  max_steps: 3000
+  action_repeat: 4
+  seed: 0
+
+logging:
+  save_gif: true
+  gif_episodes: 3
+  gif_path: assets/agent_play_craft_smoke_backup.gif
