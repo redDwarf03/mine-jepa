@@ -24,6 +24,14 @@ Phase 5+ cold-start extension (docs/10_coldstart_engineering.md):
     the "am I lost?" signal driving the scan macro in the play scripts.
   Defaults (sticky_prob=0.0, return_info=False) reproduce the original
   behaviour exactly.
+
+Phase 5+ cold-start attempt #4 (commit_length): plan() picks the best H-step
+sequence but historically returned only its first action — every replan drew a
+fresh independent 512-candidate sample, so any sustained direction proposed for
+steps 2..H was discarded. commit_length>1 returns the first M actions of the
+winning sequence instead of 1, so the caller can execute several before
+replanning. commit_length=1 (default) is the exact original code path: same
+scoring, same argmax, same single-int return.
 """
 from __future__ import annotations
 
@@ -70,6 +78,7 @@ class DiscreteLatentPlanner:
         novelty_coeff: float = 0.0,
         ensemble: "DisagreementEnsemble | None" = None,
         sticky_prob: float = 0.0,
+        commit_length: int = 1,
         device=None,
     ):
         self.model = model
@@ -79,6 +88,7 @@ class DiscreteLatentPlanner:
         self.novelty_coeff = novelty_coeff
         self.ensemble = ensemble
         self.sticky_prob = sticky_prob
+        self.commit_length = commit_length
         self.device = device or next(model.parameters()).device
 
     @torch.no_grad()
@@ -92,9 +102,14 @@ class DiscreteLatentPlanner:
                            the goal scores across the N candidates. Near-zero std means
                            every imagined future looks equally (un)promising, i.e. no
                            goal is in view — the signal the scan macro triggers on.
-        Returns:
+        Returns (self.commit_length == 1, the default — original contract, unchanged):
             action (int) — 1st action of the best sequence
             (action, info) when return_info=True
+        Returns (self.commit_length > 1):
+            actions (list[int], length min(commit_length, horizon)) — the first M
+            actions of the best sequence, letting the caller execute a sustained
+            gesture before replanning instead of discarding steps 2..H every time.
+            (actions, info) when return_info=True
 
         Nearest-neighbor scoring: each sequence is scored by its distance to the
         CLOSEST success prototype (min over K), not a blurry average centroid. The
@@ -141,14 +156,25 @@ class DiscreteLatentPlanner:
             g_mu, g_std = goal_scores.mean(), goal_scores.std().clamp(min=1e-8)
             n_mu, n_std = novelty_scores.mean(), novelty_scores.std().clamp(min=1e-8)
             scores = (goal_scores - g_mu) / g_std + self.novelty_coeff * (novelty_scores - n_mu) / n_std
+            novelty_mean = float(novelty_scores.mean().item())
         else:
             scores = goal_scores
+            novelty_mean = None
 
         best = scores.argmax()
-        action = int(actions[best, 0, 0].item())
+        info = {"goal_score_std": float(goal_scores.std().item())}
+        if novelty_mean is not None:
+            info["novelty_mean"] = novelty_mean
+        if self.commit_length <= 1:
+            action = int(actions[best, 0, 0].item())
+            if return_info:
+                return action, info
+            return action
+        M = min(self.commit_length, H)
+        committed = actions[best, 0, :M].tolist()
         if return_info:
-            return action, {"goal_score_std": float(goal_scores.std().item())}
-        return action
+            return committed, info
+        return committed
 
 
 class CraftPlanner:
@@ -272,7 +298,7 @@ class SwitchingCraftPlanner:
 
     def __init__(self, model, chop_goal, item_weights, log_idx, n_actions=22,
                  horizon=12, n_candidates=512, log_threshold=0.05,
-                 sticky_prob=0.0, device=None):
+                 sticky_prob=0.0, commit_length: int = 1, device=None):
         self.model = model
         self.chop_goal = chop_goal              # [1, D, H', W'] visual latent centroid
         self.item_weights = item_weights        # {idx: weight} for the craft objective
@@ -282,6 +308,7 @@ class SwitchingCraftPlanner:
         self.n_candidates = n_candidates
         self.log_threshold = log_threshold      # normalised; 0.05 ≈ 0.5 raw logs
         self.sticky_prob = sticky_prob
+        self.commit_length = commit_length
         self.device = device or next(model.parameters()).device
 
     @torch.no_grad()
@@ -289,7 +316,10 @@ class SwitchingCraftPlanner:
              return_info: bool = False):
         """Returns (action, mode) where mode ∈ {'chop','craft'} —
         or (action, mode, {"goal_score_std": float}) when return_info=True.
-        The std is only meaningful for the scan macro in chop mode."""
+        The std is only meaningful for the scan macro in chop mode.
+        commit_length > 1 (default 1, original contract): `action` becomes a
+        list of the first min(commit_length, horizon) actions of the winning
+        sequence instead of a single int."""
         N, H = self.n_candidates, self.horizon
         obs = obs_init.expand(N, -1, -1, -1, -1).contiguous()
         actions = _sample_actions(N, H, self.n_actions, self.sticky_prob, self.device)
@@ -318,8 +348,14 @@ class SwitchingCraftPlanner:
             scores = sum(w * gain[:, idx] for idx, w in self.item_weights.items())
 
         best = scores.argmax()
-        action = int(actions[best, 0, 0].item())
         mode = "chop" if not has_log else "craft"
+        if self.commit_length <= 1:
+            action = int(actions[best, 0, 0].item())
+            if return_info:
+                return action, mode, {"goal_score_std": float(scores.std().item())}
+            return action, mode
+        M = min(self.commit_length, H)
+        committed = actions[best, 0, :M].tolist()
         if return_info:
-            return action, mode, {"goal_score_std": float(scores.std().item())}
-        return action, mode
+            return committed, mode, {"goal_score_std": float(scores.std().item())}
+        return committed, mode

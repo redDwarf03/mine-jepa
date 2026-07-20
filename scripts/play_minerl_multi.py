@@ -18,6 +18,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import numpy as np
@@ -45,12 +46,68 @@ def read_gif_path(config: str) -> Path | None:
     return None
 
 
-def kill_stray_java():
-    """Kill leftover Minecraft processes between episodes (Windows)."""
-    subprocess.run(
-        ["taskkill", "/F", "/IM", "java.exe", "/T"],
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+def _running_java_pids() -> set[int]:
+    """PIDs of all currently running java.exe processes (Windows).
+
+    tasklist emits the console's OEM codepage, not UTF-8, and PYTHONUTF8=1
+    (set by run.bat) makes subprocess default text decoding assume UTF-8 —
+    decoding raw OEM bytes as UTF-8 can raise UnicodeDecodeError and leave
+    stdout unset. Decode explicitly with errors="replace" and never trust
+    stdout to be non-None.
+    """
+    out = subprocess.run(
+        ["tasklist", "/FI", "IMAGENAME eq java.exe", "/FO", "CSV", "/NH"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
+    pids = set()
+    for line in (out.stdout or "").splitlines():
+        fields = line.strip().split('","')
+        if len(fields) >= 2:
+            try:
+                pids.add(int(fields[1].strip('"')))
+            except ValueError:
+                pass
+    return pids
+
+
+def kill_stray_java(pre_existing_pids: set[int], timeout: float = 20.0, poll_interval: float = 0.5) -> None:
+    """Kill only the java.exe process(es) launched by THIS episode, then block
+    until they are confirmed gone before the next episode is allowed to launch.
+
+    The original implementation ran `taskkill /F /IM java.exe /T`, which is
+    image-name-wide: it kills EVERY java.exe on the machine, not just the one
+    belonging to the episode that just finished. On this project's
+    subprocess-per-episode design, several independent play_minerl_multi.py
+    runs can be executing concurrently on the same machine (confirmed via
+    process inspection during the 2026-07-20 N=20 investigation — 3 separate
+    orchestrator processes running the same config at once). An unscoped kill
+    fired by any one of them tears down the Minecraft instances of the OTHER
+    runs mid-episode, and it also raced the next episode's launch (fired and
+    returned immediately, without waiting for the OS to actually release the
+    process/ports) — together these explain both an outright
+    ConnectionResetError on the client socket and implausible inventory deltas
+    that belong to a different, unrelated, longer-running episode (MineRL's
+    InstanceManager._get_valid_port in minerl/env/malmo.py has no cross-process
+    lock, so two concurrently-launched instances can race onto overlapping
+    ports before either actually binds).
+
+    Scoping the kill to PIDs that appeared strictly after this episode started,
+    and blocking until they are gone, keeps every run's teardown local to its
+    own process tree regardless of what else is running on the machine.
+    """
+    new_pids = _running_java_pids() - pre_existing_pids
+    for pid in new_pids:
+        subprocess.run(
+            ["taskkill", "/F", "/PID", str(pid), "/T"],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+    if not new_pids:
+        return
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if not (_running_java_pids() & new_pids):
+            return
+        time.sleep(poll_interval)
 
 
 def run_one_episode(ep_idx: int, config: str) -> dict | None:
@@ -184,6 +241,7 @@ def main():
 
     results = []
     for i in range(1, n + 1):
+        pre_java_pids = _running_java_pids()
         r = _run_and_capture(i, args.config, Path(f"logs/play_ep_{i:03d}.txt"), args.script)
         if r is not None:
             results.append(r)
@@ -202,7 +260,7 @@ def main():
                 print(f"[ep {i:03d}/{n}] kept GIF (reward={r['reward']:.3f})", flush=True)
         else:
             print(f"\n[ep {i:03d}/{n}] FAILED — skipped", flush=True)
-        kill_stray_java()
+        kill_stray_java(pre_java_pids)
 
     # Restore the best successful GIF over the canonical path (last episode
     # would otherwise win, often a failure).

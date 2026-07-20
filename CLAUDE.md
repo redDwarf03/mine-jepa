@@ -26,9 +26,10 @@ but the model learned nothing). **Always**:
 ## Current phase
 **PHASE 5 — Crafting (MineRLObtainIronPickaxe)** — in progress. Phases 0→4 complete ✅.
 
-▶ **RESUMING ON THE PC? Read `HANDOFF_PC.md` first** — cold-start attempt #2 (sticky
-sampling + scan macro) is coded and smoke-tested on the Mac, awaiting calibration +
-A/B eval on the NVIDIA PC. It contains the exact procedure and failure routing.
+▶ **RESUMING WORK? Read this file's "Phase 5+" section below** — it's the up-to-date
+record of every cold-start attempt (sticky sampling/scan, coverage fine-tune, and
+whatever is in progress). `HANDOFF_PC.md` (a session-to-session bridge doc) has been
+retired now that this file stays current within a single continued session.
 
 Phase 0 — gates validated:
 - [x] Python env running + Crafter installed
@@ -161,7 +162,7 @@ awaiting PC eval:
     (lumberjack profile a14/a6/a7). GIF: last ep spawned in a TREELESS rocky ravine, ground
     its axe on stone → remaining wall = random spawn without trees + search radius, not the
     gesture. Next levers: scan re-enable in two-brain mode (chop std comes from ebwm.pt →
-    0.003 calibration valid again), then online RND. See HANDOFF_PC.md.
+    0.003 calibration valid again), then online RND.
   - Kept defaults: play_ebwm.yaml sticky 0.5 + scan on (flat_threshold 0.003 calibrated);
     play_craft.yaml sticky 0.5, scan OFF.
 - Next cycle: **online RND** (novelty that DECAYS with experience, predictor updated during play —
@@ -185,9 +186,9 @@ section) — **signal improved, outcome unchanged**:
 - `ebwm.pt`, `craft_wm_v4.pt`, `craft_wm_v4_backup.pt` all intact — `craft_wm_v4_coverage.pt`
   is a new, separate comparison checkpoint, not a replacement.
 - Next: **online RND** — behaviour-shaping (reward computed and the predictor updated
-  during play), not another perception-side patch. See HANDOFF_PC.md for the concrete
-  reuse plan (`mine_jepa/ebwm/curiosity.py`, `DisagreementEnsemble`, already config-gated
-  for the offline version that failed in chapter 09).
+  during play), not another perception-side patch. Concrete reuse plan: `mine_jepa/ebwm/curiosity.py`
+  (`DisagreementEnsemble`, already config-gated for the offline version that failed in
+  chapter 09).
 
 ⚠️ Phase 4 on **NVIDIA PC only**. MineRL requires Java 8.
 Installation: DO NOT use `uv pip install minerl` directly.

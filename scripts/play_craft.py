@@ -14,6 +14,7 @@ Usage: run.bat scripts/play_craft.py --config configs/play_craft.yaml --episodes
 import argparse
 import logging
 import time
+from collections import deque
 from pathlib import Path
 
 import cv2
@@ -27,6 +28,7 @@ logging.getLogger("minerl").setLevel(logging.CRITICAL)
 from mine_jepa.ebwm.craft_wm import build_craft_wm_v4
 from mine_jepa.ebwm.dataset import INV_SCALE
 from mine_jepa.ebwm.planner import DiscreteLatentPlanner, SwitchingCraftPlanner
+from mine_jepa.ebwm.rnd import RNDModule
 from scripts.play import load_action_map, make_minerl_env
 
 
@@ -129,14 +131,17 @@ def main():
 
     p = cfg["planner"]
     item_weights = {log_idx: float(p.get("w_log", 1.0)), planks_idx: float(p.get("w_planks", 2.0))}
+    commit_length = int(p.get("commit_length", 1))
     planner = SwitchingCraftPlanner(
         wm, chop_goal=chop_goal, item_weights=item_weights, log_idx=log_idx,
         n_actions=p["n_actions"], horizon=p["horizon"], n_candidates=p["n_candidates"],
         log_threshold=float(p.get("log_threshold", 0.05)),
-        sticky_prob=float(p.get("sticky_prob", 0.0)), device=device,
+        sticky_prob=float(p.get("sticky_prob", 0.0)), commit_length=commit_length,
+        device=device,
     )
     print(f"Planner: switching (no log→chop / log→craft), horizon={p['horizon']}, "
-          f"candidates={p['n_candidates']}, sticky_prob={planner.sticky_prob}")
+          f"candidates={p['n_candidates']}, sticky_prob={planner.sticky_prob}, "
+          f"commit_length={planner.commit_length}")
 
     # Two-brain mode (docs/10 follow-up): the proven Treechop world model drives the
     # CHOP phase (movement actions 0-16, identical in both action maps); WM v4 keeps
@@ -144,14 +149,45 @@ def main():
     # no `chop_model` block = single-brain SwitchingCraftPlanner, unchanged.
     chop_planner, chop_goals = None, None
     chop_cfg = cfg.get("chop_model") or {}
+    rnd_cfg = cfg.get("rnd", {}) or {}
+    rnd_enabled = bool(chop_cfg) and bool(rnd_cfg.get("enabled", False))
+    rnd_module, rnd_opt, rnd_buffer = None, None, None
+    rnd_batch_size = int(rnd_cfg.get("batch_size", 32))
+    rnd_update_every = int(rnd_cfg.get("update_every", 4))
     if chop_cfg:
         from scripts.play_ebwm import build_goal_latents, load_model as load_ebwm
         ebwm, ratio = load_ebwm(chop_cfg["checkpoint"], device)
         chop_goals = build_goal_latents(ebwm, {"goal": chop_cfg["goal"]}, device)
+
+        # Online RND (docs/09/10, mine_jepa/ebwm/rnd.py): only wired into the
+        # two-brain chop planner (ebwm.pt's latent space) — SwitchingCraftPlanner
+        # (craft_wm_v4) is untouched, both by construction (no ensemble/novelty_coeff
+        # kwargs on it) and because RND would be encoding into the wrong latent space
+        # during craft mode. state_dim read from ebwm.pt's own checkpoint config
+        # (same field load_model/load_ebwm in play_ebwm.py uses to build the model),
+        # never hardcoded — ResNet5 doesn't expose its out_d as an attribute.
+        if rnd_enabled:
+            _ebwm_ckpt = torch.load(chop_cfg["checkpoint"], map_location=device, weights_only=False)
+            chop_embed_dim = _ebwm_ckpt["cfg"]["model"]["embed_dim"]
+            rnd_module = RNDModule(state_dim=chop_embed_dim).to(device)
+            # Optimizer sees ONLY the predictor's parameters — the target net is
+            # frozen (rnd.py) and must never receive gradient updates.
+            rnd_opt = torch.optim.Adam(
+                rnd_module.predictor.parameters(), lr=float(rnd_cfg.get("lr", 1e-3))
+            )
+            rnd_buffer = deque(maxlen=int(rnd_cfg.get("buffer_size", 256)))
+            print(f"RND: enabled (state_dim={chop_embed_dim}, "
+                  f"novelty_coeff={float(rnd_cfg.get('novelty_coeff', 0.5))}, "
+                  f"lr={rnd_cfg.get('lr', 1e-3)}, buffer_size={rnd_buffer.maxlen}, "
+                  f"batch_size={rnd_batch_size}, update_every={rnd_update_every})")
+
         chop_planner = DiscreteLatentPlanner(
             ebwm, n_actions=int(chop_cfg.get("n_actions", 17)),
             horizon=p["horizon"], n_candidates=p["n_candidates"],
-            sticky_prob=float(p.get("sticky_prob", 0.0)), device=device,
+            sticky_prob=float(p.get("sticky_prob", 0.0)), commit_length=commit_length,
+            ensemble=rnd_module,
+            novelty_coeff=float(rnd_cfg.get("novelty_coeff", 0.5)) if rnd_enabled else 0.0,
+            device=device,
         )
         print(f"Two-brain chop: {chop_cfg['checkpoint']} (ratio={ratio:.3f}), "
               f"{chop_planner.n_actions} movement actions")
@@ -194,6 +230,9 @@ def main():
         # Scan macro state (docs/10): only meaningful in chop mode — a flat
         # goal-score std means no tree in view → force a camera-yaw sweep.
         flat_count, scanning, scan_replans, scan_triggers = 0, False, 0, 0
+        # RND tick counter (within-episode only — no cross-episode persistence;
+        # each play_minerl_multi.py subprocess is one episode anyway).
+        rnd_tick = 0
         while step < a_cfg["max_steps"]:
             obs_t = preprocess(pov, device)
             inv_t = inv_vector(inv, items, device)
@@ -206,8 +245,13 @@ def main():
             mode_counts[mode] += 1
             std = info["goal_score_std"]
             if scan_cfg.get("log_std", False) and mode == "chop":
-                print(f"    [scan] step={step:4d} goal_score_std={std:.6f}"
+                nov = f" novelty_mean={info['novelty_mean']:.6f}" if "novelty_mean" in info else ""
+                print(f"    [scan] step={step:4d} goal_score_std={std:.6f}{nov}"
                       f"{'  SCANNING' if scanning else ''}")
+            # commit_length>1 (docs/10 sustained-plan experiment): see play_ebwm.py.
+            # commit_length=1 (default) → committed is a 1-element list, and the
+            # loop below is byte-for-byte the original single-action execution.
+            committed = action if isinstance(action, list) else [action]
             if scan_enabled and mode == "chop":
                 flat = std < float(scan_cfg["flat_threshold"])
                 if not scanning:
@@ -219,23 +263,41 @@ def main():
                     if not flat or scan_replans >= int(scan_cfg.get("max_replans", 40)):
                         scanning, flat_count = False, 0
                     else:
-                        action = int(scan_cfg.get("turn_action", 12))
+                        committed = [int(scan_cfg.get("turn_action", 12))] * len(committed)
                         scan_replans += 1
             elif scanning:
                 # left chop mode (got a log) → drop the scan state
                 scanning, flat_count = False, 0
-            for _ in range(repeat):
+            for act in committed:
                 if step >= a_cfg["max_steps"]:
                     break
-                action_counts[action] += 1
-                obs, r, done, _info = apply_action(env, action, action_map)
-                pov, inv = obs["pov"], obs["inventory"]
-                total_r += r
-                max_log = max(max_log, int(inv.get("log", 0)))
-                max_planks = max(max_planks, int(inv.get("planks", 0)))
-                step += 1
-                if record:
-                    gif_frames.append(pov)
+                for _ in range(repeat):
+                    if step >= a_cfg["max_steps"]:
+                        break
+                    action_counts[act] += 1
+                    obs, r, done, _info = apply_action(env, act, action_map)
+                    pov, inv = obs["pov"], obs["inventory"]
+                    total_r += r
+                    max_log = max(max_log, int(inv.get("log", 0)))
+                    max_planks = max(max_planks, int(inv.get("planks", 0)))
+                    step += 1
+                    if record:
+                        gif_frames.append(pov)
+                    if done:
+                        break
+                # RND update — once per REAL action (not per action_repeat substep,
+                # those frames are near-identical), and only in chop mode: RND is
+                # trained on ebwm.pt's latent space, craft_wm_v4's latents during
+                # craft mode live in a different space entirely.
+                if rnd_module is not None and mode == "chop":
+                    with torch.no_grad():
+                        z_t = ebwm.encode(preprocess(pov, device)).squeeze(2).detach()
+                    rnd_buffer.append(z_t.squeeze(0))
+                    rnd_tick += 1
+                    if rnd_tick % rnd_update_every == 0 and len(rnd_buffer) >= rnd_batch_size:
+                        idx = np.random.choice(len(rnd_buffer), size=rnd_batch_size, replace=False)
+                        batch = torch.stack([rnd_buffer[i] for i in idx], dim=0)
+                        rnd_module.update(batch, rnd_opt)
                 if done:
                     break
             if done:

@@ -147,11 +147,12 @@ def main():
         n_candidates=p_cfg["n_candidates"],
         novelty_coeff=novelty_coeff, ensemble=ensemble,
         sticky_prob=float(p_cfg.get("sticky_prob", 0.0)),
+        commit_length=int(p_cfg.get("commit_length", 1)),
         device=device,
     )
     mode_label = f"novelty λ={novelty_coeff}" if novelty_coeff > 0.0 else "goal-centroid only"
     print(f"Planner: horizon={p_cfg['horizon']}, candidates={p_cfg['n_candidates']}, "
-          f"mode={mode_label}, sticky_prob={planner.sticky_prob}")
+          f"mode={mode_label}, sticky_prob={planner.sticky_prob}, commit_length={planner.commit_length}")
 
     scan_cfg = cfg.get("scan", {}) or {}
     scan_enabled = bool(scan_cfg.get("enabled", False))
@@ -203,6 +204,13 @@ def main():
             if scan_cfg.get("log_std", False):
                 print(f"    [scan] step={step:4d} goal_score_std={std:.6f}"
                       f"{'  SCANNING' if scanning else ''}")
+            # commit_length>1 (docs/10 sustained-plan experiment): plan() returns the
+            # first M actions of the winning sequence instead of only the first, so
+            # they execute as a block before the next replan. commit_length=1
+            # (default) makes `action` a single int and `committed` its 1-element
+            # list — the loop below is then identical to the original single-action
+            # execution, bit-for-bit.
+            committed = action if isinstance(action, list) else [action]
             if scan_enabled:
                 flat = std < float(scan_cfg["flat_threshold"])
                 if not scanning:
@@ -214,18 +222,21 @@ def main():
                     if not flat or scan_replans >= int(scan_cfg.get("max_replans", 40)):
                         scanning, flat_count = False, 0
                     else:
-                        action = int(scan_cfg.get("turn_action", 12))
+                        committed = [int(scan_cfg.get("turn_action", 12))] * len(committed)
                         scan_replans += 1
-            for _ in range(repeat):
+            for act in committed:
                 if done or step >= a_cfg["max_steps"]:
                     break
-                action_counts[action] += 1
-                obs, r, done, a = minerl_step(env, action, action_map)
-                total_r += r
-                ach.update(a)
-                step += 1
-                if record:
-                    gif_frames.append(obs)
+                for _ in range(repeat):
+                    if done or step >= a_cfg["max_steps"]:
+                        break
+                    action_counts[act] += 1
+                    obs, r, done, a = minerl_step(env, act, action_map)
+                    total_r += r
+                    ach.update(a)
+                    step += 1
+                    if record:
+                        gif_frames.append(obs)
 
         fps = step / (time.perf_counter() - t0)
         top3 = sorted(range(17), key=lambda i: -action_counts[i])[:3]

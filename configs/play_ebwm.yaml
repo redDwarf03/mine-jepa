@@ -13,6 +13,10 @@ planner:
   sticky_prob: 0.5      # 0.0 = i.i.d. uniform (original). 0.6-0.7 = iCEM-lite sticky
                         # sampling: candidate sequences contain sustained gestures
                         # ("turn 6 steps then walk"), which i.i.d. almost never draws.
+  commit_length: 1      # 1 = original contract (replan every action_repeat steps).
+                        # >1 = execute the first M actions of the winning H-step plan
+                        # before replanning, instead of resampling 512 fresh candidates
+                        # after every single action (docs/10 sustained-plan experiment).
 
 # Scan macro (cold-start, docs/10): when the goal-score std across candidates is
 # ~0, no tree is in view and the planner is picking among lottery tickets → force

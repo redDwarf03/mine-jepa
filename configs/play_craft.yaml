@@ -16,6 +16,10 @@ planner:
   w_log: 1.0               # craft objective: value logs (stepping stone)
   w_planks: 2.0            # craft objective: value planks (the milestone)
   log_threshold: 0.05      # normalised; >= 0.05 (=0.5 raw) means "has a log" → craft mode
+  commit_length: 1         # 1 = original contract. >1 = execute the first M actions of
+                           # the winning plan before replanning (docs/10 sustained-plan
+                           # experiment) — applies to both the chop and craft objectives,
+                           # and to the two-brain chop_model planner below.
 
 # Scan macro (chop mode only, docs/10): flat goal-score std across candidates =
 # no tree in view → force a camera-yaw sweep until the std recovers.

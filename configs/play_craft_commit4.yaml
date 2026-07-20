@@ -1,0 +1,51 @@
+# Cold-start attempt #4 (commit_length experiment, docs/10): same as play_craft.yaml
+# (two-brain, sticky 0.5, scan off) but commit_length=4 — execute 4 actions of the
+# winning plan before replanning. N=5 episodes to match the docs/10 cold-start gate budget.
+
+minerl_env: MineRLObtainIronPickaxeDense-v0
+actions_config: configs/minerl_actions_obtain.yaml
+
+model:
+  checkpoint: checkpoints/craft_wm_v4.pt
+
+planner:
+  n_actions: 22
+  horizon: 12
+  n_candidates: 512
+  sticky_prob: 0.5
+  w_log: 1.0
+  w_planks: 2.0
+  log_threshold: 0.05
+  commit_length: 4
+
+scan:
+  enabled: false
+  flat_threshold: 0.004
+  patience: 3
+  turn_action: 12
+  max_replans: 40
+  log_std: false
+
+chop_model:
+  checkpoint: checkpoints/ebwm.pt
+  n_actions: 17
+  goal:
+    data_path: data/minerl_goal/episodes.npz
+    threshold: 0.5
+    min_frames: 10
+    mode: centroid
+
+goal:
+  data_path: data/minerl_craft/episodes.npz
+  chop_reward_threshold: 0.5
+
+agent:
+  episodes: 5
+  max_steps: 3000
+  action_repeat: 4
+  seed: 0
+
+logging:
+  save_gif: true
+  gif_episodes: 3
+  gif_path: assets/agent_play_craft_commit4.gif
