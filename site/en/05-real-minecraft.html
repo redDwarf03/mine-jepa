@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The big leap to real Minecraft: four failures, then an agent that chops trees — Mine-JEPA</title>
+<meta name="description" content="Chapter 5 of the Mine-JEPA learning path: The big leap to real Minecraft: four failures, then an agent that chops trees.">
+<link rel="stylesheet" href="../style.css">
+<script>document.documentElement.classList.add("js");</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="wrap site-header-inner">
+    <a class="site-brand" href="index.html"><span class="brand-mark" aria-hidden="true">&#9935;</span> Mine-JEPA</a>
+    <div class="header-controls">
+      <nav class="lang-switch" aria-label="Site language">
+        <a href="../fr/05-le-vrai-minecraft.html" lang="fr" hreflang="fr">FR</a>
+        <a href="05-real-minecraft.html" aria-current="true" lang="en" hreflang="en">EN</a>
+      </nav>
+      <div class="track-pref" data-track-pref>
+        <span class="track-pref-label" id="track-pref-label">Show:</span>
+        <button type="button" data-track-pref-value="beginner" aria-pressed="true" aria-describedby="track-pref-label">Beginner</button>
+        <button type="button" data-track-pref-value="expert" aria-pressed="false" aria-describedby="track-pref-label">Expert</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <nav class="breadcrumb" aria-label="Breadcrumbs">
+    <div class="wrap">
+      <a href="index.html">Learning Path</a>
+      <span aria-hidden="true">/</span>
+      <span>Chapter 5</span>
+    </div>
+  </nav>
+
+  <article class="chapter">
+    <div class="wrap">
+
+      <header class="chapter-header">
+        <p class="chapter-kicker">Chapter 5</p>
+        <h1>The big leap to real Minecraft: four failures, then an agent that chops trees</h1>
+        <p class="chapter-prereqs">Prerequisites: Chapters 1 to 4.</p>
+      </header>
+
+
+      <div class="tracks" data-tracks>
+        <div class="track-tabs" role="tablist" aria-label="Reading level">
+          <button class="track-tab" role="tab" id="tab-beginner" aria-controls="panel-beginner" aria-selected="true" data-track-tab="beginner">Beginner</button>
+          <button class="track-tab" role="tab" id="tab-expert" aria-controls="panel-expert" aria-selected="false" tabindex="-1" data-track-tab="expert">Expert</button>
+        </div>
+
+        <div class="track-panel is-active chapter-prose" data-track-panel="beginner" role="tabpanel" id="panel-beginner" aria-labelledby="tab-beginner">
+          <p class="track-kicker">Beginner track</p>
+
+<h2>Crafter was training wheels</h2>
+<p>Up until now, everything built by the project — the encoder (Chapter 1), anti-collapse safeguards (Chapter 2), world model (Chapter 3), and planner (Chapter 4) — was tested on <strong>Crafter</strong>, a lightweight game resembling Minecraft in simplified pixel graphics. It was the right choice for rapid debugging. But the true goal of the project, the one that gives it its name, is <strong>real</strong> Minecraft — the 3D game with actual textures, the one everyone imagines when you say &quot;an AI plays Minecraft&quot;.</p>
+<p>This chapter tells the story of what happened when the project made that leap. And to be completely honest: <strong>it didn&#x27;t work on the first try. Nor the second. Nor the third. Nor the fourth.</strong> The fifth attempt worked — and understanding <em>why</em> the first four failed is at least as educational as the final success.</p>
+<h2>First, the good news: nothing to rebuild</h2>
+<p>The core point of this chapter: <strong>the architecture does not change</strong>. The encoder, world model, planner — in principle, these are the exact same building blocks as on Crafter. Only the game changes. If the JEPA concept (compress first, predict second, in a summary rather than pixels) is solid, it should work on any video game, not just Crafter. This chapter puts that premise to the test.</p>
+<h2>The technical pipe connecting Python to real Minecraft</h2>
+<p>Real Minecraft isn&#x27;t written in Python. The project uses <strong>MineRL</strong>, a library that drives Minecraft via a mod named <strong>Malmo</strong> (originally developed by Microsoft). The technical path looks like this: Python code sends commands to a Java server running a real instance of Minecraft, and receives back a 64×64 pixel image — the exact same size as Crafter images, so nothing else needs to change.</p>
+<p>This Python ↔ Java bridge is fragile. The project ran into a particularly stubborn bug nicknamed <strong>MALMOBUSY</strong>: after a first game episode finished, whenever it tried to launch the next one, everything froze for three minutes before crashing. In short: when an episode ends, Minecraft takes a moment to return to a &quot;ready for next&quot; state, but Python, impatient, sends the next command immediately. Minecraft responds &quot;busy&quot;, closes the connection... and Python keeps waiting for a response on a line that no longer exists.</p>
+<p>The solution retained, not elegant but reliable: <strong>relaunch Minecraft completely for every episode</strong> rather than attempting to reuse the same instance. Each Minecraft game starts in 30 to 60 seconds; collecting 20 episodes takes about half an hour — slow, but robust.</p>
+<h2>First attempt: agent spins in circles, zero reward</h2>
+<p>Once the technical connection was stabilized, the first real test yielded an undeniable result: over 20 game episodes (&quot;chop a tree&quot;), the agent obtained <strong>zero reward, zero achievements</strong>. It doesn&#x27;t crash, it plays — but it never does anything useful.</p>
+<p>Two reasons, both stemming from the same underlying issue:</p>
+<p><strong>1. The goal contained no signal.</strong> The goal (the centroid from Chapter 4) had been built from images of an agent wandering at random — and a random agent never chops trees. Result: the goal pointed to nothing in particular, like asking directions from someone who has never been where you want to go.</p>
+<p><strong>2. The world model was too weak.</strong> On images recorded by an agent wandering aimlessly, Minecraft changes very little from frame to frame — so the world model mainly learned that &quot;nothing ever changes&quot;, leaving the planner blind: imagining 12 steps into the future almost never leads anywhere different.</p>
+<h2>The fix: learning from real human gameplay</h2>
+<p>The project retrieved recordings of real games played by humans — players who actually know how to chop trees. The official servers hosting these recordings were no longer online (404, the site shut down), but the community had created a backup on Zenodo (a public scientific archive): 210 recorded gameplay sessions, complete with video and actions.</p>
+<p>By re-training the encoder and world model on these 453,496 images from real games (including 12,056 frames showing a moment where a player had just chopped wood), the project obtained a goal <em>with actual signal</em> — and yet, that still wasn&#x27;t enough.</p>
+<h2>Four attempts, four failures — and a recurring lesson</h2>
+<p><strong>The crucial detail</strong>: in this game, breaking a tree trunk requires <strong>holding the &quot;strike&quot; button fixed, aimed at the exact same trunk, for about twenty consecutive frames</strong>. Moving at the same time changes the aimed target every instant — the chop never completes. In real human games, 76% of moments where a player just obtained wood show the action &quot;strike, without moving&quot; — not &quot;walk forward while striking&quot;. Any method incapable of <em>holding</em> a precise action over time is doomed from the start.</p>
+<ul>
+<li><strong>Attempts 1 &amp; 2</strong> — the same planner from Chapter 4, reconnected to Minecraft: failure, zero reward. The world model was still not good enough to distinguish different futures on near-static images.</li>
+<li><strong>Attempt 3</strong> — learning directly, frame by frame, which key to press (&quot;imitation&quot; of a human player, with no world model or planning): failure. The agent froze in a loop on a single action. Two reasons: as soon as it deviates once from human behavior, it lands in a situation never seen during training and drifts; and Chapter 1&#x27;s encoder had learned to summarize <em>scenes</em>, not spot &quot;where the tree trunk is to aim at it&quot;.</li>
+<li><strong>Attempt 4</strong> — a pure neural network, pixels to action, bypassing JEPA embeddings entirely: failed as well, for a different but related reason. A policy with zero memory of the recent past cannot express &quot;I am currently breaking this block, I must keep going&quot; — every frame is processed in isolation.</li>
+</ul>
+<h2>What finally worked</h2>
+<p>The fifth attempt adopts Meta&#x27;s action-conditioned architecture (<code>eb_jepa</code>) with five changes at once, none sufficient on its own:</p>
+<ol>
+<li>Keep a <strong>spatial map</strong> of embeddings rather than a simple flat vector — preserving &quot;where in the image the trunk is located&quot;, information flattened out by a simple vector.</li>
+<li>Train encoder and predictor <strong>jointly</strong>, conditioned on action, rather than freezing the encoder first — embeddings structure themselves directly around action <em>consequences</em>.</li>
+<li>Have the predictor predict only the <strong>change</strong> between two images rather than the full next image — &quot;do nothing&quot; then becomes literally &quot;predict zero change&quot;, an automatically sensible fallback.</li>
+<li>Keep Chapter 2&#x27;s anti-collapse safeguards — and they had to be fixed along the way (see below).</li>
+<li><strong>Repeat every decided action for 4 game frames</strong> rather than just 1 — allowing sustained strikes at last.</li>
+</ol>
+<h2>Collapse almost ruined everything here, too</h2>
+<p>On the first trial of this new architecture, the anti-collapse signal (Chapter 2&#x27;s <code>batch<em>var</code>) collapsed to zero by training epoch 3 — a genuine collapse. The cause: the safeguard was checking variance <em>across pixels within a single spatial map</em>, which stays almost always non-zero, instead of checking variance <em>across different images in the batch</em>, which is the only variance that truly matters. The safeguard was monitoring the wrong thing — once fixed, <code>batch</em>var</code> remained stable around 1.2 across 20 full epochs.</p>
+<h2>The result: the agent actually chops trees</h2>
+<p>With these five ingredients, the resulting agent actually chops wood in real Minecraft — not 100% of the time, but a genuine, measured, honest success: over 20 episodes with the published version, 25% of episodes obtain at least one wood log, with an average reward of 0.30 (one episode even chopped two logs). It&#x27;s a modest result in absolute terms, but it&#x27;s the very first time the pipeline works on real Minecraft — after four clean, well-understood failures.</p>
+<h2>The honesty that followed: this number moves, and not for the reasons you think</h2>
+<p>Once this result was achieved, the project tried to understand <em>why</em> — and reproduce it. The first explanation that seemed obvious (&quot;a larger embedding breaks MPC search coverage&quot;) turned out to be <strong>false</strong>: re-running the experiment with a small embedding but the same &quot;more aggressive&quot; training recipe (more epochs, longer sequences), the agent failed as well. Model size is not what mattered.</p>
+<p>What actually matters is <strong>the training recipe</strong> — measured by Chapter 3&#x27;s famous ratio (predictor error / lazy solution error). The original recipe converges to a ratio of about <strong>0.93</strong>, and it is the only one producing a functioning agent. Training <em>longer</em> (more epochs, longer sequences) drops this ratio to about 0.88 — which looks &quot;better&quot; according to Chapter 3&#x27;s metric — but <strong>breaks the agent</strong>, regardless of model size. An overtrained world model learns to copy the <em>static pose</em> that accompanies success (standing still while striking) instead of the <em>gesture</em> leading to success (approaching then striking) — the agent ends up freezing while striking empty air.</p>
+<p>And there is a final layer of even more uncomfortable honesty: <strong>even with the exact same recipe and ratio (0.93), two different training runs yielded 50% success once, and 25% another time</strong>. Training was not seeded with a fixed random seed (a number that fixes all internal randomness so you can replay the exact same sequence of events): each training run draws slightly different randomness, and that difference suffices to alter the &quot;shape&quot; of latent space in a way that doesn&#x27;t show up in the ratio, but drastically alters final game success. The officially published checkpoint gets 25% — honest, not the highest number ever observed, but the one actually available and reproducible as-is.</p>
+        </div>
+
+        <div class="track-panel chapter-prose" data-track-panel="expert" role="tabpanel" id="panel-expert" aria-labelledby="tab-expert">
+          <p class="track-kicker">Expert track</p>
+
+<h2>Phase 4 Objective and Architectural Invariance</h2>
+<p>This chapter port Phase 1-3 pipeline (encoder, action-conditioned world model, random-shooting MPC) from Crafter to <strong>MineRL</strong>, maintaining architectural design — only the input domain changes (real 3D Minecraft rendering 64×64 RGB vs pixel-art Crafter). The explicit objective is testing whether the JEPA hypothesis (predictive low-dimensional features over exhaustive pixel reconstruction) holds on a visually richer, less stylized domain.</p>
+<h2>The MineRL/Malmo Technical Bridge</h2>
+<pre><code>Python ──► Malmo (JVM, Java 8) ──► Minecraft Forge ──► 64×64 rendering</code></pre>
+<p>Notable setup constraints: strict JDK 8 required (incompatible with JVM 11+), <code>gradlew.bat</code> requires <code>shell=True</code> under Python 3.12, JitPack MixinGradle repository unavailable (replaced with <code>org.spongepowered:mixingradle:0.6-SNAPSHOT</code>), Forge compilation ~15-30 min (~500 MB). The MineRL action space is a <strong>dict of continuous actions</strong> (<code>forward</code>, <code>attack</code>, <code>jump</code>, <code>camera: [pitch, yaw]</code>, …), discretized into 17 classes via a fixed table (<code>configs/minerl_actions.yaml</code>) — analogous to the 17-action discrete space used on Crafter, enabling reuse of the action-conditioned predictor without changing interface signatures.</p>
+<h2>The MALMOBUSY Bug</h2>
+<p>Symptom: <code>TimeoutError: Mission didn&#x27;t start after 180 seconds</code> on the second <code>env.reset()</code>. Root cause: MineRL 0.4.4 communicates over TCP socket; at episode end, Python immediately sends the next <code>MissionInit</code>, but the JVM responds <code>MALMOBUSY</code> (not yet returned to DORMANT) and <strong>closes the server-side socket</strong>. Python retries on the orphaned socket and blocks until timeout:</p>
+<pre><code>Python                     Minecraft (JVM)
+  │── &lt;MissionInit&gt; ────────────►│ (RUNNING→DORMANT in progress)
+  │◄─────────────── MALMOBUSY ──│
+  │── &lt;MissionInit&gt; (retry) ───►│  ← socket closed Java-side
+  │  (blocked on recv, 180s)     │
+  TimeoutError ✗</code></pre>
+<p>Failed fix attempts: increasing <code>SOCKTIME</code> (240s→1200s, timeout still hit after ~20 min); patching socket reconnection in <code><em>multiagent.py</code> (Minecraft ignores new connection). <strong>Retained workaround</strong>: fresh Python process per episode (<code>scripts/collect</em>minerl<em>multi.py --shards 15</code>, <code>scripts/play</em>minerl_multi.py --episodes N</code>) — the first episode of a fresh process always succeeds since it involves zero <code>reset()</code> calls. Cost: ~30-60s Minecraft startup overhead per episode.</p>
+<h2>Diagnostic of First Failure (Random Agent → Demos)</h2>
+<pre><code>scripts/play_minerl_multi.py --episodes 20 → 19/20 completed, mean reward 0.000</code></pre>
+<p>Two shared causes: (1) goal embedding, built from frames collected by a random policy that never chops trees, points in no useful direction; (2) world model, evaluated via <code>ratio = val<em>pred/val</em>copy = 0.983</code> on random data — a quasi-static agent produces transitions where &quot;nothing changes&quot; is already near-optimal, so predictor learns zero causal action→consequence dynamics, only identity.</p>
+<h2>Human Demonstrations (Zenodo)</h2>
+<p>Official MineRL S3 servers dead (<code>404</code>); community backup on Zenodo (<code>zenodo.org/records/12659939</code>, <code>MineRLTreechop-v0.zip</code>, 1.5 GB, 210 demonstrations). Per-demo format: <code>recording.mp4</code> (raw video), <code>rendered.npz</code> (rewards + discrete actions, <strong>without frames</strong>), <code>metadata.json</code>. <code>scripts/prepare_demos.py</code> extracts MP4 frames via <code>cv2.VideoCapture</code>, resizes to 64×64, discretizes actions, aligns MP4↔NPZ (1-2 frame shift possible). Output:</p>
+<pre><code>Total frames    : 453,496
+Frames reward&gt;0 : 12,056 (2.7%)
+Demos loaded    : 210</code></pre>
+<p>Re-training (<code>train<em>encoder</em>demos</code>, <code>train<em>wm</em>demos</code>) on this expert corpus.</p>
+<h2>Reward Mechanism — The Constraint Dictating Architecture</h2>
+<p>Chopping a trunk in Treechop requires <strong>holding <code>attack</code> fixed, aimed at the same block, over ~20 consecutive ticks</strong>. Empirical proof from the 12,056 reward&gt;0 frames in human demos:</p>
+<pre><code>a6  (attack only)      : 76.2%
+a0  (noop)              : 8.8%
+a1  (forward)           : 5.1%
+a7  (forward+attack)    : 4.7%</code></pre>
+<p>Any policy incapable of producing <strong>sustained, precise action over time</strong> is structurally doomed — this finding directly motivates the <code>action_repeat=4</code> ingredient in the final architecture.</p>
+<h2>Four Failed Approaches — Causal Analysis</h2>
+<p><strong>Approaches 1-2 — MPC + 1-step World Model (Flat Vector).</strong> Ratio capped at 0.959 on quasi-static data: &quot;change nothing&quot; is already near-optimal, so after 12 rollout steps all 512 candidate latents converge to near-identical vectors → argmax becomes arbitrary. A 1-step Markovian predictor also cannot represent &quot;attack same block 20 times&quot; — temporal dependence exceeds single-step horizon.</p>
+<p><strong>Approach 3 — Behavioral Cloning on Frozen Encoder + Classification Head.</strong> <code>val_acc</code> ≈ 64% offline, but in-game agent freezes on a single action (a0 or a7 at ~100%). Two intertwined causes: <em>covariate shift</em> (first deviation leads agent to states never seen in demos → wild predictions → uncorrected drift); and JEPA encoder, trained frame→frame without action conditioning, encodes <em>scenes</em> rather than actionable cues (&quot;where to aim&quot;). Corrective attempt (reweighting class a6, 58% of data): counter-productive — penalizing the very action producing reward.</p>
+<p><strong>Approach 4 — End-to-End CNN pixels→action.</strong> <code>val_acc</code> ≈ 49%, still frozen. Distinct but related cause: memoryless policy cannot express temporal commitment (&quot;I am breaking this block, keep going&quot;) — every frame processed independently.</p>
+<h2>Breakthrough Architecture: Action-Conditioned eb-JEPA</h2>
+<p>Five simultaneous differences from earlier approaches, each insufficient alone:</p>
+<table>
+<thead><tr><th>#</th><th>Ingredient</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>1</td><td><strong>Spatial</strong> latents <code>[64,8,8]</code> (vs flat vector 128)</td><td>Preserves &quot;where the trunk is in the frame&quot;</td></tr>
+<tr><td>2</td><td>Encoder + predictor trained <strong>jointly</strong>, action-conditioned</td><td>Latent structured around action <em>consequences</em></td></tr>
+<tr><td>3</td><td><strong>Residual</strong> predictor (predicts <code>s<em>{t+1}-s</em>t</code>)</td><td>&quot;Do nothing&quot; = copy → ratio ≤ 1 guaranteed by design</td></tr>
+<tr><td>4</td><td><strong>Fixed</strong> VICReg (<code>spatial<em>as</em>samples=False</code>)</td><td>Measures variance <em>across batch samples</em>, not map pixels</td></tr>
+<tr><td>5</td><td><code>action_repeat=4</code></td><td>Re-plans every 4 ticks, repeats action → produces sustained attack</td></tr>
+</tbody>
+</table>
+<h3>Collapse Trap Revisited</h3>
+<p>First eb<em>jepa run: <code>batch</em>var</code> 0.0018 → 0.0000 by epoch 3 (total collapse). Cause: regularizer configured with <code>spatial<em>as</em>samples=True</code>, measuring variance <em>across pixels of a single spatial map</em> (always non-zero by design), instead of variance <em>across batch entries</em> (which was collapsing) — regularizer was <strong>active yet blind to actual collapse</strong>. Fix: <code>spatial<em>as</em>samples=False</code> + <code>std<em>coeff</code> 1→10, <code>cov</em>coeff</code> 0.04→1. Post-fix: <code>batch_var</code> stable ~1.2 across 20 epochs.</p>
+<pre><code>Pre-fix : batch_var 0.0018 → 0.0000 (epoch 3)   ⚠️ COLLAPSE
+Post-fix: batch_var ~1.2 stable over 20 epochs   ✅</code></pre>
+<h2>Phase 4 Gate Result</h2>
+<pre><code>scripts/train_eb_jepa.py   →  checkpoints/ebwm.pt  (ratio 0.929, batch_var ~1.2)
+scripts/play_minerl_multi.py --script scripts/play_ebwm.py</code></pre>
+<table>
+<thead><tr><th>Approach</th><th>Mean Reward</th><th>Success Rate</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td>1-2. MPC + 1-step WM (ratio ≈0.96)</td><td>0.000</td><td>0%</td><td>✗</td></tr>
+<tr><td>3. Frozen Encoder BC + Head</td><td>0.000</td><td>0%</td><td>✗</td></tr>
+<tr><td>4. End-to-End CNN BC</td><td>0.000</td><td>0%</td><td>✗</td></tr>
+<tr><td>5. Action-Conditioned eb-JEPA MPC</td><td>0.30–0.75</td><td>25–50%</td><td>✅</td></tr>
+</tbody>
+</table>
+<p>Final published result (20/20 episodes, published checkpoint, ratio 0.927): <strong>mean reward 0.30, success rate 25.0% (5/20)</strong>, one episode chopping 2 logs. Executed actions are <strong>varied and shift with scene</strong> (mix of a14/a13/a1/a6), contrasting BC policies frozen on single actions — confirming planner actually leverages world model rather than memorizing a single gesture.</p>
+<div class="callout">
+<p><strong>Honest Caveat on Number</strong>: Success rate varies <strong>25-50% between training runs</strong> with near-identical prediction ratio (~0.93). Best observed run hits 50% (10/20); published checkpoint gets 25% (5/20). Training was <strong>unseeded</strong> — each run yields distinct latent geometry, and downstream planning success is only <strong>weakly coupled</strong> to reproducible prediction metrics (see ablation below). The &quot;random baseline ~0.4&quot; printed by script is a legacy estimate, never re-measured on this harness — treat absolute result (agent chops trees, up to 2 logs/episode) as solid claim, not baseline comparison.</p>
+</div>
+<h2>Ablation: What Actually Drives Performance</h2>
+<p>Four training runs on the same 453K demo frame corpus:</p>
+<table>
+<thead><tr><th>Run</th><th>embed_dim</th><th>Recipe</th><th>Params</th><th>Ratio</th><th>Success Rate</th></tr></thead>
+<tbody>
+<tr><td>Original (lost)</td><td>64</td><td>T=8, 20 ep</td><td>664K</td><td>0.929</td><td><strong>50%</strong></td></tr>
+<tr><td>WM v2</td><td><strong>128</strong></td><td>T=12, 25 ep</td><td>2.47M</td><td>0.890</td><td>5%</td></tr>
+<tr><td>v1-retrain</td><td>64</td><td>T=12, 25 ep</td><td>664K</td><td>0.882</td><td>~0%</td></tr>
+<tr><td>v1-restored</td><td>64</td><td><strong>T=8, 20 ep</strong></td><td>664K</td><td>0.927</td><td><strong>25%</strong></td></tr>
+</tbody>
+</table>
+<p><strong>First Hypothesis (False): &quot;Larger latent breaks MPC search coverage&quot;.</strong> When WM v2 (embed<em>dim=128) regressed to 5%, natural explanation was that doubling latent <code>[128,8,8]</code> made space too large for 512 random-shooting candidates. <strong>v1-retrain disproved this</strong>: reverting architecture alone (embed</em>dim=64) while keeping v2 recipe (T=12, 25 epochs) still failed (~0%). Small latent, still broken — model size was not the cause.</p>
+<p><strong>What Actually Matters: Training Recipe via Prediction Ratio.</strong> The only configuration producing a functional agent is the original recipe (sequences T=8, 20 epochs), converging to ratio <strong>~0.93</strong>. Both overtrained variants (T=12, 25 epochs → ratio ~0.88), at <em>any</em> embed_dim, produce a broken agent. Training world model <em>harder</em> (more epochs, longer sequences → lower ratio) causes planner to learn the <strong>static pose</strong> of success frames (a6 = attack-only, 76% of reward&gt;0 frames) instead of the <strong>gesture</strong> producing reward — agent stands still swinging at empty air. A <strong>sweet spot</strong> exists around ratio 0.93; &quot;lower is better&quot; does not hold.</p>
+<p><strong>And Even at Sweet Spot, Run-to-Run Variance Remains High.</strong> Original run hit 50%; restored run (same recipe, near-identical ratio 0.927) hit 25%. Training was unseeded, so each run produces distinct latent geometry, and downstream planning success is only <strong>weakly coupled</strong> to reproducible prediction metrics. The 50% was a favorable draw, not a recipe guarantee.</p>
+<p><strong>Honest Takeaway</strong>: A world model predicting <em>better</em> offline (lower ratio) can produce a <em>worse</em> agent, and two runs at identical recipe/ratio can differ by 2x in game success. Prediction quality is necessary but far from sufficient — latent <em>geometry</em> governing planning is not captured by prediction loss alone.</p>
+<h2>Phase 4 Lessons</h2>
+<ol>
+<li><strong>Reward dictates architecture.</strong> Treechop = sustained precise attack → required temporal commitment policy (<code>action_repeat</code> + world model).</li>
+<li><strong>World model architecture matters as much as data.</strong> Frozen frame→frame encoder (ratio 0.96) vs joint action-conditioned encoder+predictor (ratio 0.929 with <em>actionable</em> latents): difference between 0% and 50%.</li>
+<li><strong>Collapse is sneaky.</strong> A regularizer can appear active (low <code>reg<em>loss</code>) while blind to actual collapse. Always monitor <code>batch</em>var</code> (inter-sample variance), not just regularizer loss.</li>
+<li><strong>Honest diagnostics beat blind iteration.</strong> Three deeply analyzed failures led to working architecture; blind iteration never would have.</li>
+<li><strong>Better prediction ≠ better agent — and recipe, not size, is the lever.</strong> Overtraining world model (more epochs/data → ratio 0.88) breaks agent at both tested embed_dims; only original recipe (ratio ~0.93) works. Ratio sweet spot exists; &quot;lower is better&quot; is false.</li>
+<li><strong>Planning success is weakly coupled to prediction metric, with high run-to-run variance.</strong> Same recipe, same ratio 0.927 → 50% on one draw, 25% on another. Unseeded training; latent geometry governing planning is unconstrained by prediction loss alone. Report ranges, not single best numbers — and seed training before claiming reproducibility.</li>
+</ol>
+<h2>References (Verified, from docs/references/index.md)</h2>
+<ul>
+<li>Meta FAIR, eb<em>jepa (github.com/facebookresearch/eb</em>jepa) — action-conditioned backbone vendored in <code>mine<em>jepa/eb</em>jepa/</code>, foundation of approach 5.</li>
+<li>Bardes, Ponce, LeCun, VICReg, arXiv:2105.04906 (ICLR 2022) — regularizer misconfiguration (<code>spatial<em>as</em>samples=True</code>) causing collapse in this chapter.</li>
+<li>Maes, Le Lidec, Scieur, LeCun, Balestriero, LeWorldModel, arXiv:2603.19312 (2026) — ratio convention origin used to characterize ~0.93 sweet spot.</li>
+</ul>
+        </div>
+      </div>
+
+
+    </div>
+  </article>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>Mine-JEPA — a JEPA agent learning to play Minecraft from pixels, documented along the way.</p>
+  </div>
+</footer>
+
+<script src="../script.js" defer></script>
+</body>
+</html>

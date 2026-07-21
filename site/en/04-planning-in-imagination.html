@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trying 512 futures in its head before pressing a button — Mine-JEPA</title>
+<meta name="description" content="Chapter 4 of the Mine-JEPA learning path: Trying 512 futures in its head before pressing a button.">
+<link rel="stylesheet" href="../style.css">
+<script>document.documentElement.classList.add("js");</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="wrap site-header-inner">
+    <a class="site-brand" href="index.html"><span class="brand-mark" aria-hidden="true">&#9935;</span> Mine-JEPA</a>
+    <div class="header-controls">
+      <nav class="lang-switch" aria-label="Site language">
+        <a href="../fr/04-planifier-en-imagination.html" lang="fr" hreflang="fr">FR</a>
+        <a href="04-planning-in-imagination.html" aria-current="true" lang="en" hreflang="en">EN</a>
+      </nav>
+      <div class="track-pref" data-track-pref>
+        <span class="track-pref-label" id="track-pref-label">Show:</span>
+        <button type="button" data-track-pref-value="beginner" aria-pressed="true" aria-describedby="track-pref-label">Beginner</button>
+        <button type="button" data-track-pref-value="expert" aria-pressed="false" aria-describedby="track-pref-label">Expert</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <nav class="breadcrumb" aria-label="Breadcrumbs">
+    <div class="wrap">
+      <a href="index.html">Learning Path</a>
+      <span aria-hidden="true">/</span>
+      <span>Chapter 4</span>
+    </div>
+  </nav>
+
+  <article class="chapter">
+    <div class="wrap">
+
+      <header class="chapter-header">
+        <p class="chapter-kicker">Chapter 4</p>
+        <h1>Trying 512 futures in its head before pressing a button</h1>
+        <p class="chapter-prereqs">Prerequisites: Chapters 1 to 3.</p>
+      </header>
+
+
+      <div class="tracks" data-tracks>
+        <div class="track-tabs" role="tablist" aria-label="Reading level">
+          <button class="track-tab" role="tab" id="tab-beginner" aria-controls="panel-beginner" aria-selected="true" data-track-tab="beginner">Beginner</button>
+          <button class="track-tab" role="tab" id="tab-expert" aria-controls="panel-expert" aria-selected="false" tabindex="-1" data-track-tab="expert">Expert</button>
+        </div>
+
+        <div class="track-panel is-active chapter-prose" data-track-panel="beginner" role="tabpanel" id="panel-beginner" aria-labelledby="tab-beginner">
+          <p class="track-kicker">Beginner track</p>
+
+<h2>One last piece is missing</h2>
+<p>Let&#x27;s recap where we are. Chapter 1 gave the model an encoder that knows how to summarize an image into a short list of numbers (an <strong>embedding</strong>) without cheating (Chapter 2). Chapter 3 gave it a <strong>world model</strong>: a function that knows how to imagine &quot;if I take this action, what will the next embedding look like?&quot;, beating the lazy &quot;do nothing&quot; solution by a clear margin.</p>
+<p>However, summarizing images and imagining what comes next still isn&#x27;t <em>playing</em>. One last piece is missing: <strong>how do we choose which key to press, right now, at this exact moment?</strong> That is the subject of this chapter — Phase 3 of the project, tested on Crafter (the lightweight training environment before real Minecraft).</p>
+<h2>First, you need to know where you want to go</h2>
+<p>Before you can pick an action, you must define a <strong>goal</strong> — and that goal, too, is an embedding. The project builds what it calls the <strong>goal embedding</strong> in a very simple way: it takes all images from the game where the character has a good food level (hunger is a strong indicator of survival), passes them through the encoder, and averages all those vectors. That average point — the <strong>centroid</strong> — becomes &quot;what a good state looks like&quot;. The agent was never given an explicit &quot;this is a good state&quot; label during training — this goal is constructed <em>after the fact</em>, from previously collected data.</p>
+<h2>The idea: test lots of imaginary futures, pick the best one</h2>
+<p>Here comes the fun part. Imagine a &quot;choose your own adventure&quot; book, where on every page you can pick between several actions, and each choice leads to a different continuation of the story. Rather than picking an action at random and seeing what happens, imagine if, in a fraction of a second, you could <strong>flip through 512 different imaginary stories</strong> — each a sequence of 12 choices in a row — without ever turning a single physical page. You look at which of those 512 imaginary endings gets closest to what you want (the goal), and <em>only then</em> do you actually make the first choice of the best imagined story. Then you repeat the whole process from your new real-world situation.</p>
+<p>This is exactly the algorithm Mine-JEPA uses, called <strong>random-shooting MPC</strong> (Model Predictive Control):</p>
+<ol>
+<li>Encode the current state into an embedding.</li>
+<li>Randomly sample 512 different sequences of 12 actions each.</li>
+<li>For each sequence, unroll the world model step by step — 12 times — to imagine where it leads.</li>
+<li>Compare each of the 512 imagined destinations to the goal; keep the sequence whose imagined destination gets closest.</li>
+<li>Execute only the <em>first</em> action of that best sequence.</li>
+<li>Repeat the entire process from the new real state.</li>
+</ol>
+<h2>Why restart at every step instead of following the whole plan?</h2>
+<p>Great question, and the honest answer is: the world model gets increasingly inaccurate across imagined steps — small errors compound over time. If the agent blindly followed a 12-action plan imagined once, it would end up drifting far from reality. By re-planning at every single step starting from what <em>actually</em> happened, the agent continuously corrects its course. This is called a <strong>receding horizon</strong>: we only look far ahead to decide what to do <em>right now</em>.</p>
+<h2>Why 512 stories are enough (and not billions)</h2>
+<p>With 17 possible actions and 12 steps, the total number of possible sequences is astronomical — about 600 billion. We only test 512. This works because many actions have very similar short-term effects (moving left vs. moving right doesn&#x27;t lead to wildly different worlds after one step), so 512 random samples cover the important directions well enough. And because all this computation happens in embeddings — small numerical vectors — rather than full images, the computer can imagine 512 × 12 steps in a matter of milliseconds.</p>
+<h2>What actually happened</h2>
+<p>The project evaluated this planner twice, at different points, yielding numbers that closely align without being identical (which happens when re-measuring on a fresh batch of episodes rather than forcing two results to match artificially).</p>
+<p>An evaluation over 50 episodes yielded, for the JEPA-MPC agent vs. a random agent: average reward ~2.1 vs ~1.5, ~3.0 vs ~2.4 achievements per episode, and a success rate (at least 1 achievement) close to 100% vs 98% for random play.</p>
+<p>Phase 3&#x27;s official gate report in the project log shows: <strong>100% success rate</strong>, <strong>2.56 achievements per episode vs 2.38</strong> for random (+7.5%), and <strong>+14% reward</strong>. In the agent&#x27;s very first episode, it achieves 3 distinct achievements: wake up, collect wood, and place a crafting table — requiring it to locate a tree, approach it, strike it, and place an item. None of this was hand-coded.</p>
+<h2>Why it works — and what it doesn&#x27;t solve</h2>
+<p>The intuition: the world model learned that &quot;if I do X, the embedding moves in such-and-such direction&quot;. When the goal is &quot;a state with high food&quot;, the planner naturally strings together actions that move the embedding closer to that goal — finding a plant, approaching it, eating it — without ever being told step-by-step how to do so.</p>
+<p>It isn&#x27;t perfect, however. The world model drifts over long horizons, and the goal is just an average point (a centroid): it describes <em>what a good state looks like</em>, not <em>how to get there</em>. Two visually distinct states can sometimes lie close together in embedding space without being functionally equivalent — an ambiguity that will resurface later in the project&#x27;s story.</p>
+<p>Even imperfect, this world model guides action far better than random button mashing. And the next logical step — the subject of the next chapter — is to plug this exact same pipeline (encoder, world model, planner) into real Minecraft.</p>
+        </div>
+
+        <div class="track-panel chapter-prose" data-track-panel="expert" role="tabpanel" id="panel-expert" aria-labelledby="tab-expert">
+          <p class="track-kicker">Expert track</p>
+
+<h2>Problem Formulation</h2>
+<p>At the conclusion of Chapters 1-3, we possess <code>f<em>θ : x → s ∈ R^D</code> (encoder, frozen post-Phase 1) and <code>g : (s</em>t, a<em>t) → ŝ</em>{t+1}</code> (world model, Phase 2). A policy is missing. Mine-JEPA chooses <strong>not to learn a parametric policy</strong> (no policy gradient, no value function) — planning is executed via latent space search at every timestep, reusing trained modules with zero additional gradients.</p>
+<h2>Goal Embedding Construction</h2>
+<pre><code>good_frames = frames[food &gt;= 7]          # ~16,000 frames out of 32,000
+goal = encoder(good_frames).mean(dim=0)  # [D] — centroid</code></pre>
+<p>The goal is a post-hoc centroid in latent space, constructed from a subset of the offline collection dataset filtered on a survival proxy (food ≥ 7), with zero task labels provided during encoder or world model training.</p>
+<h2>Random-Shooting MPC</h2>
+<pre><code>For each timestep:
+  1. Encode current state → s_t
+  2. Sample N=512 random action sequences of horizon length H=12
+  3. For each sequence: unroll world model for H steps → ŝ_{t+H}
+  4. Score: score_i = -MSE(ŝ_{t+H,i}, s_goal)
+  5. Execute the first action of the highest-scoring sequence
+  6. Repeat (receding horizon)</code></pre>
+<pre><code>class LatentMPCPlanner:
+    @torch.no_grad()
+    def plan(self, s_current, s_goal):
+        s = s_current.expand(self.n_candidates, -1).clone()          # [N, D]
+        actions = torch.randint(0, self.n_actions,
+                                 (self.n_candidates, self.horizon))    # [N, H]
+        for h in range(self.horizon):
+            s = self.predictor(s, actions[:, h])                      # [N, D]
+        scores = -(s - s_goal).pow(2).mean(dim=1)                     # [N]
+        return actions[scores.argmax(), 0].item()</code></pre>
+<p>The entire planner fits in ~10 lines of code — a direct consequence of pushing scene understanding and dynamics into the encoder and predictor during earlier phases; the planner itself is purely a search mechanism.</p>
+<h2>Computation Budget Rationale</h2>
+<p>Sequence space size: <code>17^12 ≈ 6×10^11</code>. The candidate budget (N=512) covers a tiny fraction, yet suffices because many actions produce similar short-term effects (directional redundancy in Crafter&#x27;s action space) — i.i.d. sampling covers major useful directions without requiring exhaustive search. Batched rollout of 512×12 steps runs in &lt;5ms on GPU because each step is a single forward pass of the predictor (~140K parameters) over a batch of 512 — operating entirely in latent space without environment/render calls.</p>
+<h2>Receding Horizon</h2>
+<p>Re-planning at every step from the <em>actually</em> observed state, rather than blindly executing the 12-step plan, corrects compounding error accumulated by the world model over long rollouts (cf. Chapter 03 multi-step rollout discussion). This is a structural design choice: robustness stems from high re-planning frequency rather than world model accuracy alone.</p>
+<h2>Measured Results — Two Distinct Evaluations</h2>
+<p><code>docs/05_planning.md</code> reports an evaluation over 50 Crafter episodes:</p>
+<table>
+<thead><tr><th>Metric</th><th>JEPA-MPC Agent</th><th>Random Baseline</th></tr></thead>
+<tbody>
+<tr><td>Mean Reward</td><td>~2.1</td><td>~1.5</td></tr>
+<tr><td>Achievements/episode</td><td>~3.0</td><td>~2.4</td></tr>
+<tr><td>Success Rate (≥1 achievement)</td><td>~100%</td><td>~98%</td></tr>
+<tr><td>FPS</td><td>~150</td><td>—</td></tr>
+</tbody>
+</table>
+<p><code>CLAUDE.md</code> (official Phase 3 gate) reports distinct numbers over what appears to be a different episode set: <strong>100% success rate</strong>, <strong>2.56 achievements/episode vs 2.38</strong> for random baseline (+7.5%), and <strong>+14% reward</strong>. Both measurements originate from Phase 3 and point in the same direction (clear improvement across all 3 metrics, near-total success), but do not match digit-for-digit — consistent with two separate evaluation runs. Both are reported as recorded. The agent&#x27;s first episode strings together 3 achievements (<code>wake<em>up</code>, <code>collect</em>wood</code>, <code>place_table</code>) — a sequence requiring locating a tree, approaching, striking, and placing an item, with zero hand-coded task logic.</p>
+<h2>Why It Works</h2>
+<p>The action-conditioned predictor learned the transition function <code>ŝ<em>{t+1} = g(s</em>t, a<em>t)</code>. When the goal is a centroid of &quot;good&quot; states, the <code>-MSE(ŝ</em>{t+H}, s_goal)</code> score naturally favors action sequences that pull the latent trajectory toward that region — without any explicit task reward ever injected into encoder or predictor training. Goal-directed behavior emerges entirely from the combination of (world model + search), not reinforcement learning.</p>
+<h2>Identified Limitations &amp; Future Directions</h2>
+<p><strong>Primary Limitation</strong>: The goal embedding is a centroid — it encodes <em>what the goal looks like</em>, not <em>how to reach it</em>. Visually distinct states can be near each other in latent space without being functionally equivalent (geometric ambiguity of latent space); this prefigures a broader issue — latent geometry underlying planning is not guaranteed solely by prediction quality — which will resurface in a later project phase on a different dataset.</p>
+<p><strong>Future Extension Noted in Phase 3 Plan</strong>: Cross-Entropy Method (CEM) — iteratively refining the action sampling distribution over multiple iterations, rather than a single i.i.d. shot of 512 sequences — was implemented for continuous actions in <code>mine<em>jepa/eb</em>jepa/planning.py</code> at Phase 3 time, but not yet wired to Crafter&#x27;s discrete planner. A discrete version of this idea will return in a later project phase.</p>
+<h2>Full Pipeline at This Stage</h2>
+<pre><code>64×64 Frames  →  [Phase 1 Encoder]  →  s_t  [D=128]
+                                          │
+                                    s_t + a_t
+                                          │
+                                [Phase 2 World Model]  →  ŝ_{t+1}
+                                          │
+                            512 imagined sequences
+                                          │
+                              [Score vs s_goal]
+                                          │
+                                     best_action
+                                          │
+                              Crafter.step(action)
+                                          │
+                                obs_{t+1}  ←─ (loop)</code></pre>
+<p>Everything takes place in latent space, except at the two endpoints: raw pixel input and final action output.</p>
+<h2>References (Verified, from docs/references/index.md)</h2>
+<ul>
+<li>Maes, Le Lidec, Scieur, LeCun, Balestriero, LeWorldModel, arXiv:2603.19312 (2026) — ratio convention from Chapter 03 underlying latent rollout reliability.</li>
+<li>Meta FAIR, eb<em>jepa (github.com/facebookresearch/eb</em>jepa) — planning logic (<code>mine<em>jepa/eb</em>jepa/planning.py</code>) reused for CEM extension.</li>
+</ul>
+        </div>
+      </div>
+
+
+    </div>
+  </article>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>Mine-JEPA — a JEPA agent learning to play Minecraft from pixels, documented along the way.</p>
+  </div>
+</footer>
+
+<script src="../script.js" defer></script>
+</body>
+</html>

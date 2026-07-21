@@ -135,6 +135,20 @@
     }
   }
 
+  function initLangSwitch() {
+    var langLinks = document.querySelectorAll(".lang-switch a");
+    for (var i = 0; i < langLinks.length; i++) {
+      langLinks[i].addEventListener("click", function (event) {
+        var lang = event.currentTarget.getAttribute("lang");
+        if (lang) {
+          try {
+            localStorage.setItem("mine-jepa-lang", lang);
+          } catch (err) {}
+        }
+      });
+    }
+  }
+
   function init() {
     var preferred = getPreferredTrack();
     var groups = document.querySelectorAll("[data-tracks]");
@@ -142,6 +156,7 @@
       initTrackGroup(groups[i], preferred);
     }
     initPrefControl();
+    initLangSwitch();
   }
 
   if (document.readyState === "loading") {

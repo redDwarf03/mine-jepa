@@ -1,22 +1,113 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mine-JEPA</title>
-<meta http-equiv="refresh" content="0; url=fr/index.html">
-<link rel="canonical" href="fr/index.html">
+<meta http-equiv="refresh" content="0; url=en/index.html">
+<link rel="canonical" href="en/index.html">
+<script>
+(function() {
+  try {
+    var stored = localStorage.getItem("mine-jepa-lang");
+    if (stored === "fr") {
+      window.location.replace("fr/index.html");
+      return;
+    } else {
+      window.location.replace("en/index.html");
+      return;
+    }
+  } catch(e) {}
+  window.location.replace("en/index.html");
+})();
+</script>
 <style>
-  body { font-family: system-ui, sans-serif; background: #15140f; color: #ece7d4; display: flex;
-    min-height: 100vh; align-items: center; justify-content: center; margin: 0; text-align: center; }
-  a { color: #62e0ea; }
+  body {
+    background: #15140f;
+    color: #ece7d4;
+    font-family: system-ui, -apple-system, sans-serif;
+    display: flex;
+    min-height: 100vh;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 1.5rem;
+    box-sizing: border-box;
+  }
+  .lang-picker-card {
+    background: #201e18;
+    border: 2px solid #3d392e;
+    box-shadow: 4px 4px 0 #0c0b08;
+    padding: 2.5rem 2rem;
+    max-width: 480px;
+    width: 100%;
+    text-align: center;
+  }
+  .brand-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+    color: #62e0ea;
+  }
+  .brand-subtitle {
+    font-size: 0.95rem;
+    color: #a8a08a;
+    margin: 0 0 2rem 0;
+    line-height: 1.4;
+  }
+  .lang-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .lang-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    background: #2b2820;
+    border: 2px solid #524d3e;
+    color: #ece7d4;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1.1rem;
+    box-shadow: 2px 2px 0 #0c0b08;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  .lang-btn:hover, .lang-btn:focus {
+    background: #38342a;
+    border-color: #62e0ea;
+    color: #62e0ea;
+  }
+  .lang-tag {
+    font-size: 0.85rem;
+    background: #15140f;
+    padding: 0.25rem 0.6rem;
+    border: 1px solid #524d3e;
+    color: #a8a08a;
+  }
 </style>
 </head>
 <body>
-  <!-- This file is intentionally tiny: it is not where content lives. It exists so that
-       http(s)://<host>/site/ (repo-root-of-the-site level) always resolves to something,
-       and forwards to the current default language. Add more <link> entries here (not more
-       markup) the day a second default-eligible language exists. -->
-  <p>Redirection vers <a href="fr/index.html">Mine-JEPA en français</a>&hellip;</p>
+
+  <div class="lang-picker-card">
+    <h1 class="brand-title"><span aria-hidden="true">&#9935;</span> Mine-JEPA</h1>
+    <p class="brand-subtitle">
+      Learn JEPA through a real Minecraft agent<br>
+      Apprendre JEPA à travers un agent Minecraft
+    </p>
+
+    <div class="lang-buttons">
+      <a href="en/index.html" class="lang-btn" onclick="try{localStorage.setItem('mine-jepa-lang','en');}catch(e){}">
+        <span>English (Default)</span>
+        <span class="lang-tag">EN</span>
+      </a>
+      <a href="fr/index.html" class="lang-btn" onclick="try{localStorage.setItem('mine-jepa-lang','fr');}catch(e){}">
+        <span>Français</span>
+        <span class="lang-tag">FR</span>
+      </a>
+    </div>
+  </div>
+
 </body>
 </html>

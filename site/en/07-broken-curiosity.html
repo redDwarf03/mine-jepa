@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Broken curiosity, then two patches that half-work — Mine-JEPA</title>
+<meta name="description" content="Chapter 7 of the Mine-JEPA learning path: Broken curiosity, then two patches that half-work.">
+<link rel="stylesheet" href="../style.css">
+<script>document.documentElement.classList.add("js");</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="wrap site-header-inner">
+    <a class="site-brand" href="index.html"><span class="brand-mark" aria-hidden="true">&#9935;</span> Mine-JEPA</a>
+    <div class="header-controls">
+      <nav class="lang-switch" aria-label="Site language">
+        <a href="../fr/07-la-curiosite-en-panne.html" lang="fr" hreflang="fr">FR</a>
+        <a href="07-broken-curiosity.html" aria-current="true" lang="en" hreflang="en">EN</a>
+      </nav>
+      <div class="track-pref" data-track-pref>
+        <span class="track-pref-label" id="track-pref-label">Show:</span>
+        <button type="button" data-track-pref-value="beginner" aria-pressed="true" aria-describedby="track-pref-label">Beginner</button>
+        <button type="button" data-track-pref-value="expert" aria-pressed="false" aria-describedby="track-pref-label">Expert</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <nav class="breadcrumb" aria-label="Breadcrumbs">
+    <div class="wrap">
+      <a href="index.html">Learning Path</a>
+      <span aria-hidden="true">/</span>
+      <span>Chapter 7</span>
+    </div>
+  </nav>
+
+  <article class="chapter">
+    <div class="wrap">
+
+      <header class="chapter-header">
+        <p class="chapter-kicker">Chapter 7</p>
+        <h1>Broken curiosity, then two patches that half-work</h1>
+        <p class="chapter-prereqs">Prerequisites: Chapters 1 to 6 — up to the wall of finding the first tree solo, which this chapter attacks for the first time.</p>
+      </header>
+
+
+      <div class="tracks" data-tracks>
+        <div class="track-tabs" role="tablist" aria-label="Reading level">
+          <button class="track-tab" role="tab" id="tab-beginner" aria-controls="panel-beginner" aria-selected="true" data-track-tab="beginner">Beginner</button>
+          <button class="track-tab" role="tab" id="tab-expert" aria-controls="panel-expert" aria-selected="false" tabindex="-1" data-track-tab="expert">Expert</button>
+        </div>
+
+        <div class="track-panel is-active chapter-prose" data-track-panel="beginner" role="tabpanel" id="panel-beginner" aria-labelledby="tab-beginner">
+          <p class="track-kicker">Beginner track</p>
+
+<h2>The problem being tackled: finding the first tree, alone</h2>
+<p>Chapter 6 ended on a well-defined wall: the agent crafts planks perfectly once it holds wood, but in a real randomly generated survival world, it <strong>never</strong> finds its first tree — 0 logs chopped over 5 tested episodes. This chapter tells the story of the first major campaign to attack that wall. An honest spoiler, as always in this project: the first idea fails cleanly, and subsequent patches provide only partial progress — but every failure reveals something precise about the true nature of the problem.</p>
+<h2>Idea #1: curiosity — rewarding the agent for surprises</h2>
+<p>The concept is called <strong>artificial curiosity</strong>. The principle: instead of rewarding the agent strictly for reaching an explicit goal, we also give it a small reward whenever it moves toward something <strong>surprising</strong> — a location its world model understands poorly, where its predictions make large errors. The intuition: if the agent never finds a tree because it doesn&#x27;t know which direction to search in, pushing it toward surprising experiences should naturally drive exploration over standing idle.</p>
+<p>Concretely, the project built a small ensemble of 5 &quot;predictors&quot; that each try to predict what happens next in embedding space (the numerical summary of the frame, Chapter 1). When all 5 predictors agree, it&#x27;s a familiar location — nothing surprising. When they disagree, it&#x27;s a poorly understood location — potentially interesting to explore. This idea is called Plan2Explore and comes from a real published research paper.</p>
+<p>Before launching this experiment (and all subsequent ones in this chapter and the next), the project built a small team of three specialized software sub-agents — one proposing experiments grounded in verified scientific literature, one implementing them without breaking existing working checkpoints, and one testing them honestly and reporting true numbers. This discipline prevents self-delusion about results.</p>
+<h2>The result: zero difference, and much slower</h2>
+<p>Comparison across 20 Treechop episodes (the &quot;just chop a tree&quot; mode from Chapter 5), with and without curiosity enabled: <strong>without curiosity, 30% success rate; with curiosity, 25%</strong> — a difference far too small to be statistically meaningful over 20 episodes per arm, and critically, curiosity made the game run <strong>2.5 times slower</strong> (the 5-predictor ensemble has to evaluate all 512 imagined futures at every single timestep, Chapter 4). Honest verdict: <strong>curiosity added zero performance benefit, and cost heavily in runtime speed.</strong></p>
+<h2>Why it failed: the ensemble agreed too quickly</h2>
+<p>Examining the training logs of the predictor ensemble, the explanation became obvious: by training epoch 3, all 5 predictors <strong>had converged to exact agreement</strong>, and remained in lockstep agreement for the rest of training. An ensemble that always agrees can never flag &quot;this is surprising&quot; anywhere — the curiosity signal flatlined to zero everywhere, explaining precisely why enabling curiosity changed nothing (other than slowing down execution).</p>
+<p>The true underlying cause, more interesting than the symptom: the true Plan2Explore method trains its predictor ensemble <strong>online, on data collected as the agent explores on its own</strong> — a stream of data that stays diverse because the agent continuously visits new places. This project trained the ensemble <strong>once and for all, offline, on fixed recordings of expert human games that always chop the same tree in the same way</strong>. On such repetitive data, all 5 predictors quickly find the exact same low-loss solution, and lose any reason to disagree. <strong>The project reproduced the form of the method without reproducing the condition that makes it work.</strong></p>
+<h2>Idea #2: looking past curiosity</h2>
+<p>Following this failure, the project took a step back and reframed the question: what is the planner (Chapter 4) <em>actually</em> doing, mechanically, when no tree is in view? Two very concrete flaws emerged — neither requiring machine learning to fix.</p>
+<p><strong>Flaw 1: the planner cannot even imagine the right gesture.</strong> To search for an unseen tree, the correct gesture is &quot;rotate the camera in one direction for several consecutive frames&quot;. But the planner samples its 512 imagined futures by picking an action independently at <em>every single imagined step</em> — like rolling a 17-sided die 12 times in a row with zero memory. The probability of such sampling generating 6 consecutive &quot;turn&quot; actions is practically zero. <strong>The problem isn&#x27;t that the planner chooses poorly — it&#x27;s that the correct gesture doesn&#x27;t even exist in the set of candidate futures it considers.</strong></p>
+<p>The fix is called <strong>sticky sampling</strong>: at each imagined step, instead of sampling a fresh random action, repeat the previous action with a chosen probability. This single rule increases consecutive action repetition from 7% (independent sampling) to 72% (70% sticky probability) — the 512 candidate futures now contain sustained gestures (turn-and-look, walk-forward, sustained striking).</p>
+<p><strong>Flaw 2: the agent doesn&#x27;t even know it&#x27;s lost.</strong> When a tree is in view, the 512 candidate futures yield wildly different goal scores (some get close to the tree, others move away). When nothing is in view, all 512 scores are nearly identical — the final choice becomes random button-mashing in disguise. This spread across scores (their standard deviation) is a free signal, already computed, never used before: high spread means &quot;I see something useful&quot;; near-zero spread means &quot;I am lost&quot;. A simple rule was added: after several consecutive timesteps with near-zero score spread, the agent temporarily steps away from the planner and <strong>turns the camera methodically</strong> until score spread recovers (a tree enters view) or a budget expires.</p>
+<p>To be clear: this is <strong>not machine learning</strong>. It is a hand-written reflex — the kind of behavior heavier methods (out of reach of a single consumer GPU) learn on their own. But it makes little sense to try to learn exploration when an agent cannot even turn its head properly.</p>
+<h2>Results: real progress on Treechop, zero on cold-start</h2>
+<p>On Treechop (where the agent always spawns in a forest), combining sticky sampling + camera scan yields a nuanced result: at a moderate setting (50% sticky), success rate stays in the normal range observed in Chapter 5, but every successful episode yields roughly double the reward — sticky sampling helps <em>dig deeper</em> (continue chopping an already found tree) more than it helps <em>search</em> (find more trees). At a higher setting (70% sticky), the agent gets stuck on single actions too aggressively and performance degrades slightly.</p>
+<p>On true cold-start (random spawn, no starting wood): <strong>zero logs chopped across all tested configurations.</strong> Worse, at certain threshold settings, the &quot;turn head&quot; reflex becomes pathological: the agent turns its camera 82% to 92% of the time, literally spinning in circles endlessly. The most revealing observation: in some episodes, the agent spawns <strong>surrounded by trees and still does not chop them</strong>. The core issue is not (just) a search problem — it is an <em>approach-and-chop</em> execution problem once a target is found.</p>
+<p>A diagnostic variant tested to understand this: give the agent two separate &quot;brains&quot; — the proven Treechop model handles searching for the tree, and the new crafting model takes over once the first log is acquired. Result: still zero logs, but behavior shifts noticeably (recognizable lumberjack actions instead of confused wandering). One episode showed the agent spawning in a rocky ravine with zero trees, striking stone instead — a reminder that a spawn point with zero wood in range cannot be solved by any search reflex.</p>
+<h2>One final attempt before concluding: fine-tuning on diverse data</h2>
+<p>The final avenue tested in this campaign: if the &quot;am I lost?&quot; signal is blurry on the crafting model (unlike the Treechop model where it is sharp), perhaps it&#x27;s because expert human demos rarely show moments where the expert is &quot;lost&quot; — experts find wood instantly, never wandering in empty space. By adding ~20 short random gameplay recordings (statistically rich in &quot;lost&quot; states) to the training corpus and lightly fine-tuning the model on this blend, the &quot;lost vs found&quot; signal did indeed become much sharper than before.</p>
+<p>Yet the final result didn&#x27;t change one bit: still zero logs chopped, with or without this refinement. <strong>Making the signal sharper did not make the behavior better.</strong> This discovery reinforced what the two-brain experiment had suggested: the wall is not in <em>perception</em> (knowing you are lost), it is in <em>behavior</em> (knowing what to do once something is found, or how to cover ground when nothing is found). The next chapter continues this investigation with even more direct diagnostic tools.</p>
+        </div>
+
+        <div class="track-panel chapter-prose" data-track-panel="expert" role="tabpanel" id="panel-expert" aria-labelledby="tab-expert">
+          <p class="track-kicker">Expert track</p>
+
+<h2>Framing: From Exploration Hypothesis to Mechanical Diagnostics</h2>
+<p>The initial symptom (0 logs on <code>ObtainIronPickaxeDense</code>, 5 episodes, <code>docs/08_crafting.md</code>) was initially treated as an intrinsic reward/exploration issue, then re-diagnosed as an implementation flaw in MPC itself — two interpretations of the same symptom, tested sequentially.</p>
+<h2>Harness: 3-Agent Development Loop</h2>
+<p>Before any experiment: <code>jepa-explorer</code> (read-only, proposes experiment grounded in <code>docs/references/index.md</code> §3), <code>jepa-developer</code> (implements, config-gated, never touches working checkpoints, seeded), <code>jepa-tester</code> (runs gates + play, reports PASS/FAIL with true numbers, honest on variance), orchestrated by <code>/jepa-loop</code>.</p>
+<h2>Proposal #1 — Plan2Explore, Offline Novelty</h2>
+<p><strong>Idea</strong> (Sekar et al., <a href="https://arxiv.org/abs/2005.05960">arXiv:2005.05960</a>, ICML 2020): Add intrinsic bonus <code>score = goal<em>score + λ · novelty</em>score</code>, where <code>novelty_score</code> = disagreement of an ensemble of k=5 1-step action-conditioned prediction heads on spatial latent <code>[D,8,8]</code>.</p>
+<p><strong>Implementation</strong>: <code>mine<em>jepa/ebwm/curiosity.py::DisagreementEnsemble</code>; <code>scripts/train</em>curiosity.py</code> trains on <strong>frozen</strong> eb-JEPA latents, separate optimizer, seeded, saves to <code>checkpoints/curiosity<em>ensemble.pt</code>, never touches <code>ebwm.pt</code>; <code>DiscreteLatentPlanner</code> blends z-scored novelty when <code>novelty</em>coeff &gt; 0</code> (<code>0.0</code> default = bit-for-bit original behavior).</p>
+<p><strong>Result, A/B on <code>MineRLTreechop-v0</code>, N=20, same <code>ebwm.pt</code> (ratio 0.927):</strong></p>
+<table>
+<thead><tr><th>Condition</th><th>Success Rate</th><th>Mean Reward</th><th>Logs</th><th>fps</th></tr></thead>
+<tbody>
+<tr><td>OFF (goal-centroid only)</td><td>6/20 = 30%</td><td>0.40</td><td>8</td><td>63</td></tr>
+<tr><td>ON (novelty λ=1.0)</td><td>5/20 = 25%</td><td>0.25</td><td>5</td><td><strong>25</strong></td></tr>
+</tbody>
+</table>
+<p>Non-significant difference at N=20 (documented 25-50% Treechop variance); 2.5x fps penalty (ensemble evaluates all 512 candidates at every step). Verdict: <strong>FAIL</strong>.</p>
+<h2>Root Cause: Ensemble Collapse During Training</h2>
+<pre><code>epoch 1: val_disagree = 0.0613   (healthy diversity)
+epoch 2: val_disagree = 0.0122
+epoch 3: val_disagree = 0.0017   (collapsed)
+epoch 4-15: val_disagree ≈ 0.0005 (dead, never recovers)</code></pre>
+<p>By epoch 3, all 5 heads converge to identical functions → disagreement ≈ 0 everywhere → novelty bonus uniformly zero → planner behaves identically to goal-centroid alone, just slower.</p>
+<div class="callout">
+<p><strong>Form of Plan2Explore without its condition.</strong> Plan2Explore trains its ensemble <strong>online, on a data stream diversified by the exploring agent itself</strong>. Training offline on a static set of Treechop demos (same chopping gesture, same tree type, same camera perspective) — highly homogeneous — drives every head to the same low-loss trivial solution. The quality of an ensemble novelty signal is bounded by training data diversity; offline training on frozen expert demo latents destroys that exact diversity.</p>
+</div>
+<p>Retained candidates for future work: explicit disagreement regularization; RND (<a href="https://arxiv.org/abs/1810.12894">arXiv:1810.12894</a>, structurally immune to collapse as target never moves); online self-play (true Plan2Explore recipe, higher compute cost).</p>
+<h2>Re-analysis Without Curiosity Lens: Two Mechanical Flaws</h2>
+<p><strong>Flaw 1 — i.i.d. sampling cannot <em>propose</em> correct behavior.</strong> The corrective gesture for &quot;nothing in view&quot; is sustained action (turning camera over multiple steps). The probability of an i.i.d. sequence over 17 actions producing 6 consecutive turns is (1/17)⁶ — negligible. Fix: <strong>sticky sampling</strong> (<code><em>sample</em>actions()</code>, <code>mine<em>jepa/ebwm/planner.py</code>, used by <code>DiscreteLatentPlanner</code> and <code>SwitchingCraftPlanner</code>): repeat previous action with probability <code>sticky</em>prob</code>, else sample fresh. Measured over 4,096 sequences: consecutive action repetition rate 7% (i.i.d.) → 72% (<code>sticky<em>prob=0.7</code>). <code>sticky</em>prob=0.0</code> (default) reproduces legacy behavior bit-for-bit. Inspiration: iCEM (<a href="https://arxiv.org/abs/2008.06389">arXiv:2008.06389</a>), temporally correlated noise for continuous actions, adapted to discrete actions.</p>
+<p><strong>Flaw 2 — agent is blind to its own blindness.</strong> <code>goal<em>score</em>std</code> (std of scores across 512 candidates, already computed, never used): high when goal is in view (ranking carries signal), ≈0 when nothing is in view (argmax is noise). <strong>Macro scan</strong> (<code>plan(..., return<em>info=True)</code> exposing <code>goal</em>score<em>std</code>; <code>scripts/play</em>ebwm.py</code> and <code>scripts/play<em>craft.py</code> in chop mode) triggers a fixed camera-yaw action (<code>a12</code>, +10°/replan) after <code>patience</code> consecutive flat replans, until signal recovery or <code>max</em>replans</code> exhaustion. <code>scan.enabled: false</code> by default. Explicit honesty: hand-written reflex, not machine learning.</p>
+<h3>Calibration (PC, 3 Treechop episodes, 750 replans/ep, seed 0)</h3>
+<table>
+<thead><tr><th>Situation</th><th><code>goal<em>score</em>std</code> Range</th></tr></thead>
+<tbody>
+<tr><td>Lost (wall, sky, open grass)</td><td>0.0002 – 0.002</td></tr>
+<tr><td>Wandering, distant trees</td><td>0.003 – 0.01</td></tr>
+<tr><td>Tree/canopy full field</td><td>0.02 – 0.056</td></tr>
+</tbody>
+</table>
+<p><code>flat_threshold: 0.003</code> selected (just above &quot;lost&quot; band), <code>patience: 3</code>.</p>
+<h2>Gate (PC, 2026-07-08) — Treechop: Partial Progress</h2>
+<table>
+<thead><tr><th>Condition</th><th>N</th><th>Success Rate</th><th>Mean Reward</th><th>fps</th></tr></thead>
+<tbody>
+<tr><td>OFF (fresh baseline)</td><td>20</td><td>45% (9/20)</td><td>0.50</td><td>65.9</td></tr>
+<tr><td>sticky 0.7 + scan@0.003</td><td>20</td><td>25% (5/20)</td><td>0.45</td><td>65.0</td></tr>
+<tr><td>sticky 0.5 + scan@0.003</td><td>10</td><td>40% (4/10)</td><td><strong>0.90</strong></td><td>64.6</td></tr>
+</tbody>
+</table>
+<p>No statistically significant difference (Fisher p=0.32 / p=1.0) but consistent direction: 0.7 over-engages (a14 at 71-97%, walking indefinitely on single action); 0.5 maintains success within variance band and <strong>doubles reward per success</strong> — sticky sampling buys <em>depth</em> (chopping further into reached tree), not <em>breadth</em> (finding more trees). fps unchanged.</p>
+<h2>Gate — Cold-Start: FAIL Across All Configurations</h2>
+<table>
+<thead><tr><th>Config</th><th>N</th><th>Logs</th><th>Note</th></tr></thead>
+<tbody>
+<tr><td>sticky 0.5 + scan@0.003</td><td>1 (interrupted)</td><td>0</td><td>Agent often <em>in</em> forest, doesn&#x27;t chop</td></tr>
+<tr><td>sticky 0.5 + scan@0.004</td><td>5</td><td>0</td><td>Pathological: a12 82-92%, 15-34 scans/ep — agent spins in circles</td></tr>
+<tr><td>sticky 0.5, scan off</td><td>5</td><td>0</td><td>Varied actions, still zero first log</td></tr>
+</tbody>
+</table>
+<p>Cause: on <code>craft<em>wm</em>v4.pt</code>, <code>goal<em>score</em>std</code> bands are <strong>compressed</strong> (lost ~0.002, tree-visible ~0.010, median 0.0047 — 5x gap) versus Treechop&#x27;s clean 10x gap. Any absolute threshold triggers too rarely or constantly. Clear observation: with scan@0.003, agent is sometimes <strong>surrounded by trees and still does not chop</strong> — wall is not (only) search, but approach-and-chop execution itself.</p>
+<p><strong>Micro-experiment — Swapping Chop Compass</strong>: Use Treechop centroid (12,056 frames reward≥0.5) encoded by <code>craft<em>wm</em>v4</code> encoder instead of Obtain-demo centroid as chop goal. Result: still 0/5. Compass alone doesn&#x27;t save cold-start.</p>
+<p><strong>Two-Brain Agent</strong> (<code>chop<em>model:</code>, config-gated): <code>ebwm.pt</code> drives chop (17 shared movement actions), <code>craft</em>wm_v4</code> takes over upon first log acquisition. Result: still 0/5, but behavior transformed (a14 sprint+attack 30-52% instead of diffuse wandering). GIF of most active episode (a6=85%): spawn in rocky ravine with zero trees, agent strikes stone. 2/5 episodes die early. Remaining wall: random spawn without nearby wood and search radius — precisely the domain of online curiosity.</p>
+<p>Preserved defaults: <code>play<em>ebwm.yaml</code> → sticky 0.5 + scan on (calibrated, risk-free, deeper chops); <code>play</em>craft.yaml</code> → sticky 0.5, scan <strong>off</strong>, two-brain on.</p>
+<h2>Fine-tuning on Coverage Data (2026-07-20) — Signal Improved, Result Unchanged</h2>
+<p>Hypothesis: compressed bands of <code>craft<em>wm</em>v4.pt</code> are a data coverage artifact — 40 expert demos rarely show &quot;lost, no tree in sight&quot; (experts find wood fast). Fix tested: ~20 short random policy episodes (400 steps) on <code>ObtainIronPickaxeDense-v0</code> (random spawn = free biome diversity), merged with 40 expert demos, fine-tuned 4 epochs low LR from <code>craft<em>wm</em>v4.pt</code> backup (<code>checkpoints/craft<em>wm</em>v4_coverage.pt</code>). Zero collapse (<code>bvar</code> 1.24-1.27), zero precondition regression (<code>dPlanks@craft</code> held between +1.22 and +1.35).</p>
+<table>
+<thead><tr><th></th><th>Backup (Original)</th><th>Coverage (Fine-tuned)</th></tr></thead>
+<tbody>
+<tr><td>Logs Chopped (N=3)</td><td>0/3</td><td>0/3</td></tr>
+<tr><td>Planks Crafted (N=3)</td><td>0/3</td><td>0/3</td></tr>
+<tr><td>Median <code>goal<em>score</em>std</code></td><td>0.0034</td><td>0.0126 (3.7x)</td></tr>
+<tr><td>Ratio p90/p10</td><td>3.2x</td><td>5.4x</td></tr>
+<tr><td>Episode Length</td><td>3000/3000/3000</td><td>2295/3000/1070 (2 early deaths)</td></tr>
+</tbody>
+</table>
+<p><strong>Verdict: Signal improved, result unchanged.</strong> Band separation widened (3.2x → 5.4x, approaching Treechop&#x27;s 10x) — data coverage mechanism is real — but 0/3 logs identical across both checkpoints, and fine-tuned checkpoint dies earlier in 2/3 episodes (more exploratory movement, no extra chopping).</p>
+<div class="callout">
+<p><strong>Lesson: Sharpening the &quot;am I lost?&quot; signal does not, in itself, fix the search-and-approach behavior meant to exploit it.</strong> The two-brain experiment diagnosis is confirmed: gap is behavioral (search/approach), not purely perceptual. Coverage data helps model better <em>represent</em> &quot;lost&quot; states; it doesn&#x27;t teach it <em>what to do about them</em>.</p>
+</div>
+<p><code>ebwm.pt</code>, <code>craft<em>wm</em>v4.pt</code>, <code>craft<em>wm</em>v4<em>backup.pt</code> intact; <code>craft</em>wm<em>v4</em>coverage.pt</code> is a separate comparison checkpoint, not a replacement.</p>
+<h2>References (Verified, from docs/references/index.md)</h2>
+<ul>
+<li>Sekar, Rybkin, Daniilidis, Abbeel, Hafner, Pathak, Plan2Explore, arXiv:2005.05960 (ICML 2020) — ensemble disagreement novelty principle tested and diagnosed here.</li>
+<li>Burda, Edwards, Storkey, Klimov, RND, arXiv:1810.12894 (2018) — candidate for future work, structurally immune to ensemble collapse.</li>
+<li>iCEM, arXiv:2008.06389 (2020) — inspiration behind discrete sticky sampling&#x27;s temporally correlated noise.</li>
+</ul>
+        </div>
+      </div>
+
+
+    </div>
+  </article>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>Mine-JEPA — a JEPA agent learning to play Minecraft from pixels, documented along the way.</p>
+  </div>
+</footer>
+
+<script src="../script.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Learning to craft: the rule is understood, the first tree remains out of reach — Mine-JEPA</title>
+<meta name="description" content="Chapter 6 of the Mine-JEPA learning path: Learning to craft: the rule is understood, the first tree remains out of reach.">
+<link rel="stylesheet" href="../style.css">
+<script>document.documentElement.classList.add("js");</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="wrap site-header-inner">
+    <a class="site-brand" href="index.html"><span class="brand-mark" aria-hidden="true">&#9935;</span> Mine-JEPA</a>
+    <div class="header-controls">
+      <nav class="lang-switch" aria-label="Site language">
+        <a href="../fr/06-apprendre-a-fabriquer.html" lang="fr" hreflang="fr">FR</a>
+        <a href="06-learning-to-craft.html" aria-current="true" lang="en" hreflang="en">EN</a>
+      </nav>
+      <div class="track-pref" data-track-pref>
+        <span class="track-pref-label" id="track-pref-label">Show:</span>
+        <button type="button" data-track-pref-value="beginner" aria-pressed="true" aria-describedby="track-pref-label">Beginner</button>
+        <button type="button" data-track-pref-value="expert" aria-pressed="false" aria-describedby="track-pref-label">Expert</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <nav class="breadcrumb" aria-label="Breadcrumbs">
+    <div class="wrap">
+      <a href="index.html">Learning Path</a>
+      <span aria-hidden="true">/</span>
+      <span>Chapter 6</span>
+    </div>
+  </nav>
+
+  <article class="chapter">
+    <div class="wrap">
+
+      <header class="chapter-header">
+        <p class="chapter-kicker">Chapter 6</p>
+        <h1>Learning to craft: the rule is understood, the first tree remains out of reach</h1>
+        <p class="chapter-prereqs">Prerequisites: Chapters 1 to 5 — the encoder, anti-collapse safeguards, world model, planner, and first success in real Minecraft.</p>
+      </header>
+
+
+      <div class="tracks" data-tracks>
+        <div class="track-tabs" role="tablist" aria-label="Reading level">
+          <button class="track-tab" role="tab" id="tab-beginner" aria-controls="panel-beginner" aria-selected="true" data-track-tab="beginner">Beginner</button>
+          <button class="track-tab" role="tab" id="tab-expert" aria-controls="panel-expert" aria-selected="false" tabindex="-1" data-track-tab="expert">Expert</button>
+        </div>
+
+        <div class="track-panel is-active chapter-prose" data-track-panel="beginner" role="tabpanel" id="panel-beginner" aria-labelledby="tab-beginner">
+          <p class="track-kicker">Beginner track</p>
+
+<h2>The next goal: crafting a tool</h2>
+<p>Chapter 5 ended on a real victory: the agent chops wood in real Minecraft, roughly once every four tries. The next logical step is to teach it to do something <em>with</em> that wood — convert it into planks, then into a tool. The original dream was &quot;an AI that crafts a wooden sword&quot;. An amusing minor hiccup: in the version of Minecraft used by this project (MineRL 0.4.4), <strong>the wooden sword simply does not exist</strong> as a craftable action — only the technology tree leading to the pickaxe is wired into the game environment. The new goal thus becomes: chop a wood log, convert it into planks, then sticks, place a crafting table, and craft a wooden pickaxe. The complete crafting chain.</p>
+<p>To do this, the project switches environments: instead of Treechop (&quot;chop a tree, nothing else&quot;), it moves to <code>MineRLObtainIronPickaxeDense</code>, a version of Minecraft that exposes player inventory (how many logs, planks, sticks the player holds) and rewards each item acquired (a log is worth 1 point, a plank 2, etc.).</p>
+<h2>First try: guessing inventory from the image → this cannot work</h2>
+<p>The first idea seemed natural: keep the image-summarizing encoder (Chapter 1), and attach a small extension that tries to <em>guess</em> the inventory from that embedding (the image&#x27;s numerical summary).</p>
+<p>It couldn&#x27;t work, and the reason is almost obvious once pointed out: <strong>the screen never displays the number of planks in your inventory.</strong> When you craft planks in Minecraft, the on-screen image barely changes — the &quot;planks: 36&quot; counter is a separate data point, never rendered in first-person view. Result: this extension only learns vague scene correlations (&quot;forest scene → few planks&quot;, &quot;near crafting table → more planks&quot;), never the actual rule. And because the image barely changes while crafting, the world model simply copies the previous embedding — its prediction changes almost nothing. In-game, this agent does nothing useful. A clean failure, but one that teaches an important lesson.</p>
+<h2>The core insight of this chapter</h2>
+<div class="callout">
+<p><strong>Crafting an item is not an image problem. It is a discrete state problem — tracking the count of items you hold.</strong></p>
+</div>
+<p>Since we cannot guess inventory from the image, inventory must become an <strong>input</strong> to the world model — data fed to it directly, rather than trying to reconstruct it from pixels. That is precisely why Minecraft, in this environment version, provides inventory as a separate observation: the game engine knows full well it isn&#x27;t rendered on screen.</p>
+<h2>Second try: inventory as model state → it works</h2>
+<p>The new world model version (named WM v4 in the project) splits into two components:</p>
+<ul>
+<li>A <strong>visual</strong> component — the eb-JEPA from Chapter 5, which understands &quot;is there a tree in front of me? am I near a table?&quot;</li>
+<li>An <strong>inventory</strong> component — a small auxiliary function added to the model that takes current inventory, the chosen action, and what the visual component sees, and predicts the <em>new</em> inventory.</li>
+</ul>
+<p>Concretely: <code>new<em>inventory = old</em>inventory + change(old<em>inventory, action, what</em>I_see)</code>. By training this function on human gameplay recordings, the model learned, all by itself, a simple yet very concrete rule: <strong>crafting with one log yields four planks</strong> — exactly the real Minecraft recipe, learned without ever being written in code, observed purely in the data.</p>
+<h2>The expert demonstration trap: nobody ever fails a craft</h2>
+<p>A model that knows &quot;craft → +4 planks&quot; is not enough. Once deployed in-game, the agent started <strong>pressing &quot;craft&quot; in a loop, even with zero logs in its pocket</strong> — which, of course, produces nothing.</p>
+<p>The reason is both funny and insightful: <strong>no human player ever tries to craft something without having the ingredients.</strong> The human gameplay recordings used for training contain <em>zero</em> examples of failed crafts. The model learned &quot;craft → +4 planks&quot; as an absolute truth, without ever seeing that a log was required beforehand. This is a classic trap of learning from expert demonstrations: <strong>experts never show their mistakes</strong>, so the model never learns the preconditions required before taking action.</p>
+<p>The solution adopted here, without waiting for a full autonomous exploration loop (the subject of upcoming chapters): synthetically generate <strong>negative examples</strong>. We tell the model explicitly: &quot;if you craft on an empty inventory, the result is zero&quot;. This addition had to be calibrated carefully — the first attempt, applied too aggressively, overwhelmed the positive signal (the model started predicting near-zero planks <em>all the time</em>, even on valid successful crafts). The right balance: apply heavy re-weighting to the rare moments of actual crafting in the data (144 out of 85,000 frames, otherwise hopelessly drowned out) and a moderate penalty for crafting on empty inventory. Final result: the model knows <em>both</em> &quot;craft + log → +4 planks&quot; <em>and</em> &quot;craft + empty inventory → nothing&quot;. The agent stops crafting into thin air.</p>
+<h2>A planner that switches goals based on what it carries</h2>
+<p>The planner (the one from Chapter 4, imagining multiple futures and picking the best) now receives two possible goals, switching based on inventory state:</p>
+<ul>
+<li><strong>No log</strong> → goal &quot;chop wood&quot; (the same trick as Chapter 5);</li>
+<li><strong>At least one log</strong> → goal &quot;maximize inventory gain&quot; (planks, sticks...).</li>
+</ul>
+<h2>Proof that crafting works in real Minecraft</h2>
+<p>To verify that crafting <em>actually</em> works, independently of the &quot;find the first tree&quot; problem (which remains hard, discussed next), the project runs the agent in a test version of the environment starting with wood in inventory (5 logs, 3 planks). Over 6 episodes, <strong>100% success rate</strong>: the agent crafts between 16 and 20 additional planks every single time, with a 10-point reward. This is an agent planning and executing the entire crafting chain by itself — we simply provide the starting wood.</p>
+<p>A minor detail that aligns with this chapter&#x27;s theme: <strong>you see nothing happening on screen while the agent crafts.</strong> The proof of success is not a dramatic video — it is the inventory counter and reward increasing. Exactly why inventory had to become model state rather than something guessed from images.</p>
+<h2>The remaining wall: finding the first tree, alone</h2>
+<p>Here is the honest note closing this chapter. When released into the real survival game from a cold start, with no initial wood, the agent behaves sensibly — spending all its time in &quot;chop wood&quot; mode, moving with clear intent rather than at random — but over 5 episodes, it chops <strong>zero logs</strong>.</p>
+<p>Why this is harder than Chapter 5: in Treechop (Chapter 5), the player always spawns in a dense forest, with trees guaranteed in view. Here, the player spawns <strong>anywhere</strong> in a randomly generated survival world — trees might be far away, hidden behind a hill, or absent from the initial view entirely. The agent must first <strong>search</strong> for a tree before it can chop it, a capability nothing so far has taught it.</p>
+<p><strong>The honest summary of this chapter</strong>: the &quot;understand the crafting rule&quot; part is solved — the world model truly learned the recipe, and the agent crafts perfectly once it holds wood. The true open problem is locating that first tree from a random spawn point. That is the subject of the next chapters.</p>
+        </div>
+
+        <div class="track-panel chapter-prose" data-track-panel="expert" role="tabpanel" id="panel-expert" aria-labelledby="tab-expert">
+          <p class="track-kicker">Expert track</p>
+
+<h2>Phase 5 Objective and Environment Choice</h2>
+<p><code>MineRLObtainIronPickaxeDense-v0</code> replaces Treechop as the test harness. <code>wooden<em>sword</code> lacks a craft handler in MineRL 0.4.4 (<code>CraftNearbyAction</code> covers only the pickaxe branch); the goal thus becomes the equivalent chain <code>log → planks → stick → crafting</em>table → wooden pickaxe</code>. The environment brings three elements absent from Treechop: inventory in observations, dense per-item rewards (log=1, planks=2, stick=4, …), and a discrete <code>craft</code> action (no GUI menu). Demonstrations: Zenodo <code>MineRLObtainIronPickaxe-v0.zip</code> (2.8 GB), 40 demos prepared via <code>scripts/prepare<em>demos</em>obtain.py</code> → 84,902 frames, <strong>144 craft-planks steps</strong>, 37/40 demos reaching wooden pickaxe, <strong>22-class action space</strong> (17 movement + 5 craft, <code>configs/minerl<em>actions</em>obtain.yaml</code>).</p>
+<h2>Attempt 1 — WM v3: Inventory as Prediction Head → Structural Failure</h2>
+<pre><code>frame → [visual encoder] → latent → [inventory head] → predicted inventory</code></pre>
+<p>Fundamental flaw: first-person view (64×64) never contains the inventory counter — &quot;planks: 36&quot; is never rendered on screen. Measured consequences:</p>
+<ul>
+<li>Head learns only scene correlations (game stage ↔ probable inventory), never causal mechanics;</li>
+<li>Scene being quasi-static during craft, predictor <strong>copies</strong> (ratio ≈ 0.98, same <code>val<em>pred/val</em>copy</code> metric from Chapter 3);</li>
+<li>At planning time, <code>craft</code> action does not change predicted visual latent → inventory head reads <em>same</em> predicted inventory → predicted plank gain = 0 → <strong>planner blind to crafting.</strong></li>
+</ul>
+<h2>The Structural Insight</h2>
+<div class="callout">
+<p><strong>Crafting is a discrete inventory state problem, not a pixel problem.</strong></p>
+</div>
+<p>Inventory must be a <strong>world model state variable</strong> (an input), not a quantity predicted from frames — consistent with MineRL exposing it as a separate observation rather than rendering it on screen.</p>
+<h2>Attempt 2 — WM v4: Inventory as State Variable → Rule Learned</h2>
+<pre><code>Perception (pixels)              Discrete State (inventory)
+─────────────────                ──────────────────────────
+Visual eb-JEPA                   InventoryDynamics (MLP)
+&quot;tree in front? table nearby?&quot;   inv_{t+1} = inv_t + g(inv_t, action, visual_latent)</code></pre>
+<p>Inventory becomes an <strong>input</strong>; dynamics <code>g</code> (small MLP) are conditioned on visual latent, learning both chopping (attack + tree-visual → log+1) and crafting (craft + log → planks+4). Measured result, <code>dPlanks@craft</code> (predicted Δplanks on true craft-planks steps):</p>
+<pre><code>epoch 1: +1.24    epoch 4: +4.01    epoch 20: +3.81</code></pre>
+<p><code>dPlanks@craft ≈ +4</code> is precisely the Minecraft recipe (1 log → 4 planks), learned purely from demonstrations — zero hand-coding. This result aligns directly with Yu et al. (arXiv:2509.12249, <em>Why and How Auxiliary Tasks Improve JEPA Representations</em>, NeurIPS 2025): an auxiliary head (<code>InventoryDynamics</code>) trained jointly with latent dynamics prevents non-equivalent observations from collapsing together — their <em>No Unhealthy Representation Collapse</em> theorem is the exact mechanism behind WM v4&#x27;s design.</p>
+<h2>The Precondition Trap (Expert Demo Gap)</h2>
+<p>In-game, agent v4 <strong>crafts continuously on an empty inventory</strong> (<code>a17 = 30%</code> of steps), obtaining nothing. Cause: zero human demos show failed crafts (<code>craft</code> on empty inventory) — model learned &quot;craft → +4&quot; <strong>unconditionally</strong>, <code>dPlanks@craft = +4</code> looking perfect precisely because measured solely on craft steps that always possessed logs. This is the direct argument for curiosity/self-play (upcoming chapters): an agent crafting on empty inventory and observing zero effect <strong>learns</strong> the precondition through its own prediction error.</p>
+<h3>Fix: Synthetic Negatives + Balanced Reweighting</h3>
+<ul>
+<li><strong>Synthetic Negative</strong>: Enforce <code>g(empty_inventory, craft, visual) ≈ 0</code> on zero-log steps.</li>
+<li><strong>Reweighting</strong>: Craft transitions are rare (144/85k). Naive precondition weight (5.0) <strong>overwhelmed</strong> positive signal — model took shortcut &quot;always predict ~0 planks&quot; (<code>dPlanks</code> collapsed from +4 to +0.4). Fix: <strong>over-weight ×30</strong> rare positive craft transitions, moderate precondition weight (2.0).</li>
+</ul>
+<p><strong>Balanced Result</strong>: <code>dPlanks@craft ≈ +3.8</code> <strong>and</strong> <code>precond ≈ 0.0001</code>. Model now knows <em>both</em> &quot;craft + log → +4 planks&quot; <em>and</em> &quot;craft + empty → nothing&quot;. In-game, agent stops useless crafting.</p>
+<h2>The Planner: Switching Goals Based on Inventory State</h2>
+<p><code>SwitchingCraftPlanner</code>, single MPC (Chapter 4), dual goals:</p>
+<pre><code>No log   → CHOP  : Pull visual latent toward &quot;log acquired&quot; centroid
+                   (Chapter 5 Treechop trick)
+Log held → CRAFT : Maximize predicted inventory gain (Δlog, Δplanks) via g</code></pre>
+<p>Combines two previously validated blocks — chopping (goal centroid) and crafting (WM v4).</p>
+<h2>Live Craft Demo — Successful Crafting in Real Minecraft</h2>
+<p>To isolate proof of crafting loop <em>without</em> cold-start chopping difficulty, agent is launched on <code>MineRLObtainTest-v0</code> (debug env, log=5 planks=3 at spawn, flat world). Result over 6/6 episodes: <strong>100% success rate, +16 to +20 planks per episode (5 logs × 4 planks), reward 10.</strong> Crafting planned and executed by agent — only starting wood provided.</p>
+<div class="callout">
+<p>Crucial reminder: <strong>crafting is invisible in first-person view</strong> — screen barely changes. Proof is inventory/reward (+20 planks, reward 10), not a GIF. Exactly why inventory had to become world model state rather than a visual target.</p>
+</div>
+<h2>The Remaining Wall: Cold-Start Chopping in Survival</h2>
+<p>With switching planner, behavior is sensible (chop mode dominant, <code>a1</code>/<code>a13</code> majority, no random wandering) but over 5 episodes: <strong>0 logs chopped.</strong></p>
+<p>Identified reasons:</p>
+<ul>
+<li><strong>Treechop spawns in dense forest</strong> (trees guaranteed in view) → Treechop agent hits 25-50% (Chapter 5). <strong><code>ObtainIronPickaxeDense</code> spawns in random survival biome</strong> — trees potentially far, behind hills, or absent from initial view. Agent must first <em>find</em> a tree.</li>
+<li>Visual predictor copies (ratio ≈ 0.98) on near-static frames → planner cannot &quot;imagine&quot; vividly turning toward a tree → chop goal provides weak steering signal.</li>
+<li>Episodes frequently terminate early (~750-1500 steps) from survival hazards.</li>
+</ul>
+<h2>Honest Scorecard</h2>
+<table>
+<thead><tr><th>Component</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td>WM learns crafting rule (1 log → 4 planks)</td><td>✅ <code>dPlanks@craft = +3.8</code></td></tr>
+<tr><td>WM learns precondition (no log → no craft)</td><td>✅ <code>precond ≈ 0</code></td></tr>
+<tr><td>Inventory-as-state world model (v4)</td><td>✅ <code>checkpoints/craft<em>wm</em>v4.pt</code></td></tr>
+<tr><td>Switching planner (chop ↔ craft)</td><td>✅ Correct switching in real game</td></tr>
+<tr><td>Live craft <strong>with initial wood provided</strong></td><td>✅ 100% over 6 ep, +16-20 planks/ep</td></tr>
+<tr><td>End-to-end craft from <strong>cold start</strong></td><td>❌ Blocked by survival cold-start chopping</td></tr>
+</tbody>
+</table>
+<p><strong>Crafting is solved at world model level. Obtaining the first log in a random survival world is the open problem</strong> — same family as Treechop&#x27;s 25-50%, but harder here.</p>
+<h2>Lessons</h2>
+<ol>
+<li><strong>Crafting ≠ pixels.</strong> Inventory is not in frame; it must be a world model state variable (v3 → v4 makes this concrete).</li>
+<li><strong>A world model can learn a symbolic game rule</strong> from demonstrations — <code>dPlanks = +4</code> is the Minecraft recipe, learned, not coded.</li>
+<li><strong>Expert demos teach actions, not preconditions.</strong> Without failed craft examples, model believes crafting always works. Negatives (synthetic or via curiosity/self-play) are required.</li>
+<li><strong>Rare critical signals must be over-weighted</strong> — and balance matters: 144 craft steps drowned in 85k were invisible until ×30 weight; overly strong precondition then crushed positive signal.</li>
+<li><strong>Know your bottleneck.</strong> Conceptually hard part (crafting) is solved; real wall (cold-start chopping) is named honestly rather than hidden under a &quot;complete milestone&quot; label.</li>
+</ol>
+<h2>References (Verified, from docs/references/index.md)</h2>
+<ul>
+<li>Yu et al., <em>Why and How Auxiliary Tasks Improve JEPA Representations</em>, arXiv:2509.12249 (NeurIPS 2025) — directly justifies <code>InventoryDynamics</code> auxiliary head design anchored on latent dynamics.</li>
+<li>Maes, Le Lidec, Scieur, LeCun, Balestriero, LeWorldModel, arXiv:2603.19312 (2026) — ratio convention reused to diagnose WM v3 failure.</li>
+</ul>
+        </div>
+      </div>
+
+
+    </div>
+  </article>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>Mine-JEPA — a JEPA agent learning to play Minecraft from pixels, documented along the way.</p>
+  </div>
+</footer>
+
+<script src="../script.js" defer></script>
+</body>
+</html>

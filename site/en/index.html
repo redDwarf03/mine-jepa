@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mine-JEPA — learning JEPA through a real Minecraft agent</title>
+<meta name="description" content="Mine-JEPA teaches JEPA (Joint-Embedding Predictive Architecture) through the ongoing real story of an agent learning to play Minecraft from pixels — successes and failures included, written side-by-side for beginners and experts.">
+<link rel="stylesheet" href="../style.css">
+<script>document.documentElement.classList.add("js");</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="wrap site-header-inner">
+    <a class="site-brand" href="index.html"><span class="brand-mark" aria-hidden="true">&#9935;</span> Mine-JEPA</a>
+    <div class="header-controls">
+      <nav class="lang-switch" aria-label="Site language">
+        <a href="../fr/index.html" lang="fr" hreflang="fr">FR</a>
+        <a href="index.html" aria-current="true" lang="en" hreflang="en">EN</a>
+      </nav>
+      <div class="track-pref" data-track-pref>
+        <span class="track-pref-label" id="track-pref-label">Show:</span>
+        <button type="button" data-track-pref-value="beginner" aria-pressed="true" aria-describedby="track-pref-label">Beginner</button>
+        <button type="button" data-track-pref-value="expert" aria-pressed="false" aria-describedby="track-pref-label">Expert</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <p class="eyebrow">A real research journal, in progress</p>
+        <h1>Watch a JEPA agent learn to play Minecraft — and understand how it works, chapter by chapter</h1>
+        <p class="lede">
+          Mine-JEPA is a lightweight JEPA (Joint-Embedding Predictive Architecture)
+          trained directly on game images, built to plan its own actions rather than reacting blindly.
+          This site tells the story of how it was built, in the order it actually happened — including
+          the parts that didn't work. Each chapter is written twice: once for a curious beginner,
+          once for someone who already knows machine learning. Pick a track, switch anytime.
+        </p>
+        <a class="button" href="#path">Start the journey</a>
+      </div>
+      <figure class="hero-media">
+        <img
+          src="../../assets/agent_play_ebwm.gif"
+          width="64"
+          height="64"
+          alt="First-person view in Minecraft: the agent walks through a dense forest, approaches a tree trunk, and strikes it with its tool until the tree breaks to yield a log.">
+        <figcaption>
+          Real footage from <code>MineRLTreechop-v0</code>: the agent, guided by its JEPA world model,
+          plans its approach to a tree and chops it down to obtain a log. This is the best recorded
+          episode among those evaluated — the actual success rate of this policy is between 1-in-4 and
+          1-in-2, not every single attempt.
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="section" id="path" aria-labelledby="path-heading">
+    <div class="wrap">
+      <h2 id="path-heading">The Tech Tree</h2>
+      <p class="section-intro">
+        Chapters follow the project in the order it actually unfolded: each builds on the ideas
+        and results of the previous one — like a crafting recipe where each slot only unlocks once
+        its ingredients are gathered.
+      </p>
+
+      <ol class="tech-tree">
+
+        <li class="tech-node">
+          <div class="recipe-row" aria-hidden="true">
+            <div class="recipe-slot recipe-slot-output">1</div>
+          </div>
+          <div class="node-card">
+            <p class="node-meta">
+              <span class="badge badge-order">Chapter 1</span>
+            </p>
+            <h3 class="node-title">
+              <a href="01-what-is-jepa.html">What is JEPA, and why train a program to play Minecraft with it?</a>
+            </h3>
+            <p class="node-prereqs">
+              No prerequisites — this is the starting point of the path.
+            </p>
+          </div>
+        </li>
+
+        <li class="tech-node">
+          <div class="recipe-row" aria-hidden="true">
+            <div class="recipe-slot recipe-slot-prereq" title="Chapter 1">1</div>
+            <div class="recipe-arrow">&#10141;</div>
+            <div class="recipe-slot recipe-slot-output">2</div>
+          </div>
+          <div class="node-card">
+            <p class="node-meta">
+              <span class="badge badge-order">Chapter 2</span>
+            </p>
+            <h3 class="node-title">
+              <a href="02-the-collapse-trap.html">The shortcut the model always tries to find (and how we prevent it)</a>
+            </h3>
+            <p class="node-prereqs">
+              Prerequisites: Chapter 1, &quot;What is JEPA, and why train a program to play Minecraft with it?&quot;
+            </p>
+          </div>
+        </li>
+
+        <li class="tech-node">
+          <div class="recipe-row" aria-hidden="true">
+            <div class="recipe-slot recipe-slot-prereq" title="Chapter 1">1</div>
+            <div class="recipe-slot recipe-slot-prereq" title="Chapter 2">2</div>
+            <div class="recipe-arrow">&#10141;</div>
+            <div class="recipe-slot recipe-slot-output">3</div>
+          </div>
+          <div class="node-card">
+            <p class="node-meta">
+              <span class="badge badge-order">Chapter 3</span>
+            </p>
+            <h3 class="node-title">
+              <a href="03-the-world-model.html">Teaching the model to imagine what comes next</a>
+            </h3>
+            <p class="node-prereqs">
+              Prerequisites: Chapter 1, &quot;What is JEPA, and why train a program to play Minecraft with it?&quot; and Chapter 2, &quot;The shortcut the model always tries to find (and how we prevent it)&quot;
+            </p>
+          </div>
+        </li>
+
+        <li class="tech-node">
+          <div class="recipe-row" aria-hidden="true">
+            <div class="recipe-slot recipe-slot-prereq" title="Chapter 1">1</div>
+            <div class="recipe-slot recipe-slot-prereq" title="Chapter 2">2</div>
+            <div class="recipe-slot recipe-slot-prereq" title="Chapter 3">3</div>
+            <div class="recipe-arrow">&#10141;</div>
+            <div class="recipe-slot recipe-slot-output">4</div>
+          </div>
+          <div class="node-card">
+            <p class="node-meta">
+              <span class="badge badge-order">Chapter 4</span>
+            </p>
+            <h3 class="node-title">
+              <a href="04-planning-in-imagination.html">Trying 512 futures in its head before pressing a button</a>
+            </h3>
+            <p class="node-prereqs">
+              Prerequisites: Chapters 1 to 3 — the encoder, anti-collapse safeguards, and world model.
+            </p>
+          </div>
+        </li>
+
+        <li class="tech-node">
+          <div class="recipe-row" aria-hidden="true">
+            <div class="recipe-slot recipe-slot-prereq" title="Chapter 1">1</div>
+            <div class="recipe-slot recipe-slot-prereq" title="Chapter 2">2</div>
+            <div class="recipe-slot recipe-slot-prereq" title="Chapter 3">3</div>
+            <div class="recipe-slot recipe-slot-prereq" title="Chapter 4">4</div>
+            <div class="recipe-arrow">&#10141;</div>
+            <div class="recipe-slot recipe-slot-output">5</div>
+          </div>
+          <div class="node-card">
+            <p class="node-meta">
+              <span class="badge badge-order">Chapter 5</span>
+            </p>
+            <h3 class="node-title">
+              <a href="05-real-minecraft.html">The big leap to real Minecraft: four failures, then an agent that chops trees</a>
+            </h3>
+            <p class="node-prereqs">
+              Prerequisites: Chapters 1 to 4 — encoder, anti-collapse safeguards, world model, and imagination planner.
+            </p>
+          </div>
+        </li>
+
+        <li class="tech-node">
+          <div class="recipe-row" aria-hidden="true">
+            <div class="recipe-slot recipe-slot-prereq" title="Chapter 1">1</div>
+            <div class="recipe-slot recipe-slot-prereq" title="Chapter 2">2</div>
+            <div class="recipe-slot recipe-slot-prereq" title="Chapter 3">3</div>
+            <div class="recipe-slot recipe-slot-prereq" title="Chapter 4">4</div>
+            <div class="recipe-slot recipe-slot-prereq" title="Chapter 5">5</div>
+            <div class="recipe-arrow">&#10141;</div>
+            <div class="recipe-slot recipe-slot-output">6</div>
+          </div>
+          <div class="node-card">
+            <p class="node-meta">
+              <span class="badge badge-order">Chapter 6</span>
+            </p>
+            <h3 class="node-title">
+              <a href="06-learning-to-craft.html">Learning to craft: the rule is understood, the first tree remains out of reach</a>
+            </h3>
+            <p class="node-prereqs">
+              Prerequisites: Chapters 1 to 5 — encoder, anti-collapse safeguards, world model, planner, and the first success in real Minecraft.
+            </p>
+          </div>
+        </li>
+
+        <li class="tech-node">
+          <div class="recipe-row" aria-hidden="true">
+            <div class="recipe-slot recipe-slot-prereq" title="Chapter 1">1</div>
+            <div class="recipe-slot recipe-slot-prereq" title="Chapter 2">2</div>
+            <div class="recipe-slot recipe-slot-prereq" title="Chapter 3">3</div>
+            <div class="recipe-slot recipe-slot-prereq" title="Chapter 4">4</div>
+            <div class="recipe-slot recipe-slot-prereq" title="Chapter 5">5</div>
+            <div class="recipe-slot recipe-slot-prereq" title="Chapter 6">6</div>
+            <div class="recipe-arrow">&#10141;</div>
+            <div class="recipe-slot recipe-slot-output">7</div>
+          </div>
+          <div class="node-card">
+            <p class="node-meta">
+              <span class="badge badge-order">Chapter 7</span>
+            </p>
+            <h3 class="node-title">
+              <a href="07-broken-curiosity.html">Broken curiosity, then two patches that half-work</a>
+            </h3>
+            <p class="node-prereqs">
+              Prerequisites: Chapters 1 to 6 — up to the wall of finding the first tree solo, which this chapter attacks for the first time.
+            </p>
+          </div>
+        </li>
+
+        <li class="tech-node">
+          <div class="recipe-row" aria-hidden="true">
+            <div class="recipe-slot recipe-slot-prereq" title="Chapter 1">1</div>
+            <div class="recipe-slot recipe-slot-prereq" title="Chapter 2">2</div>
+            <div class="recipe-slot recipe-slot-prereq" title="Chapter 3">3</div>
+            <div class="recipe-slot recipe-slot-prereq" title="Chapter 4">4</div>
+            <div class="recipe-slot recipe-slot-prereq" title="Chapter 5">5</div>
+            <div class="recipe-slot recipe-slot-prereq" title="Chapter 6">6</div>
+            <div class="recipe-slot recipe-slot-prereq" title="Chapter 7">7</div>
+            <div class="recipe-arrow">&#10141;</div>
+            <div class="recipe-slot recipe-slot-output">8</div>
+          </div>
+          <div class="node-card">
+            <p class="node-meta">
+              <span class="badge badge-order">Chapter 8</span>
+            </p>
+            <h3 class="node-title">
+              <a href="08-the-wall-is-behavioral.html">The wall is behavioral: a real first success, then four proofs that sharpening the signal isn&#x27;t enough — and a fifth that confirms the diagnosis</a>
+            </h3>
+            <p class="node-prereqs">
+              Prerequisites: Chapters 1 to 7 — including the first two failed attempts to find the first tree solo.
+            </p>
+          </div>
+        </li>
+
+        <li class="tech-node">
+          <div class="recipe-row" aria-hidden="true">
+            <div class="recipe-slot recipe-slot-prereq" title="Chapter 1">1</div>
+            <div class="recipe-slot recipe-slot-prereq" title="Chapter 2">2</div>
+            <div class="recipe-slot recipe-slot-prereq" title="Chapter 3">3</div>
+            <div class="recipe-slot recipe-slot-prereq" title="Chapter 4">4</div>
+            <div class="recipe-slot recipe-slot-prereq" title="Chapter 5">5</div>
+            <div class="recipe-slot recipe-slot-prereq" title="Chapter 6">6</div>
+            <div class="recipe-slot recipe-slot-prereq" title="Chapter 7">7</div>
+            <div class="recipe-slot recipe-slot-prereq" title="Chapter 8">8</div>
+            <div class="recipe-arrow">&#10141;</div>
+            <div class="recipe-slot recipe-slot-output">9</div>
+          </div>
+          <div class="node-card">
+            <p class="node-meta">
+              <span class="badge badge-order">Chapter 9</span> <span class="badge badge-plan">Not yet launched</span>
+            </p>
+            <h3 class="node-title">
+              <a href="09-next-directions.html">After avenues A and C: the learned policy becomes the priority</a>
+            </h3>
+            <p class="node-prereqs">
+              Prerequisites: Chapters 1 to 8 — including attempt #8 (avenues A and C, now tested and NO-GO, see Chapter 8). This chapter distinguishes acquired results from an unexecuted plan (learned policy and two refinements).
+            </p>
+          </div>
+        </li>
+
+      </ol>
+
+      <p class="section-intro section-note">
+        The journey stops honestly where writing stops today: no future slots have been added in advance.
+      </p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="honesty-heading">
+    <div class="wrap">
+      <h2 id="honesty-heading">Why this feels like a lab notebook, not a showreel</h2>
+      <div class="callout">
+        <p>
+          Mine-JEPA is a real, ongoing project, and this site is written directly from its research
+          log — including attempts that failed, partially conclusive results, and problems nobody
+          has solved yet. If a chapter reports a negative result, it remains a negative result here:
+          no forced enthusiasm, no confetti. The honest version of this story is also the most
+          interesting.
+        </p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>Mine-JEPA — a JEPA agent learning to play Minecraft from pixels, documented along the way.</p>
+  </div>
+</footer>
+
+<script src="../script.js" defer></script>
+</body>
+</html>
