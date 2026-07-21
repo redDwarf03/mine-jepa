@@ -14,19 +14,6 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 SITE_DIR = ROOT_DIR / "site"
 CONTENT_DIR = SITE_DIR / "content"
 
-# Map chapter order/index to (fr_slug, en_slug)
-CHAPTER_MAP = {
-    1: ("01-c-est-quoi-jepa", "01-what-is-jepa"),
-    2: ("02-le-piege-du-collapse", "02-the-collapse-trap"),
-    3: ("03-le-modele-du-monde", "03-the-world-model"),
-    4: ("04-planifier-en-imagination", "04-planning-in-imagination"),
-    5: ("05-le-vrai-minecraft", "05-le-vrai-minecraft"), # or 05-real-minecraft
-    6: ("06-apprendre-a-fabriquer", "06-learning-to-craft"),
-    7: ("07-la-curiosite-en-panne", "07-broken-curiosity"),
-    8: ("08-le-mur-est-comportemental", "08-the-wall-is-behavioral"),
-    9: ("09-les-prochaines-pistes", "09-next-directions"),
-}
-
 # Real slug mappings from frontmatter
 SLUG_PAIR = {
     "01-c-est-quoi-jepa": "01-what-is-jepa",
@@ -41,6 +28,37 @@ SLUG_PAIR = {
 }
 # Inverse mapping
 REVERSE_SLUG_PAIR = {v: k for k, v in SLUG_PAIR.items()}
+
+CHAPTER_MEDIA = {
+    5: {
+        "gif": "agent_play_ebwm.gif",
+        "alt_fr": "Vue à la première personne dans Minecraft : l'agent traverse une forêt dense, s'approche d'un tronc d'arbre et frappe avec son outil jusqu'à faire tomber l'arbre pour obtenir une bûche.",
+        "caption_fr": "La cinquième tentative, en action — le meilleur épisode enregistré. Le taux de succès réel de la version publiée de cette politique est de 25% (5 épisodes sur 20) ; le meilleur run observé en interne (non publié) a atteint 50%. Ce n'est pas un agent qui coupe du bois à chaque tentative.",
+        "alt_en": "First-person view in Minecraft: the agent walks through a dense forest, approaches a tree trunk, and strikes it with its tool until the tree breaks to yield a log.",
+        "caption_en": "The fifth attempt in action — the best recorded episode. The actual success rate of the published policy version is 25% (5 out of 20 episodes); the best internally observed run (unpublished) hit 50%. This is not an agent that chops wood on every single attempt.",
+    },
+    6: {
+        "gif": "agent_play_craft_demo.best.gif",
+        "alt_fr": "Vue à la première personne dans Minecraft : l'agent commence avec du bois dans son inventaire, fabrique des planches, puis pose un établi et fabrique une pioche.",
+        "caption_fr": "Fabrication réussie en direct — l'agent réutilise ses compétences visuelles et sa mémoire d'inventaire pour transformer le bois de départ en planches.",
+        "alt_en": "First-person view in Minecraft: starting with wood in inventory, the agent crafts planks, places a crafting table, and crafts a pickaxe.",
+        "caption_en": "Live crafting in action — the agent leverages its visual representation and inventory state memory to turn starting wood into planks.",
+    },
+    7: {
+        "gif": "agent_play_explore.gif",
+        "alt_fr": "Vue à la première personne dans Minecraft : l'agent explore un paysage vallonné en tournant la caméra et en s'avançant.",
+        "caption_fr": "Le réflexe d'échantillonnage collant et de balayage de caméra en action lors de l'exploration.",
+        "alt_en": "First-person view in Minecraft: the agent explores a hilly landscape, rotating its camera and stepping forward.",
+        "caption_en": "Sticky sampling and camera scan reflexes in action during exploration.",
+    },
+    8: {
+        "gif": "agent_play_craft_commit4.gif",
+        "alt_fr": "Vue à la première personne dans Minecraft : l'agent enchaîne 4 actions consécutives par cycle de planification pour approcher et couper un arbre.",
+        "caption_fr": "L'effet de commit_length=4 : l'agent tient ses gestes sur 4 pas consécutifs au lieu de réinitialiser à chaque pas.",
+        "alt_en": "First-person view in Minecraft: the agent holds 4 consecutive actions per planning cycle to approach and chop a tree.",
+        "caption_en": "The effect of commit_length=4: holding gestures over 4 consecutive steps instead of resetting every single step.",
+    },
+}
 
 def parse_frontmatter(text):
     if text.startswith("---"):
@@ -99,14 +117,12 @@ def markdown_to_html(md):
     def flush_table():
         nonlocal in_table, table_lines
         if in_table:
-            # parse table_lines
             rows = []
             for tline in table_lines:
                 cells = [c.strip() for c in tline.strip("|").split("|")]
                 rows.append(cells)
             if len(rows) >= 2:
                 headers = rows[0]
-                # row 1 is separator
                 data_rows = rows[2:]
                 th_html = "".join(f"<th>{render_inline(c)}</th>" for c in headers)
                 tbody_html = ""
@@ -119,21 +135,16 @@ def markdown_to_html(md):
 
     def render_inline(txt):
         txt = html.escape(txt)
-        # Bold **text**
         txt = re.sub(r"\*\*(.*?)\*\*", r"<strong>\1</strong>", txt)
-        # Italics *text* or _text_
         txt = re.sub(r"\*(.*?)\*", r"<em>\1</em>", txt)
         txt = re.sub(r"_(.*?)_", r"<em>\1</em>", txt)
-        # Inline code `code`
         txt = re.sub(r"`(.*?)`", r"<code>\1</code>", txt)
-        # Links [text](url)
         txt = re.sub(r"\[(.*?)\]\((.*?)\)", r'<a href="\2">\1</a>', txt)
         return txt
 
     for line in lines:
         stripped = line.strip()
 
-        # Code block fence
         if stripped.startswith("```"):
             if in_code:
                 c_content = html.escape("\n".join(code_lines))
@@ -153,7 +164,6 @@ def markdown_to_html(md):
             code_lines.append(line)
             continue
 
-        # Table lines
         if stripped.startswith("|") and stripped.endswith("|"):
             flush_list()
             flush_quote()
@@ -165,7 +175,6 @@ def markdown_to_html(md):
         elif in_table:
             flush_table()
 
-        # Blockquote
         if stripped.startswith("> "):
             flush_list()
             flush_table()
@@ -177,7 +186,6 @@ def markdown_to_html(md):
         elif in_quote:
             flush_quote()
 
-        # Headings
         if stripped.startswith("## "):
             flush_list()
             out.append(f"<h2>{render_inline(stripped[3:])}</h2>")
@@ -191,7 +199,6 @@ def markdown_to_html(md):
             out.append(f"<h4>{render_inline(stripped[5:])}</h4>")
             continue
 
-        # Lists
         if stripped.startswith("- ") or stripped.startswith("* "):
             flush_quote()
             flush_table()
@@ -216,7 +223,6 @@ def markdown_to_html(md):
         else:
             flush_list()
 
-        # Blank line / Paragraph
         if not stripped:
             continue
 
@@ -229,7 +235,6 @@ def markdown_to_html(md):
     return "\n".join(out)
 
 def process_tracks(body_md, lang):
-    """Splits body_md into beginner and expert sections and renders them."""
     beginner_kicker = "Piste débutant" if lang == "fr" else "Beginner track"
     expert_kicker = "Piste expert" if lang == "fr" else "Expert track"
 
@@ -274,7 +279,6 @@ def build_chapter_html(meta, body_md, lang):
     title = meta.get("title", "")
     slug = meta.get("slug", "")
 
-    # Language toggle targets
     if lang == "fr":
         other_lang = "en"
         other_slug = SLUG_PAIR.get(slug, slug)
@@ -312,7 +316,6 @@ def build_chapter_html(meta, body_md, lang):
 
     tracks_content = process_tracks(body_md, lang)
 
-    # Format prerequisites display text
     if lang == "fr":
         if order == 1:
             prereq_text = "Aucun prérequis — c'est le point de départ du parcours."
@@ -339,6 +342,27 @@ def build_chapter_html(meta, body_md, lang):
             prereq_text = "Prerequisites: Chapters 1 to 8 — including attempt #8 (avenues A and C, now tested and NO-GO, see Chapter 8)."
         else:
             prereq_text = f"Prerequisites: Chapters 1 to {order-1}."
+
+    media_html = ""
+    if order in CHAPTER_MEDIA:
+        m = CHAPTER_MEDIA[order]
+        gif = m["gif"]
+        alt = m[f"alt_{lang}"]
+        cap = m[f"caption_{lang}"]
+        media_html = f"""
+      <figure class="chapter-media">
+        <img
+          src="../assets/{gif}"
+          width="64"
+          height="64"
+          alt="{html.escape(alt)}">
+        <figcaption>
+          {html.escape(cap)}
+        </figcaption>
+      </figure>
+"""
+
+    footer_text = "Mine-JEPA — un agent JEPA qui apprend à jouer à Minecraft à partir des pixels, documenté au fil de l'eau." if lang == "fr" else "Mine-JEPA — a JEPA agent learning to play Minecraft from pixels, documented along the way."
 
     html_content = f"""<!doctype html>
 <html lang="{lang}">
@@ -388,7 +412,7 @@ def build_chapter_html(meta, body_md, lang):
         <h1>{html.escape(title)}</h1>
         <p class="chapter-prereqs">{html.escape(prereq_text)}</p>
       </header>
-
+{media_html}
 {tracks_content}
 
     </div>
@@ -398,7 +422,7 @@ def build_chapter_html(meta, body_md, lang):
 
 <footer class="site-footer">
   <div class="wrap">
-    <p>Mine-JEPA — {"un agent JEPA qui apprend à jouer à Minecraft à partir des pixels, documenté au fil de l'eau." if lang == "fr" else "a JEPA agent learning to play Minecraft from pixels, documented along the way."}</p>
+    <p>{footer_text}</p>
   </div>
 </footer>
 
@@ -416,7 +440,6 @@ def generate_en_landing_page(chapters_meta):
         title = ch["title"]
         slug = ch["slug"]
 
-        # Build recipe slots HTML
         recipe_html = ""
         if order == 1:
             recipe_html = """          <div class="recipe-row" aria-hidden="true">
@@ -431,7 +454,6 @@ def generate_en_landing_page(chapters_meta):
             <div class="recipe-slot recipe-slot-output">{order}</div>
           </div>"""
 
-        # Prereqs text
         if order == 1:
             prereq_desc = "No prerequisites — this is the starting point of the path."
         elif order == 2:
@@ -518,7 +540,7 @@ def generate_en_landing_page(chapters_meta):
       </div>
       <figure class="hero-media">
         <img
-          src="../../assets/agent_play_ebwm.gif"
+          src="../assets/agent_play_ebwm.gif"
           width="64"
           height="64"
           alt="First-person view in Minecraft: the agent walks through a dense forest, approaches a tree trunk, and strikes it with its tool until the tree breaks to yield a log.">
@@ -580,13 +602,18 @@ def generate_en_landing_page(chapters_meta):
 """
     return index_html
 
-def update_fr_lang_switches():
-    """Updates FR chapter files to link to corresponding EN pages instead of disabled EN span."""
+def update_fr_html_assets_and_nav():
+    """Fixes image asset paths in site/fr/*.html to ../assets/ and updates language switches."""
     fr_dir = SITE_DIR / "fr"
     if not fr_dir.exists():
         return
     for fpath in fr_dir.glob("*.html"):
         content = fpath.read_text(encoding="utf-8")
+
+        # Fix asset paths: ../../assets/ -> ../assets/
+        content = content.replace("../../assets/", "../assets/")
+
+        # Update language switcher
         if fpath.name == "index.html":
             new_nav = '''      <nav class="lang-switch" aria-label="Langue du site">
         <a href="index.html" aria-current="true" lang="fr" hreflang="fr">FR</a>
@@ -600,12 +627,10 @@ def update_fr_lang_switches():
         <a href="../en/{en_slug}.html" lang="en" hreflang="en">EN</a>
       </nav>'''
         
-        # Replace the nav block if disabled EN span is present
         old_pattern = r'<nav class="lang-switch".*?</nav>'
         updated_content = re.sub(old_pattern, new_nav, content, flags=re.DOTALL)
-        if updated_content != content:
-            fpath.write_text(updated_content, encoding="utf-8")
-            print(f"Updated language switcher in {fpath.relative_to(SITE_DIR)}")
+        fpath.write_text(updated_content, encoding="utf-8")
+        print(f"Updated {fpath.relative_to(SITE_DIR)}")
 
 def build():
     en_content_dir = CONTENT_DIR / "en"
@@ -630,8 +655,8 @@ def build():
     (en_site_dir / "index.html").write_text(en_index_html, encoding="utf-8")
     print("Generated en/index.html")
 
-    # Update language switch links in site/fr/ so FR visitors can toggle to EN
-    update_fr_lang_switches()
+    # Fix image asset paths and update language switches in site/fr/
+    update_fr_html_assets_and_nav()
 
 if __name__ == "__main__":
     build()
