@@ -3,16 +3,20 @@
 Build script for Mine-JEPA static learning website.
 Parses Markdown sources in site/content/<lang>/ and generates HTML pages in site/<lang>/.
 Supports both 'fr' and 'en' languages.
+Auto-updates last publication date across generated site pages.
 """
 
 import os
 import re
 import html
+from datetime import datetime
 from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 SITE_DIR = ROOT_DIR / "site"
 CONTENT_DIR = SITE_DIR / "content"
+
+BUILD_DATE = datetime.now().strftime("%Y-%m-%d")
 
 # Real slug mappings from frontmatter
 SLUG_PAIR = {
@@ -296,6 +300,7 @@ def build_chapter_html(meta, body_md, lang):
         track_pref_label = "Afficher :"
         beg_label = "Débutant"
         exp_label = "Expert"
+        date_prefix = "Mis à jour le"
     else:
         other_lang = "fr"
         other_slug = REVERSE_SLUG_PAIR.get(slug, slug)
@@ -313,6 +318,7 @@ def build_chapter_html(meta, body_md, lang):
         track_pref_label = "Show:"
         beg_label = "Beginner"
         exp_label = "Expert"
+        date_prefix = "Updated"
 
     tracks_content = process_tracks(body_md, lang)
 
@@ -381,6 +387,7 @@ def build_chapter_html(meta, body_md, lang):
   <div class="wrap site-header-inner">
     <a class="site-brand" href="index.html"><span class="brand-mark" aria-hidden="true">&#9935;</span> Mine-JEPA</a>
     <div class="header-controls">
+      <span class="last-updated" title="Date de mise à jour">{date_prefix}: {BUILD_DATE}</span>
       <nav class="lang-switch" aria-label="{'Langue du site' if lang == 'fr' else 'Site language'}">
         <a href="{fr_href}"{fr_current} lang="fr" hreflang="fr">{fr_title}</a>
         <a href="{en_href}"{en_current} lang="en" hreflang="en">{en_title}</a>
@@ -423,6 +430,11 @@ def build_chapter_html(meta, body_md, lang):
 <footer class="site-footer">
   <div class="wrap">
     <p>{footer_text}</p>
+    <p class="footer-links">
+      Author / Auteur: <a href="https://x.com/reddwarf03" target="_blank" rel="noopener">@reddwarf03 (X/Twitter)</a> ·
+      <a href="https://github.com/redDwarf03" target="_blank" rel="noopener">redDwarf03 (GitHub)</a> |
+      <a href="https://github.com/redDwarf03/mine-jepa" target="_blank" rel="noopener">GitHub Repository</a>
+    </p>
   </div>
 </footer>
 
@@ -509,6 +521,7 @@ def generate_en_landing_page(chapters_meta):
   <div class="wrap site-header-inner">
     <a class="site-brand" href="index.html"><span class="brand-mark" aria-hidden="true">&#9935;</span> Mine-JEPA</a>
     <div class="header-controls">
+      <span class="last-updated" title="Last update date">Updated: {BUILD_DATE}</span>
       <nav class="lang-switch" aria-label="Site language">
         <a href="../fr/index.html" lang="fr" hreflang="fr">FR</a>
         <a href="index.html" aria-current="true" lang="en" hreflang="en">EN</a>
@@ -593,6 +606,11 @@ def generate_en_landing_page(chapters_meta):
 <footer class="site-footer">
   <div class="wrap">
     <p>Mine-JEPA — a JEPA agent learning to play Minecraft from pixels, documented along the way.</p>
+    <p class="footer-links">
+      Author: <a href="https://x.com/reddwarf03" target="_blank" rel="noopener">@reddwarf03 (X/Twitter)</a> ·
+      <a href="https://github.com/redDwarf03" target="_blank" rel="noopener">redDwarf03 (GitHub)</a> |
+      <a href="https://github.com/redDwarf03/mine-jepa" target="_blank" rel="noopener">GitHub Repository</a>
+    </p>
   </div>
 </footer>
 
@@ -603,15 +621,19 @@ def generate_en_landing_page(chapters_meta):
     return index_html
 
 def update_fr_html_assets_and_nav():
-    """Fixes image asset paths in site/fr/*.html to ../assets/ and updates language switches."""
+    """Fixes image asset paths in site/fr/*.html, updates language switches, last-updated badge, and footer links."""
     fr_dir = SITE_DIR / "fr"
     if not fr_dir.exists():
         return
     for fpath in fr_dir.glob("*.html"):
         content = fpath.read_text(encoding="utf-8")
 
-        # Fix asset paths: ../../assets/ -> ../assets/
         content = content.replace("../../assets/", "../assets/")
+
+        # Update header controls with last updated span
+        date_span = f'<span class="last-updated" title="Date de mise à jour">Mis à jour le : {BUILD_DATE}</span>'
+        if 'class="last-updated"' not in content:
+            content = content.replace('<div class="header-controls">', f'<div class="header-controls">\n      {date_span}')
 
         # Update language switcher
         if fpath.name == "index.html":
@@ -628,8 +650,23 @@ def update_fr_html_assets_and_nav():
       </nav>'''
         
         old_pattern = r'<nav class="lang-switch".*?</nav>'
-        updated_content = re.sub(old_pattern, new_nav, content, flags=re.DOTALL)
-        fpath.write_text(updated_content, encoding="utf-8")
+        content = re.sub(old_pattern, new_nav, content, flags=re.DOTALL)
+
+        # Update footer
+        new_footer = '''<footer class="site-footer">
+  <div class="wrap">
+    <p>Mine-JEPA — un agent JEPA qui apprend à jouer à Minecraft à partir des pixels, documenté au fil de l'eau.</p>
+    <p class="footer-links">
+      Auteur : <a href="https://x.com/reddwarf03" target="_blank" rel="noopener">@reddwarf03 (X/Twitter)</a> ·
+      <a href="https://github.com/redDwarf03" target="_blank" rel="noopener">redDwarf03 (GitHub)</a> |
+      <a href="https://github.com/redDwarf03/mine-jepa" target="_blank" rel="noopener">Repository GitHub</a>
+    </p>
+  </div>
+</footer>'''
+        footer_pattern = r'<footer class="site-footer">.*?</footer>'
+        content = re.sub(footer_pattern, new_footer, content, flags=re.DOTALL)
+
+        fpath.write_text(content, encoding="utf-8")
         print(f"Updated {fpath.relative_to(SITE_DIR)}")
 
 def build():
@@ -655,7 +692,7 @@ def build():
     (en_site_dir / "index.html").write_text(en_index_html, encoding="utf-8")
     print("Generated en/index.html")
 
-    # Fix image asset paths and update language switches in site/fr/
+    # Fix image asset paths and update language switches & footer links in site/fr/
     update_fr_html_assets_and_nav()
 
 if __name__ == "__main__":

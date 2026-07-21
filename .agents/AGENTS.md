@@ -34,6 +34,7 @@ JEPA is **prone to collapse** (all embeddings → constant, variance → 0, loss
 4. **NEVER overwrite a good checkpoint**. `scripts/train_eb_jepa.py` overwrites `checkpoints/ebwm.pt`. Back up current good checkpoints before training (e.g., `ebwm_backup_<date>.pt`).
 5. **SEED EVERYTHING** trained (`torch.manual_seed`, `numpy`, CUDA deterministic).
 6. **The proxy metric lies**: Lower WM `ratio` (`val_pred/val_copy`) does NOT mean a better agent. Recipe $T=8$/20ep ($\text{ratio} \approx 0.93$) is the sweet spot. Over-training ($\text{ratio} \approx 0.88$) breaks the planner. Judge by real cold-start play gates.
+7. **Site build & Last Updated Date**: Whenever modifying site content or code, always execute `python scripts/build_site.py` to regenerate `site/fr/` and `site/en/` pages. `scripts/build_site.py` automatically updates the last publication date at the top of every site page.
 
 ---
 
