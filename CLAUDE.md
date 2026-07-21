@@ -190,6 +190,187 @@ section) — **signal improved, outcome unchanged**:
   (`DisagreementEnsemble`, already config-gated for the offline version that failed in
   chapter 09).
 
+Phase 5+ — Cold-start attempt #4: `commit_length` (real result) + online RND (tried, inconclusive)
+(PC, 2026-07-20, `docs/10` follow-up section):
+- **`commit_length` — first non-zero cold-start result.** `plan()` was scoring good multi-step
+  sequences correctly but returning only their 1st action every replan, discarding steps 2..12
+  of its own winning plan on every tick. `commit_length=4` (config-gated, `mine_jepa/ebwm/planner.py`,
+  default 1 = old behaviour byte-for-byte) executes the first 4 actions of the winning sequence
+  before replanning. Pooled over 3 batches (N=5+6+20=31, seed 0, two-brain, sticky 0.5, scan
+  off): **3/31 logs chopped (9.7%)**, every success identical (+4 planks, reward 9 — the known
+  craft rule) — vs **0/27 pooled for `commit_length=1`** across every earlier cold-start batch
+  in attempts #2-#3. Fisher one-sided p≈0.15 (not significant at this N) but the first-ever
+  non-zero result on this milestone.
+  - **LESSON: a scoring bug and a calling-convention bug look identical from outside.**
+    Attempts #2-#3 kept sharpening the *signal* (sticky sampling, scan, coverage fine-tune);
+    the actual gap was that the planner wasn't *executing* the multi-step plan it had already
+    correctly picked.
+- **Online RND on top of `commit_length=4` — inconclusive, stopped before a confirmation batch.**
+  N=7 launch attempt: 3/7 crashed at setup on a real bug (`ResNet5.out_dim` didn't exist; fixed
+  mid-batch, now in the committed code — not MineRL/Java flakiness, verified by file mtime
+  falling inside the run window). Of the 4 valid episodes: 0/4 successes — uninformative on its
+  own at this N (expected ≈0.4 successes at the 9.7% base rate). Qualitative check: action
+  profiles mixed (2/4 kept the lumberjack a14 signature, 2/4 didn't); GIF visually
+  indistinguishable from a *successful* `commit_length=4`-alone episode (same close-trunk,
+  camera-pitched-up frames) — no visible "less stuck" behaviour attributable to RND. **The
+  `novelty_mean` diagnostic that would have actually answered the question was never logged**
+  (`scan.log_std: false` in the config used) — zero data on whether the novelty signal behaved
+  as designed. Per the project's own rule (no N=15-20 batch without a real positive qualitative
+  signal first): **stopped here, no larger batch run.**
+  - **LESSON: an unlogged diagnostic is the same as a nonexistent one.** `novelty_mean` existed
+    in `plan(return_info=True)`'s return dict already; one YAML key (`scan.log_std: true`) would
+    have told us whether RND was alive. Next RND attempt: flip that key first, at the same
+    cheap N=4-7 scale, before spending a confirmation batch.
+- **RND follow-up with `novelty_mean` actually logged — confirmed negative, root cause found.**
+  N=6, `scan.log_std: true`. All 6 episodes show the same shape: `novelty_mean` starts at
+  0.02-0.09, decays smoothly to 10-60× lower within ~150-280 ticks, **regardless of what's on
+  screen** — correlation with `goal_score_std` (the independent lost/found signal) ranges
+  -0.83 to +0.15 across episodes, no reliable relationship. Sharpest evidence: in one episode,
+  `goal_score_std` hit its single highest value of the whole run (the most visually salient
+  moment) at the exact tick where `novelty_mean` was near its lowest. **Root cause: the 256-slot
+  ring buffer fills within ~150 ticks with visually homogeneous single-biome frames; the online
+  predictor converges on that narrow local distribution, so "novelty" tracks elapsed ticks, not
+  scene content.** Different failure mechanism from chapter 09's offline ensemble collapse, same
+  outcome (no usable signal in the deployment that matters). No N=15-20 batch run — the
+  mechanism is answered, more episodes would only restate it.
+- `ebwm.pt`, `craft_wm_v4.pt` untouched by attempts #4-#7 (all of them live only in the planner
+  call convention, the two-brain chop planner's scoring, or a small separately-trained head —
+  no retraining of either main checkpoint).
+
+Phase 5+ — Cold-start attempt #5: re-enable the scan macro in two-brain mode (`docs/10`
+follow-up) — **NO-GO**:
+- Hypothesis: the scan macro (attempt #2, calibrated `flat_threshold: 0.003` on `ebwm.pt`,
+  genuine 10× band separation) was disabled for craft configs only because `craft_wm_v4`'s
+  bands were compressed — but the two-brain chop phase runs on `ebwm.pt`, the model scan was
+  actually calibrated on. Wiring verified correct (scan reads `chop_planner`'s std, not
+  `craft_wm_v4`'s). Combined with `commit_length=4`.
+- N=7: **0/7 successes.** 2/7 episodes reproduced a bounded version of attempt #2's "agent
+  spins" pathology (a12 turn-camera action at 51%/87%, some scan triggers running to the
+  `max_replans=40` cap). One episode's std sat in the salient-scene band (comparable to
+  Treechop's canopy band) for ~880 ticks with scan correctly staying inert — **and the agent
+  still didn't chop**, a direct replay of attempt #2's "surrounded by trees, still doesn't chop"
+  finding, this time on a confirmed-correctly-wired signal. One episode ended in a treeless
+  underground/rocky passage — a scan macro cannot fix a spawn like that by construction.
+  - **LESSON: a correctly-wired, well-calibrated "I'm lost" detector is not itself a fix if the
+    behaviour that consumes it (turn in place) can't cover ground or can't convert "something
+    is visible" into "approach and chop."** This is now the standing diagnosis, not a hypothesis.
+
+Phase 5+ — Cold-start attempt #6: real CEM (Cross-Entropy Method) planner (`docs/10`
+follow-up) — **NO-GO**:
+- Replaced single-generation random/sticky-shooting with an iterative categorical-CEM refit
+  loop (`cem_iters`, config-gated, `cem_iters<=1` reproduces old behaviour bit-for-bit, verified
+  on both checkpoints). `cem_iters=3`: fps cost ×2.94 per call, ~41% live throughput drop
+  (not disqualifying alone).
+- N=8: **0/8 successes.** The qualitative signal is a **regression, not a wash**: mean top-action
+  concentration 66.3% (range 50-89%) vs. `commit_length=4`-alone's 35.8% average — roughly
+  double, with almost no search/turn actions in the highest-concentration episodes.
+  - **LESSON: CEM's elite-refit loop needs a real gradient in the score to refine toward. When
+    the score is flat (no tree in view — the standing diagnosis), refitting locks onto sampling
+    *noise* instead, and does so more aggressively each generation than plain random-shooting
+    would. An optimizer that amplifies whatever it's given amplifies noise just as readily as
+    signal.** This is the third independent confirmation (after RND, after scan) that the wall
+    survives fixes aimed at the score/search signal itself.
+
+Phase 5+ — Cold-start attempt #7: trained cost-to-reach distance metric (`docs/10` follow-up,
+Destrade et al. arXiv:2601.00844) — **NO-GO, but a genuinely new diagnostic finding**:
+- Replaced the untrained raw-latent L2 distance with a small projector `P` (frozen `ebwm.pt`,
+  only `P`'s ~49 params trained) so `||P(z_t)-P(z_goal)||` approximates true step-count-to-goal,
+  trained on Treechop + the attempt #3 coverage episodes (as capped/censored "far" examples,
+  one-sided hinge loss) so the metric would see genuinely-lost frames during training, not just
+  Treechop's forest-guaranteed ones. `distance_projector=None` verified bit-for-bit identical to
+  old behaviour.
+- **Offline validation (the real gate) passed clearly**: near pairs (true k≤5) predicted
+  distance mean 12.3; far/coverage pairs mean 97.3 — **separation ratio 7.9** (required ≥1.3,
+  far above it, unlike RND's flat collapse).
+- Live N=6: **0/6 successes**, no crashes, action-profile concentration normal (16-40%, no
+  CEM-style regression). Frame/std analysis on the one surviving episode: `goal_score_std`
+  correlates with scene *brightness* (r=-0.57, day vs. dusk/night frames differ ~2×) but **not
+  monotonically** — the two darkest frames right before a death had the lowest std in the whole
+  episode, the opposite of what a genuine "lost" signal should do.
+  - **LESSON: the metric discriminates — a real ~150× dynamic range, structurally unlike RND's
+    flat collapse — but along a lighting/scene-composition axis, not tree-proximity.** Neither
+    training source (Treechop, coverage) contains true night/cave frames, so the metric never
+    learned to separate "unusual lighting" from "far from goal" — a specific, third failure
+    mode (data composition gap), distinct from "no signal" (RND) and "score amplifies noise"
+    (CEM). Concrete next step if revisited: targeted dusk/night/cave coverage collection, or
+    photometric augmentation during projector training — not more live episodes on this
+    checkpoint, which won't fix a training-data gap.
+
+**Standing diagnosis after attempts #4-#7 — the wall is BEHAVIOURAL (action generation), not
+PERCEPTUAL (score quality).** Three independent score/search-quality fixes (online RND, real
+CEM, a trained cost-to-reach metric) each landed differently — one flat, one actively regressive,
+one real-but-misaligned — and none moved the outcome. The one lever that ever produced a
+non-zero result (`commit_length=4`, attempt #4) is a pure execution fix: it changed nothing
+about how good the *choice* was, only how long a chosen plan is *held*. The world model can
+already evaluate situations correctly (attempt #7's own offline gate proves that); the 512
+randomly/stickily-sampled candidate sequences it evaluates essentially never contain the
+right long-duration gesture to act on that evaluation.
+
+Phase 5+ — Cold-start attempt #8: Proposal A (action-pool priming) + Proposal C (bushwhack
+cruise macro), combined with `commit_length=4` (`docs/10` follow-up) — **NO-GO, but the most
+informative negative result of the campaign**:
+- Both mechanisms verified config-gated and bit-for-bit-identical when disabled
+  (`planner.action_pool_priming`, `scan.macro: bushwhack`), new config
+  `configs/play_craft_commit4_ac.yaml`. `mine_jepa/ebwm/planner.py`'s `_sample_actions()` now
+  injects ~30 hand-authored forward+attack / turn / backward macro rows into the 512-candidate
+  pool (Proposal A); `scripts/play_craft.py`'s scan block gained a `bushwhack` mode that forces
+  a bounded forward-sprint+jump cruise instead of turning in place when `goal_score_std` is flat
+  on the chop planner (Proposal C).
+- N=8, seed 0: **0/8 logs, 0/8 planks, reward 0.** Against the standing `commit_length=4`-alone
+  base rate (3/31 ≈ 9.7%), 0/8 is not itself surprising (≈0.8 expected successes) — not a
+  significant regression, but not a confirmation either.
+- **Both mechanisms verifiably fired** (not just wired-but-unused): the primed forward+attack
+  macro (a7) reached 21-49% share in 3/8 episodes; the bushwhack macro (a13) reached 28% with 8
+  scan triggers in 1/8 episode (only when the flat signal actually persisted long enough).
+- **The finding that matters more than the 0/8**: 3/8 episodes showed a single action (a14, the
+  pre-existing "move+attack" gesture) at 83-100% share — near-total behavioural lock-in. This
+  echoes attempt #6's real-CEM regression (66.3% mean top-action concentration vs.
+  `commit_length=4`-alone's 35.8%) on a *different* mechanism (fixed-menu priming + a
+  ground-covering macro, not iterative refitting) reaching a structurally similar failure mode.
+  ⚠️ Not yet cross-checked against `commit_length=4`-alone's own action distributions before
+  calling this "the same lock-in" in the docs — flagged for the write-up to verify, not assert.
+- **Standing-diagnosis refinement**: the MPC's argmax has no real gradient to follow when
+  `goal_score_std` is flat (no tree in view) — feed it i.i.d. noise (attempts #1-3) and it
+  fidgets in place; feed it a concentrated menu (real CEM, attempt #6) or continuous macros
+  (attempt #8) and it locks blindly onto one of them, because nothing in the flat score ever
+  corrects the choice. Hand-designed action generation (A/C) and score sharpening aimed at
+  *hard-coded* macros both hit the same wall from opposite directions. The mechanism that
+  should not lock blindly is one that has *learned* the full contextual behaviour distribution
+  (including how experts search) rather than being handed a small fixed menu.
+- Next actions, in this order:
+  1. **Proposal B (latent policy prior), promoted to next priority.** Train a lightweight BC
+     actor on frozen `ebwm.pt` using Treechop demos to *propose* MPC candidates (not decide
+     final actions — the MPC still evaluates/re-plans every step, so this is not a repeat of
+     Phase 4's failed pure-BC, where BC was the uncorrected final policy). ⚠️ Treechop demos
+     guarantee forest proximity — they contain almost no genuine "lost, searching" trajectories,
+     so the actor risks learning "always attack the visible tree" without learning to search.
+     Mitigation: fold in the attempt #3 coverage episodes (random-policy, genuinely lost frames)
+     alongside the Treechop demos so the actor sees at least some search-like behaviour.
+  2. **Repair the attempt #7 distance metric with photometric augmentation — DONE, NO-GO.**
+     Implemented (`augmentation.color_jitter` in `scripts/train_value_projector.py` /
+     `configs/train_value_projector_colorjitter.yaml`, training-input-side only, `ebwm.pt`
+     untouched). Offline separation held up (8.7× vs. attempt #7's 7.9×, gate passes) but the
+     actual target — the brightness confound — got **worse, not better**, on a cleaner isolated
+     measure (coverage-only pool, same "far" label by construction so any brightness→distance
+     relationship is a pure shortcut): r=0.117 (attempt #7, unaugmented) → **r=0.498 (augmented)**.
+     **LESSON: the confound is plausibly baked into `ebwm.pt`'s frozen latent space itself (narrow,
+     mostly-daytime Treechop training), not introduced by the projector's own training. Perturbing
+     only the projector's inputs can't undo a shortcut the upstream frozen encoder already
+     committed to** — a fourth distinct failure mode after attempt #7's "data composition gap"
+     (RND=flat, CEM=amplifies noise, distance-metric=wrong axis, this=confound is upstream not
+     downstream). `checkpoints/value_projector_colorjitter.pt` kept for comparison, NOT used in
+     place of the original — do not deploy it in the combined Proposal-B eval. Revisiting this
+     properly would need an encoder-side fix (adapter fine-tune under anti-collapse guardrails),
+     out of scope for now. The combined eval below proceeds on goal-centroid scoring alone
+     (no working non-flat distance signal), same as every attempt through #8.
+  3. **Spawn-viability diagnostic.** Attempt #8's episode 7 ended early (1856/3000 steps) with
+     no death logged and no tree ever found — log spawn type (e.g. underground/oceanic vs.
+     forest-adjacent) at episode start in `play_craft.py`/`play_minerl_multi.py` so a batch's
+     denominator can distinguish "the algorithm failed" from "the spawn made success
+     impossible by construction." Measurement fix, not a capability fix — but attempts #5 and
+     #8 both show unwinnable spawns diluting every success-rate number so far.
+  4. Evaluate B + the repaired distance metric together once both land.
+
 ⚠️ Phase 4 on **NVIDIA PC only**. MineRL requires Java 8.
 Installation: DO NOT use `uv pip install minerl` directly.
 See complete procedure below (patches gym + minerl + Gradle).

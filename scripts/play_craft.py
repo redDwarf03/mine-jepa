@@ -132,16 +132,21 @@ def main():
     p = cfg["planner"]
     item_weights = {log_idx: float(p.get("w_log", 1.0)), planks_idx: float(p.get("w_planks", 2.0))}
     commit_length = int(p.get("commit_length", 1))
+    # None/absent (default): _sample_actions() bit-for-bit original sampling
+    # (docs/10 attempt #8, Proposal A).
+    pool_priming = p.get("action_pool_priming")
     planner = SwitchingCraftPlanner(
         wm, chop_goal=chop_goal, item_weights=item_weights, log_idx=log_idx,
         n_actions=p["n_actions"], horizon=p["horizon"], n_candidates=p["n_candidates"],
         log_threshold=float(p.get("log_threshold", 0.05)),
         sticky_prob=float(p.get("sticky_prob", 0.0)), commit_length=commit_length,
+        action_pool_priming=pool_priming,
         device=device,
     )
     print(f"Planner: switching (no log→chop / log→craft), horizon={p['horizon']}, "
           f"candidates={p['n_candidates']}, sticky_prob={planner.sticky_prob}, "
-          f"commit_length={planner.commit_length}")
+          f"commit_length={planner.commit_length}, "
+          f"action_pool_priming={'ON' if pool_priming and pool_priming.get('enabled', False) else 'off'}")
 
     # Two-brain mode (docs/10 follow-up): the proven Treechop world model drives the
     # CHOP phase (movement actions 0-16, identical in both action maps); WM v4 keeps
@@ -158,6 +163,37 @@ def main():
         from scripts.play_ebwm import build_goal_latents, load_model as load_ebwm
         ebwm, ratio = load_ebwm(chop_cfg["checkpoint"], device)
         chop_goals = build_goal_latents(ebwm, {"goal": chop_cfg["goal"]}, device)
+
+        # Trained cost-to-goal metric (docs/10 attempt #7, mine_jepa/ebwm/value_head.py):
+        # absent key = None = the two-brain chop planner's original raw-latent squared-L2
+        # goal distance, unchanged. Present = DistanceProjector.pairwise_dist replaces it
+        # in DiscreteLatentPlanner._score().
+        distance_projector = None
+        dp_path = chop_cfg.get("distance_projector")
+        if dp_path:
+            from mine_jepa.ebwm.value_head import DistanceProjector
+            distance_projector = DistanceProjector.load(dp_path, device=device)
+            print(f"Distance projector: {dp_path} loaded "
+                  f"(proj_dim={distance_projector.proj_dim}) — replaces raw-latent goal distance")
+
+        # BC actor prior (docs/10 attempt #8, Proposal B, mine_jepa/ebwm/actor.py):
+        # placed under chop_model (not the top-level planner block) because the
+        # actor is trained on THIS checkpoint's (ebwm.pt) latent space specifically
+        # — same reasoning as distance_projector/RND above, an actor trained here
+        # must never be attached to craft_wm_v4's SwitchingCraftPlanner (different
+        # encoder, same latent SHAPE, different geometry). Absent/enabled:false
+        # (default) leaves chop_actor=None, actor_n_samples=0 — DiscreteLatentPlanner
+        # never calls the actor, bit-for-bit the original/Proposal-A sampling.
+        actor_cfg = chop_cfg.get("actor_prior") or {}
+        chop_actor, actor_n_samples, actor_temperature = None, 0, 1.0
+        if actor_cfg.get("enabled", False):
+            from mine_jepa.ebwm.actor import BCActor
+            chop_actor = BCActor.load(actor_cfg["checkpoint_path"], device=device)
+            actor_n_samples = int(actor_cfg.get("n_actor_samples", 128))
+            actor_temperature = float(actor_cfg.get("temperature", 1.0))
+            print(f"BC actor prior: {actor_cfg['checkpoint_path']} loaded "
+                  f"(n_actor_samples={actor_n_samples}, temperature={actor_temperature}) "
+                  f"— proposes candidates for the two-brain chop planner")
 
         # Online RND (docs/09/10, mine_jepa/ebwm/rnd.py): only wired into the
         # two-brain chop planner (ebwm.pt's latent space) — SwitchingCraftPlanner
@@ -181,24 +217,71 @@ def main():
                   f"lr={rnd_cfg.get('lr', 1e-3)}, buffer_size={rnd_buffer.maxlen}, "
                   f"batch_size={rnd_batch_size}, update_every={rnd_update_every})")
 
+        cem_cfg = p.get("cem", {}) or {}
+        cem_iters = int(cem_cfg.get("iters", 1))
         chop_planner = DiscreteLatentPlanner(
             ebwm, n_actions=int(chop_cfg.get("n_actions", 17)),
             horizon=p["horizon"], n_candidates=p["n_candidates"],
             sticky_prob=float(p.get("sticky_prob", 0.0)), commit_length=commit_length,
             ensemble=rnd_module,
             novelty_coeff=float(rnd_cfg.get("novelty_coeff", 0.5)) if rnd_enabled else 0.0,
+            cem_iters=cem_iters,
+            cem_elite_frac=float(cem_cfg.get("elite_frac", 0.1)),
+            cem_smoothing=float(cem_cfg.get("smoothing", 0.01)),
+            distance_projector=distance_projector,
+            action_pool_priming=pool_priming,
+            actor=chop_actor, actor_n_samples=actor_n_samples, actor_temperature=actor_temperature,
             device=device,
         )
         print(f"Two-brain chop: {chop_cfg['checkpoint']} (ratio={ratio:.3f}), "
-              f"{chop_planner.n_actions} movement actions")
+              f"{chop_planner.n_actions} movement actions"
+              + (f", CEM iters={cem_iters} elite_frac={chop_planner.cem_elite_frac} "
+                 f"smoothing={chop_planner.cem_smoothing}" if cem_iters > 1 else ""))
 
     scan_cfg = cfg.get("scan", {}) or {}
     scan_enabled = bool(scan_cfg.get("enabled", False))
+    # "turn" (default, docs/10 attempt #2): the original turn-in-place reflex,
+    # unchanged. "bushwhack" (docs/10 attempt #8, Proposal C): a bounded forward-
+    # sprint+jump cruise instead — covers ground rather than spinning on the spot,
+    # for spawns where nothing is ever found by turning (attempt #5's treeless
+    # underground episode). Same trigger (goal_score_std flat on the chop planner).
+    scan_macro = scan_cfg.get("macro", "turn")
+    bushwhack_max_ticks = int(scan_cfg.get("bushwhack_max_ticks", 30))
     if scan_enabled:
-        print(f"Scan macro: ON (chop mode only, flat_threshold={scan_cfg['flat_threshold']}, "
-              f"patience={scan_cfg.get('patience', 3)}, "
-              f"turn_action=a{scan_cfg.get('turn_action', 12)}, "
+        macro_desc = (
+            f"turn_action=a{scan_cfg.get('turn_action', 12)}" if scan_macro == "turn"
+            else f"bushwhack forward=a{scan_cfg.get('bushwhack_forward_action', 13)} "
+                 f"jump=a{scan_cfg.get('bushwhack_jump_action', 8)} "
+                 f"jump_every={scan_cfg.get('bushwhack_jump_every', 4)} "
+                 f"max_ticks={bushwhack_max_ticks}"
+        )
+        print(f"Scan macro: ON (chop mode only, macro={scan_macro}, "
+              f"flat_threshold={scan_cfg['flat_threshold']}, "
+              f"patience={scan_cfg.get('patience', 3)}, {macro_desc}, "
               f"max_replans={scan_cfg.get('max_replans', 40)})")
+
+    # Spawn-viability diagnostic (docs/10 attempt #8 follow-up): honest,
+    # observable per-episode evidence of whether ANYTHING findable was ever in
+    # view, so a batch's failures can be split into "algorithm didn't find a
+    # tree" vs. "there was no tree within reach" without inventing a biome
+    # classifier. Two cheap signals, neither claiming to be definitive on its
+    # own: (1) the max chop-mode goal_score_std reached over the whole episode
+    # (already computed every step regardless of scan/log_std — this just
+    # tracks its running max instead of discarding it) against a configured
+    # "something was visible at some point" threshold; (2) a first-frame
+    # thumbnail dumped to disk for manual human eyeballing, since no automatic
+    # signal here has been shown reliable enough to replace that (docs/10
+    # attempt #7's lighting-confound finding is a direct warning against
+    # trusting an untested automatic proxy). Disabled by default — zero cost,
+    # zero behaviour change, when `spawn_diag.enabled` is absent/false.
+    spawn_cfg = cfg.get("spawn_diag", {}) or {}
+    spawn_diag_enabled = bool(spawn_cfg.get("enabled", False))
+    spawn_thumb_dir = Path(spawn_cfg.get("thumb_dir", "assets/spawn_thumbs"))
+    spawn_std_viable_threshold = float(spawn_cfg.get("std_viable_threshold", 0.005))
+    if spawn_diag_enabled:
+        spawn_thumb_dir.mkdir(parents=True, exist_ok=True)
+        print(f"Spawn-viability diagnostic: ON (thumb_dir={spawn_thumb_dir}, "
+              f"std_viable_threshold={spawn_std_viable_threshold})")
 
     a_cfg = cfg["agent"]
     n_episodes = args.episodes or a_cfg["episodes"]
@@ -227,9 +310,17 @@ def main():
         gif_frames = [pov] if record else []
         t0 = time.perf_counter()
 
+        spawn_thumb_path = None
+        spawn_max_std = 0.0
+        if spawn_diag_enabled:
+            spawn_thumb_path = spawn_thumb_dir / f"ep{ep:03d}_{int(time.time() * 1000)}.png"
+            imageio.imwrite(str(spawn_thumb_path), pov)
+
         # Scan macro state (docs/10): only meaningful in chop mode — a flat
-        # goal-score std means no tree in view → force a camera-yaw sweep.
+        # goal-score std means no tree in view → force a camera-yaw sweep (macro
+        # "turn") or a bounded forward cruise (macro "bushwhack", attempt #8).
         flat_count, scanning, scan_replans, scan_triggers = 0, False, 0, 0
+        bushwhack_ticks = 0
         # RND tick counter (within-episode only — no cross-episode persistence;
         # each play_minerl_multi.py subprocess is one episode anyway).
         rnd_tick = 0
@@ -244,6 +335,8 @@ def main():
                 action, mode, info = planner.plan(obs_t, inv_t, return_info=True)
             mode_counts[mode] += 1
             std = info["goal_score_std"]
+            if spawn_diag_enabled and mode == "chop":
+                spawn_max_std = max(spawn_max_std, std)
             if scan_cfg.get("log_std", False) and mode == "chop":
                 nov = f" novelty_mean={info['novelty_mean']:.6f}" if "novelty_mean" in info else ""
                 print(f"    [scan] step={step:4d} goal_score_std={std:.6f}{nov}"
@@ -257,11 +350,30 @@ def main():
                 if not scanning:
                     flat_count = flat_count + 1 if flat else 0
                     if flat_count >= int(scan_cfg.get("patience", 3)):
-                        scanning, scan_replans = True, 0
+                        scanning, scan_replans, bushwhack_ticks = True, 0, 0
                         scan_triggers += 1
                 if scanning:
-                    if not flat or scan_replans >= int(scan_cfg.get("max_replans", 40)):
+                    ticks_exceeded = (
+                        scan_macro == "bushwhack" and bushwhack_ticks >= bushwhack_max_ticks
+                    )
+                    if not flat or scan_replans >= int(scan_cfg.get("max_replans", 40)) or ticks_exceeded:
                         scanning, flat_count = False, 0
+                    elif scan_macro == "bushwhack":
+                        # Bounded forward-sprint cruise with periodic jumps (covers
+                        # ground instead of turning in place; jumps hop 1-block
+                        # obstacles that would otherwise stall a straight sprint).
+                        # goal_score_std is rechecked every replan — i.e. every
+                        # len(committed) ticks, well inside bushwhack_max_ticks —
+                        # not only once the macro's tick budget is exhausted.
+                        jump_every = int(scan_cfg.get("bushwhack_jump_every", 4))
+                        jump_action = int(scan_cfg.get("bushwhack_jump_action", 8))
+                        forward_action = int(scan_cfg.get("bushwhack_forward_action", 13))
+                        committed = [
+                            jump_action if (bushwhack_ticks + i) % jump_every == 0 else forward_action
+                            for i in range(len(committed))
+                        ]
+                        bushwhack_ticks += len(committed)
+                        scan_replans += 1
                     else:
                         committed = [int(scan_cfg.get("turn_action", 12))] * len(committed)
                         scan_replans += 1
@@ -320,6 +432,11 @@ def main():
               f"{'YES (+' + str(planks_gain) + ')' if got_planks else 'no'}"
               f"  |  plans: chop={mode_counts['chop']} craft={mode_counts['craft']}"
               + (f"  |  scan triggers={scan_triggers}" if scan_enabled else ""))
+        if spawn_diag_enabled:
+            spawn_viable = spawn_max_std >= spawn_std_viable_threshold
+            print(f"   [spawn_diag] max_chop_std={spawn_max_std:.6f} "
+                  f"viable={spawn_viable} (threshold={spawn_std_viable_threshold}) "
+                  f"thumb={spawn_thumb_path}")
 
         if record and save_gif:
             gp = Path(cfg["logging"]["gif_path"])

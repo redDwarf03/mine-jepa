@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apprendre au modèle à imaginer la suite — Mine-JEPA</title>
+<meta name="description" content="Chapitre 3 du parcours Mine-JEPA : le world model — un predictor conditionné par l'action qui imagine l'embedding du prochain instant, évalué contre une base de référence « copier le dernier état » plutôt qu'un chiffre de perte isolé.">
+<link rel="stylesheet" href="../style.css">
+<script>document.documentElement.classList.add("js");</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Aller au contenu</a>
+
+<header class="site-header">
+  <div class="wrap site-header-inner">
+    <a class="site-brand" href="index.html"><span class="brand-mark" aria-hidden="true">&#9935;</span> Mine-JEPA</a>
+    <div class="header-controls">
+      <nav class="lang-switch" aria-label="Langue du site">
+        <a href="index.html" aria-current="true" lang="fr" hreflang="fr">FR</a>
+        <span aria-disabled="true" lang="en" title="Anglais — pas encore disponible">EN</span>
+      </nav>
+      <div class="track-pref" data-track-pref>
+        <span class="track-pref-label" id="track-pref-label">Afficher :</span>
+        <button type="button" data-track-pref-value="beginner" aria-pressed="true" aria-describedby="track-pref-label">Débutant</button>
+        <button type="button" data-track-pref-value="expert" aria-pressed="false" aria-describedby="track-pref-label">Expert</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <nav class="breadcrumb" aria-label="Fil d'Ariane">
+    <div class="wrap">
+      <a href="index.html">Parcours d'apprentissage</a>
+      <span aria-hidden="true">/</span>
+      <span>Chapitre 3</span>
+    </div>
+  </nav>
+
+  <article class="chapter">
+    <div class="wrap">
+
+      <header class="chapter-header">
+        <p class="chapter-kicker">
+          Chapitre 3
+
+        </p>
+        <h1>Apprendre au modèle à imaginer la suite</h1>
+        <p class="chapter-prereqs">
+          Prérequis :
+          <a href="01-c-est-quoi-jepa.html">Qu'est-ce que JEPA, et pourquoi apprendre à un programme à jouer à Minecraft avec ça ?</a>
+          et
+          <a href="02-le-piege-du-collapse.html">Le raccourci que le modèle essaie toujours de trouver (et comment on l'en empêche)</a>
+        </p>
+      </header>
+
+      <div class="tracks" data-tracks>
+        <div class="track-tabs" role="tablist" aria-label="Niveau de lecture">
+          <button class="track-tab" role="tab" id="tab-beginner" aria-controls="panel-beginner" aria-selected="true" data-track-tab="beginner">Débutant</button>
+          <button class="track-tab" role="tab" id="tab-expert" aria-controls="panel-expert" aria-selected="false" tabindex="-1" data-track-tab="expert">Expert</button>
+        </div>
+
+        <div class="track-panel is-active chapter-prose" data-track-panel="beginner" role="tabpanel" id="panel-beginner" aria-labelledby="tab-beginner">
+          <p class="track-kicker">Piste débutant</p>
+
+          <h2>Comprendre une photo, ce n'est pas prédire la suivante</h2>
+          <p>
+            À la fin des Chapitres 1 et 2, l'encodeur a appris à transformer une image de
+            Minecraft/Crafter en une courte liste de nombres (un embedding) qui capture vraiment
+            quelque chose de réel sur le jeu — pas une « triche » qui s'effondre vers une seule
+            réponse constante, mais un résumé sincère de ce qui se passe à l'écran.
+          </p>
+          <p>
+            Mais savoir <em>résumer</em> une image, ce n'est pas la même chose que savoir
+            <em>jouer</em>. Pour jouer, l'agent doit répondre à une question plus difficile :
+            « si j'appuie sur ce bouton maintenant, à quoi ressemblera le monde un instant plus
+            tard ? » C'est exactement ce que la Phase 2 de ce projet — le <strong>world
+            model</strong> (modèle du monde) — est construite pour répondre.
+          </p>
+
+          <h2>Le test du flipbook</h2>
+          <p>
+            Voici une image simple pour comprendre la différence entre un modèle qui prédit
+            vraiment et un modèle qui triche en ne faisant rien. Imagine un flipbook — ce petit
+            carnet où l'on dessine une image légèrement différente sur chaque page, pour qu'en
+            feuilletant vite ça donne un mini-film. Il y a deux façons très différentes de
+            « remplir » la page suivante d'un flipbook :
+          </p>
+          <ul>
+            <li>
+              <strong>Recopier la page actuelle.</strong> Retracer le dernier dessin, sans rien
+              changer. Techniquement, on a produit <em>une</em> page suivante, et si rien ne
+              bouge beaucoup dans la scène d'une image à l'autre, cette « prédiction » n'aura même
+              pas l'air si fausse.
+            </li>
+            <li>
+              <strong>Dessiner vraiment ce qui se passe ensuite.</strong> Si le personnage donne
+              un coup de bâton sur un arbre, dessiner l'arbre avec un morceau manquant, ou un
+              éclat de bois qui s'envole. Ça demande une vraie compréhension de « ce qui se passe
+              quand on fait X ».
+            </li>
+          </ul>
+          <p>
+            Un world model qui se contente de recopier discrètement l'embedding de l'image
+            précédente fait l'équivalent, pour un flipbook, de retracer sans arrêt la même page.
+            Il peut même obtenir un score <em>correct</em> sur un test naïf, parce que dans
+            beaucoup de jeux, la plupart des instants ne changent pas énormément d'une image à
+            l'autre. Le vrai test doit être : <strong>fait-il mieux que simplement recopier ?</strong>
+          </p>
+
+          <h2>Le test que le projet utilise réellement</h2>
+          <p>C'est exactement le contrôle utilisé par ce projet. Deux chiffres sont comparés :</p>
+          <ul>
+            <li>
+              <strong>copy_loss</strong> : à quel point on se tromperait en supposant « rien ne
+              change » — c'est-à-dire en réutilisant littéralement l'embedding actuel comme
+              supposition pour le suivant.
+            </li>
+            <li><strong>pred_loss</strong> : à quel point le predictor entraîné se trompe réellement.</li>
+          </ul>
+          <p>
+            On regarde ensuite le <strong>ratio</strong> : <code>pred_loss / copy_loss</code>. Si
+            ce ratio est supérieur à 1, le modèle est <em>pire</em> que ne rien faire — un signal
+            d'alarme. S'il est nettement inférieur à 1, le modèle bat la solution « paresseuse »
+            — une preuve réelle qu'il a appris quelque chose sur la cause et l'effet, et pas
+            seulement de l'inertie.
+          </p>
+
+          <h2>Ce qui s'est vraiment passé</h2>
+          <p>
+            Dans les cent premières étapes d'entraînement de la Phase 2 (sur Crafter, en
+            utilisant l'encodeur de la Phase 1), le ratio a démarré très haut — autour de
+            <strong>14</strong>, ce qui veut dire que le predictor non entraîné était quatorze
+            fois pire que ne rien faire — puis a rapidement chuté au fur et à mesure de
+            l'entraînement, jusqu'à environ <strong>1,66</strong> à l'étape 100. C'est attendu : au
+            tout début, le predictor n'a rien appris encore, donc bien sûr « deviner au hasard »
+            est pire que « deviner que rien ne change ».
+          </p>
+          <p>
+            Après l'entraînement complet (30 epochs), le projet a mesuré <strong>val_pred =
+            0,033</strong> contre <strong>val_copy = 0,086</strong> — un ratio de
+            <strong>0,38</strong>. Ça veut dire que l'erreur du predictor entraîné représente bien
+            moins de la moitié de l'erreur de la solution « ne rien faire » : une vraie preuve que
+            le modèle a appris une structure de cause à effet réelle dans le jeu (ce qui se passe
+            quand on frappe un outil, qu'on marche dans un mur, etc.), et pas seulement qu'il
+            répète l'image précédente.
+          </p>
+          <p>
+            Le projet ne s'est pas arrêté à un seul chiffre : il a aussi vérifié que ça tenait sur
+            plusieurs étapes imaginées d'affilée (imaginer l'étape 2 à partir de l'étape 1
+            imaginée, l'étape 3 à partir de l'étape 2 imaginée, et ainsi de suite, sans jamais
+            regarder une vraie image entre les deux). Sur 10 étapes de ce genre, la trajectoire
+            imaginée par le predictor est restée sous la base « ne rien faire » à chaque fois (10
+            fois sur 10). L'erreur grossit un peu plus on imagine loin — c'est attendu, puisque les
+            petites erreurs s'accumulent — mais le contrôle clé est qu'elle n'<em>explose</em> pas,
+            et qu'elle ne s'écroule pas non plus vers un zéro suspect (ce qui voudrait dire que le
+            predictor a appris à complètement ignorer l'action).
+          </p>
+
+          <h2>Pourquoi c'est important pour jouer au jeu</h2>
+          <p>
+            Une fois qu'un modèle sait imaginer de façon fiable « si je fais X, le monde
+            ressemblera à ceci », il peut essayer plusieurs plans différents <em>dans sa tête</em>,
+            comparer quel résultat imaginé se rapproche le plus de ce qu'il veut, et n'agir
+            réellement qu'ensuite — plutôt que de simplement réagir à l'aveugle. C'est le germe de
+            la planification, et c'est là que le projet va ensuite.
+          </p>
+        </div>
+
+        <div class="track-panel chapter-prose" data-track-panel="expert" role="tabpanel" id="panel-expert" aria-labelledby="tab-expert">
+          <p class="track-kicker">Piste expert</p>
+
+          <h2>Objectif</h2>
+          <p>
+            La Phase 2 entraîne un predictor conditionné par l'action
+            <code>g(s_t, a_t) → ŝ_{t+1}</code> par-dessus l'encodeur <strong>figé</strong> de la
+            Phase 1 (<code>s_t = f_θ(x_t)</code>, poids fixés après la Phase 1). Seul le predictor
+            reçoit des gradients ; la représentation de l'encodeur est traitée comme un espace
+            cible stable, ce qui se justifie directement par les garanties anti-collapse établies
+            au Chapitre 02 — une cible qui a déjà une variance saine et non dégénérée (~1,15
+            mesurée au moment de la sonde Phase 1) est intrinsèquement difficile à faire collapser,
+            puisque VICReg n'est même pas réappliqué ici.
+          </p>
+
+          <h2>Architecture</h2>
+          <pre><code>class ActionConditionedPredictor(nn.Module):
+    def __init__(self, embed_dim=128, n_actions=17, action_dim=32):
+        self.action_embed = nn.Embedding(n_actions, action_dim)
+        self.net = nn.Sequential(
+            nn.Linear(embed_dim + action_dim, 256), nn.GELU(),
+            nn.Linear(256, 256), nn.GELU(),
+            nn.Linear(256, embed_dim),
+        )</code></pre>
+          <p>
+            ~140K paramètres — délibérément petit comparé aux 688K paramètres de l'encodeur de la
+            Phase 1 (<code>docs/04_world_model.md</code>). L'intention de design : la capacité
+            représentationnelle pour « comprendre la scène » doit vivre dans l'encodeur ; le rôle
+            du predictor est étroitement limité à la dynamique de transition. Un predictor
+            surdimensionné risquerait de compenser les faiblesses de l'encodeur plutôt que de les
+            révéler, ce qui brouillerait la séparation entre les gates Phase 1 et Phase 2. GELU
+            est utilisé plutôt que ReLU pour des gradients plus lisses sur des entrées d'embedding
+            centrées sur zéro (pas de zone à zéro dur qui bloque la rétropropagation pour de
+            petites activations négatives).
+          </p>
+
+          <h2>Perte</h2>
+          <pre><code>L = MSE(ŝ_{t+1}, s_{t+1}) = ‖ g(s_t, a_t) - f_θ(x_{t+1}) ‖²</code></pre>
+          <p>
+            Un simple MSE latent contre la sortie de l'encodeur figé sur l'image suivante réelle —
+            pas de terme VICReg ici (contraste avec l'objectif composé de la Phase 1 au Chapitre
+            02) ; les garanties anti-collapse de la Phase 1 sont héritées, pas re-dérivées.
+          </p>
+
+          <h2>La base de référence et la métrique du gate</h2>
+          <pre><code>copy_loss = MSE(s_t, s_{t+1})        # base de référence « rien ne change »
+pred_loss = MSE(ŝ_{t+1}, s_{t+1})    # erreur du predictor entraîné
+ratio     = pred_loss / copy_loss</code></pre>
+          <p>
+            <code>ratio &gt; 1</code> → le predictor fait moins bien que la base de référence à
+            état constant (gate raté). <code>ratio &lt; 1</code> → le predictor bat le
+            « copy-last » (gate validé). Cette métrique de ratio (<code>val_pred/val_copy</code>)
+            est la même construction introduite par LeWorldModel (Maes, Le Lidec, Scieur, LeCun,
+            Balestriero, arXiv:2603.19312, 2026) — le design du gate Phase 2 de Mine-JEPA suit
+            directement cette convention d'évaluation, et le projet utilise plus tard un ratio
+            empirique « sweet spot » documenté (~0,93, tiré de l'ablation Phase 4) comme mise en
+            garde contre l'idée qu'un ratio <em>plus bas</em> serait toujours meilleur — une
+            nuance simplement signalée ici comme un pointeur vers un chapitre futur, pas
+            retro-appliquée au résultat de ce chapitre sur Crafter Phase 2, qui se juge sur ses
+            propres critères de gate.
+          </p>
+
+          <h2>Trajectoire d'entraînement mesurée (100 premières étapes, Crafter, encodeur Phase 1 figé val_loss=0,080)</h2>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr><th>Step</th><th>pred_loss</th><th>copy_loss</th><th>ratio</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>20</td><td>1.0193</td><td>0.0710</td><td>14.36</td></tr>
+                <tr><td>40</td><td>0.5721</td><td>0.0905</td><td>6.32</td></tr>
+                <tr><td>60</td><td>0.2819</td><td>0.1015</td><td>2.78</td></tr>
+                <tr><td>80</td><td>0.1877</td><td>0.1026</td><td>1.83</td></tr>
+                <tr><td>100</td><td>0.1338</td><td>0.0806</td><td>1.66</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            La descente rapide en début d'entraînement (14,4x → 1,66x en 100 étapes) reflète le
+            fait que le predictor capture très vite le mode de transition le plus fréquent
+            (quasi-identité — l'agent bouge souvent très peu d'une image à l'autre dans Crafter),
+            cohérent avec le fait que <code>copy_loss</code> est elle-même une base de référence
+            assez forte au début.
+          </p>
+
+          <h2>Résultat du gate Phase 2 (CLAUDE.md, après le run complet de 30 epochs)</h2>
+          <p>
+            <code>val_pred=0,033</code> contre <code>val_copy=0,086</code> → <strong>ratio=0,38</strong>
+            (0,033/0,086 = 0,384, arrondi à 0,38 — c'est la valeur exacte rapportée par
+            <code>CLAUDE.md</code>). Ce même gate liste, sur une ligne distincte, « erreur latente
+            à 1 pas &lt; base de référence : ratio 0,367 » — un second chiffre issu d'une mesure
+            séparée (le check 1-step de <code>eval_wm.py</code>), pas une reformulation du premier
+            ; les deux figurent explicitement dans <code>CLAUDE.md</code> et sont rapportés ici
+            tels quels, sans tenter de les faire coïncider artificiellement. Ce gate passe la
+            barre <code>ratio &lt; 1,0</code> avec une large marge. Le gate de rollout
+            multi-étapes (<code>scripts/eval_wm.py</code>) a en plus confirmé <strong>10/10</strong>
+            k (k=1..10) avec une erreur de rollout restant sous la base de référence à chaque étape
+            — c'est-à-dire que l'imagination latente n'explose pas et ne dégénère pas vers une
+            insensibilité totale à l'action sur un horizon déroulé de 10 étapes :
+          </p>
+          <pre><code>s_1 = g(s_0, a_0); s_2 = g(s_1, a_1); ...; s_k = g(s_{k-1}, a_{k-1})</code></pre>
+          <p>
+            L'accumulation d'erreur avec k croissant est attendue (erreur composée à chaque étape)
+            et n'est pas en elle-même une signature de défaillance ; les signatures de défaillance
+            explicitement surveillées par le projet sont soit la divergence (erreur qui explose
+            plus vite que la base de référence), soit le collapse du predictor vers l'invariance à
+            l'action (apprendre à ignorer <code>a_t</code>, ce qui se traduirait par un
+            <code>ŝ_{t+1}</code> restant presque identique pour des actions différentes depuis le
+            même <code>s_t</code>) — le résultat 10/10 sous la base de référence est incompatible
+            avec l'une ou l'autre.
+          </p>
+
+          <h2>Note sur l'interprétation du ratio pour la suite</h2>
+          <p>
+            Ce chapitre rapporte le gate Phase 2 tel qu'il est : ratio=0,38 passe le gate
+            nettement. Une phase ultérieure de ce projet (Phase 4, ablation MineRL) a trouvé qu'un
+            ratio <em>plus bas</em> n'est pas monotonement « meilleur » pour le succès de la
+            planification en aval — un world model surentraîné avec un ratio plus bas (~0,88)
+            s'est comporté moins bien qu'un modèle avec un ratio plus haut (~0,93). Ce constat est
+            spécifique au world model conditionné par l'action de MineRL et au cadre de
+            planification de la Phase 4 ; il est signalé ici comme un pointeur vers l'avant, pas
+            rétro-appliqué au résultat Crafter de la Phase 2 de ce chapitre, qui reste valide sur
+            ses propres critères.
+          </p>
+
+          <h2>Références (vérifiées, tirées de docs/references/index.md)</h2>
+          <ul>
+            <li>
+              Maes, Le Lidec, Scieur, LeCun, Balestriero, LeWorldModel, arXiv:2603.19312 (2026) —
+              origine de la convention d'évaluation <code>ratio = val_pred/val_copy</code> adoptée
+              ici.
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="achievement" role="note" aria-label="Résultat de ce chapitre">
+        <span class="achievement-icon" aria-hidden="true">&#127942;</span>
+        <div>
+          <p class="achievement-title">Succès &mdash; le predictor bat la solution paresseuse</p>
+          <p>
+            <code>val_pred = 0,033</code> contre <code>val_copy = 0,086</code> (ratio
+            <strong>0,38</strong>), confirmé sur <strong>10/10</strong> pas de rollout multi-étapes
+            sans divergence : le world model a appris une vraie structure de cause à effet, pas
+            seulement à recopier l'image précédente.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </article>
+
+  <nav class="chapter-nav" aria-label="Navigation entre chapitres">
+    <div class="wrap chapter-nav-inner">
+      <a class="chapter-nav-link" href="index.html">&larr; Retour au parcours</a>
+      <a class="chapter-nav-link" href="04-planifier-en-imagination.html">Chapitre suivant : Essayer 512 avenirs dans sa tête avant d'appuyer sur un bouton &rarr;</a>
+    </div>
+  </nav>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>Mine-JEPA — un agent JEPA qui apprend à jouer à Minecraft à partir des pixels, documenté au fil de l'eau.</p>
+  </div>
+</footer>
+
+<script src="../script.js" defer></script>
+</body>
+</html>

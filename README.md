@@ -20,6 +20,7 @@ The agent trains a Joint-Embedding Predictive Architecture entirely on raw gamep
 | 3 — Planner | Crafter MPC agent | Achievements vs random | **+7.5%** (+14% reward) |
 | 4 — Minecraft | MineRL Treechop eb-JEPA (v1, 664K) | Success rate | **25–50%** (draw-dependent; released ckpt 25%) |
 | 5 — Crafting | WM v4 crafts planks in **live** Minecraft (given wood) | Craft success | **100%**, +16–20 planks/ep (rule learned: dPlanks +3.8) |
+| 5+ — Cold-start | Crafting from scratch (random spawn, no starting wood) | Best config success rate | **~10%** (3/31 episodes — the first non-zero result after 4 engineering attempts; not yet statistically significant) |
 
 **No collapse across all runs.** `batch_var > 1` throughout — embeddings are diverse and informative.
 
@@ -219,6 +220,32 @@ Full analysis: [`docs/06_minecraft_port.md`](docs/06_minecraft_port.md)
 
 ---
 
+## Phase 5+: the cold-start frontier (open problem)
+
+Crafting **given wood** works 100% of the time (Phase 5, above). Crafting **from a random
+survival spawn** — no tree in view, no wood in hand — is a different, much harder problem, and
+still open. Four engineering attempts documented in
+[`docs/10_coldstart_engineering.md`](docs/10_coldstart_engineering.md), each an honest negative
+until the fourth:
+
+| Attempt | Idea | Result |
+|---|---|---|
+| 1 | Offline curiosity (Plan2Explore-style ensemble) | 0 logs — the ensemble collapsed on narrow frozen demos |
+| 2 | Sticky action sampling + a "lost state" scan reflex | 0 logs — fixed *depth*, not *breadth* |
+| 3 | Fine-tune on coverage data (more "lost" frames) | 0 logs — sharper "I'm lost" signal, same behaviour |
+| **4** | **`commit_length`: hold a planned gesture for 4 steps instead of 1** | **3/31 episodes (~9.7%) — the first non-zero result** |
+
+The breakthrough: the planner replans every single step and was discarding any sustained
+gesture its own imagined plan proposed. Holding 4 actions before replanning let a real
+lumberjack gesture survive — every one of the 3 successes chopped exactly 1 log and crafted
+exactly 4 planks, matching the project's own known craft rule. It's not yet statistically
+significant (Fisher p≈0.15 vs. a 0/27 prior baseline) but it's the first reproducible signal on
+this milestone. Online RND (novelty reward trained *during* play, immune to the offline
+ensemble's collapse failure mode) is being tested as a complementary fix for *choosing* a good
+direction when lost, on top of `commit_length`'s ability to *hold* one.
+
+---
+
 ## Training details
 
 ### Hardware used
@@ -266,6 +293,16 @@ The full analysis is in [`docs/07_cua_landscape_june2026.md`](docs/07_cua_landsc
 
 ---
 
+## Learning site (in progress)
+
+A public, step-by-step tutorial site is being built at [`site/`](site/) — the same real project
+history as the docs below, but written twice per chapter: once for a curious 16-year-old, once
+for an ML specialist, side by side. Currently French-only (English planned), local-only (not yet
+deployed), and growing one chapter at a time as new results land. Run it locally with
+`python -m http.server` from the repo root and open `site/fr/index.html`.
+
+---
+
 ## Docs
 
 | Document | Content |
@@ -279,6 +316,7 @@ The full analysis is in [`docs/07_cua_landscape_june2026.md`](docs/07_cua_landsc
 | [`docs/07_cua_landscape_june2026.md`](docs/07_cua_landscape_june2026.md) | CUA landscape June 2026, JEPA positioning |
 | [`docs/08_crafting.md`](docs/08_crafting.md) | Teaching the WM to craft: v3 fails → v4 inventory-as-state → preconditions |
 | [`docs/09_curiosity_coldstart.md`](docs/09_curiosity_coldstart.md) | Curiosity for cold-start (attempt #1): a 3-agent loop + a diagnosed negative result |
+| [`docs/10_coldstart_engineering.md`](docs/10_coldstart_engineering.md) | Cold-start attempts #2–#4: sticky sampling, coverage fine-tune, `commit_length` + online RND |
 | [`docs/references/index.md`](docs/references/index.md) | Curated bibliography — papers implemented, read, or explicitly rejected |
 | [`PLAN.md`](PLAN.md) | Full project plan with gates and phases |
 
@@ -296,6 +334,8 @@ Full annotated bibliography (with implementation notes and rejection reasons): [
 | Meta FAIR — eb_jepa | **Our backbone** (vendored, action-conditioned) |
 | Maes et al. 2026 — LeWorldModel (arXiv:2603.19312) | World model design + ratio metric |
 | Terver et al. 2025 — *What Drives Success in Physical Planning with Joint-Embedding Predictive World Models?* ([code](https://github.com/facebookresearch/jepa-wms)) | MPC planning design |
+| Burda et al. 2018 — Random Network Distillation (arXiv:1810.12894) | Cold-start exploration (attempt #4) — online novelty reward, immune to the ensemble-collapse failure mode that killed the offline attempt |
+| Sekar et al. 2020 — Plan2Explore (arXiv:2005.05960) | Cold-start exploration (attempt #1) — **tried offline, failed**: the disagreement ensemble collapsed on frozen demos |
 | Assran et al. 2025 — V-JEPA 2 | Studied; **not used** (OOD on Minecraft, 600 M params) |
 
 ---

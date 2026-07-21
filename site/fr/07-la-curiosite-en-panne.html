@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>La curiosité en panne, puis deux rustines qui marchent à moitié — Mine-JEPA</title>
+<meta name="description" content="Chapitre 7 du parcours Mine-JEPA : la curiosité artificielle (Plan2Explore) échoue à cause d'un collapse d'ensemble entraîné hors-ligne ; l'échantillonnage collant et un réflexe de recherche amènent un vrai progrès sur Treechop mais zéro sur le cold-start — le mur commence à ressembler à un problème comportemental.">
+<link rel="stylesheet" href="../style.css">
+<script>document.documentElement.classList.add("js");</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Aller au contenu</a>
+
+<header class="site-header">
+  <div class="wrap site-header-inner">
+    <a class="site-brand" href="index.html"><span class="brand-mark" aria-hidden="true">&#9935;</span> Mine-JEPA</a>
+    <div class="header-controls">
+      <nav class="lang-switch" aria-label="Langue du site">
+        <a href="index.html" aria-current="true" lang="fr" hreflang="fr">FR</a>
+        <span aria-disabled="true" lang="en" title="Anglais — pas encore disponible">EN</span>
+      </nav>
+      <div class="track-pref" data-track-pref>
+        <span class="track-pref-label" id="track-pref-label">Afficher :</span>
+        <button type="button" data-track-pref-value="beginner" aria-pressed="true" aria-describedby="track-pref-label">Débutant</button>
+        <button type="button" data-track-pref-value="expert" aria-pressed="false" aria-describedby="track-pref-label">Expert</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <nav class="breadcrumb" aria-label="Fil d'Ariane">
+    <div class="wrap">
+      <a href="index.html">Parcours d'apprentissage</a>
+      <span aria-hidden="true">/</span>
+      <span>Chapitre 7</span>
+    </div>
+  </nav>
+
+  <article class="chapter">
+    <div class="wrap">
+
+      <header class="chapter-header">
+        <p class="chapter-kicker">Chapitre 7</p>
+        <h1>La curiosité en panne, puis deux rustines qui marchent à moitié</h1>
+        <p class="chapter-prereqs">
+          Prérequis :
+          <a href="01-c-est-quoi-jepa.html">Qu'est-ce que JEPA, et pourquoi apprendre à un programme à jouer à Minecraft avec ça ?</a>,
+          <a href="02-le-piege-du-collapse.html">Le raccourci que le modèle essaie toujours de trouver (et comment on l'en empêche)</a>,
+          <a href="03-le-modele-du-monde.html">Apprendre au modèle à imaginer la suite</a>,
+          <a href="04-planifier-en-imagination.html">Essayer 512 avenirs dans sa tête avant d'appuyer sur un bouton</a>,
+          <a href="05-le-vrai-minecraft.html">Le grand saut vers le vrai Minecraft : quatre échecs, puis un agent qui coupe des arbres</a>
+          et
+          <a href="06-apprendre-a-fabriquer.html">Apprendre à fabriquer : la règle est comprise, le premier arbre reste hors de portée</a>
+        </p>
+      </header>
+
+      <figure class="chapter-media">
+        <img
+          src="../../assets/agent_play_explore.gif"
+          width="64"
+          height="64"
+          alt="Vue à la première personne dans MineRLTreechop-v0, capturée pendant le test de la curiosité (Plan2Explore) : l'agent se déplace au milieu d'arbres denses, la même scène de départ garantie qu'au Chapitre 5.">
+        <figcaption>
+          Un épisode du test A/B avec la curiosité (Plan2Explore) activée. Le résultat de ce
+          chapitre : ce comité de « devineurs » s'est mis d'accord trop vite pendant
+          l'entraînement, et n'a jamais réellement influencé le comportement affiché ici.
+        </figcaption>
+      </figure>
+
+      <div class="tracks" data-tracks>
+        <div class="track-tabs" role="tablist" aria-label="Niveau de lecture">
+          <button class="track-tab" role="tab" id="tab-beginner" aria-controls="panel-beginner" aria-selected="true" data-track-tab="beginner">Débutant</button>
+          <button class="track-tab" role="tab" id="tab-expert" aria-controls="panel-expert" aria-selected="false" tabindex="-1" data-track-tab="expert">Expert</button>
+        </div>
+
+        <div class="track-panel is-active chapter-prose" data-track-panel="beginner" role="tabpanel" id="panel-beginner" aria-labelledby="tab-beginner">
+          <p class="track-kicker">Piste débutant</p>
+
+          <h2>Le problème qu'on attaque : trouver le premier arbre, seul</h2>
+          <p>
+            Le Chapitre 6 s'est terminé sur un mur bien identifié : l'agent sait fabriquer des
+            planches à la perfection une fois qu'il a du bois, mais dans un vrai monde de survie
+            généré au hasard, il ne trouve <strong>jamais</strong> son premier arbre — 0 bûche sur
+            5 épisodes testés. Ce chapitre raconte la première grande campagne pour attaquer ce
+            mur. Spoiler honnête, comme toujours dans ce projet : la première idée échoue
+            proprement, et les corrections suivantes n'apportent qu'un progrès partiel — mais
+            chaque échec révèle quelque chose de précis sur la nature réelle du problème.
+          </p>
+
+          <h2>Idée n°1 : la curiosité — récompenser l'agent pour ce qui le surprend</h2>
+          <p>
+            L'idée s'appelle la <strong>curiosité artificielle</strong>. Le principe : au lieu de
+            ne récompenser l'agent que pour atteindre un objectif, on lui donne aussi une petite
+            récompense chaque fois qu'il va vers quelque chose de <strong>surprenant</strong> — un
+            endroit que son modèle du monde connaît mal, où ses prédictions se trompent beaucoup.
+            L'intuition : si l'agent ne trouve jamais d'arbre parce qu'il ne sait pas dans quelle
+            direction chercher, le pousser vers ce qui le surprend devrait naturellement le faire
+            explorer plutôt que rester planté.
+          </p>
+          <p>
+            Concrètement, le projet a construit un petit comité de 5 « devineurs » qui essaient
+            chacun de prédire ce qui va se passer ensuite dans l'embedding (le résumé en nombres
+            de l'image, Chapitre 1). Quand les 5 devineurs sont d'accord, c'est un endroit familier
+            — rien de surprenant. Quand ils sont en désaccord, c'est un endroit mal compris —
+            potentiellement intéressant à explorer. Cette idée s'appelle Plan2Explore et vient
+            d'un vrai article de recherche.
+          </p>
+          <p>
+            Avant de lancer cette expérience (et toutes celles qui suivent dans ce chapitre et le
+            suivant), le projet a construit une petite équipe de trois agents logiciels
+            spécialisés — un qui propose une expérience à partir de vraies références
+            scientifiques, un qui l'implémente sans jamais abîmer ce qui fonctionne déjà, un qui la
+            teste honnêtement et rapporte les vrais chiffres. Cette discipline sert à éviter de se
+            raconter des histoires sur ses propres résultats.
+          </p>
+
+          <h2>Le résultat : aucune différence, et plus lent</h2>
+          <p>
+            Comparaison sur 20 épisodes de Treechop (le mode « juste couper un arbre » du
+            Chapitre 5), avec et sans la curiosité activée : <strong>sans curiosité, 30% de
+            réussite ; avec curiosité, 25%</strong> — une différence bien trop petite pour être
+            fiable avec seulement 20 épisodes de chaque côté, et surtout, avec la curiosité, le jeu
+            tourne <strong>deux fois et demi plus lentement</strong> (le comité de 5 devineurs doit
+            juger chacune des 512 histoires imaginées à chaque instant, Chapitre 4). Verdict
+            honnête : <strong>la curiosité n'a rien apporté, et elle a coûté cher en vitesse.</strong>
+          </p>
+
+          <h2>Pourquoi ça a échoué : le comité s'est mis d'accord trop vite</h2>
+          <p>
+            En regardant l'entraînement du comité de devineurs, l'explication apparaît clairement :
+            dès la troisième passe d'entraînement, les 5 devineurs <strong>se sont tous mis
+            d'accord entre eux</strong>, et sont restés d'accord pour le reste de l'entraînement.
+            Un comité toujours d'accord ne peut plus jamais signaler « ceci est surprenant » nulle
+            part — le signal de curiosité est resté plat partout, ce qui explique exactement
+            pourquoi activer la curiosité n'a rien changé (à part ralentir le jeu).
+          </p>
+          <p>
+            La vraie cause, plus intéressante que le symptôme : la vraie méthode Plan2Explore
+            entraîne son comité de devineurs <strong>en continu, sur ce que l'agent découvre en
+            explorant lui-même</strong> — un flux de données forcément varié, puisque l'agent va
+            sans arrêt vers des endroits nouveaux. Ce projet, lui, a entraîné le comité
+            <strong>une fois pour toutes, sur des enregistrements figés de parties d'experts qui
+            coupent toujours le même arbre de la même façon</strong>. Sur des données aussi
+            répétitives, les 5 devineurs trouvent tous la même solution simple, et n'ont plus
+            jamais de raison d'être en désaccord. <strong>Le projet a reproduit la forme de la
+            méthode sans reproduire la condition qui la fait marcher.</strong>
+          </p>
+
+          <h2>Idée n°2 : arrêter de regarder par le prisme de la curiosité</h2>
+          <p>
+            Après cet échec, le projet a pris du recul et reposé la question autrement :
+            qu'est-ce que le planificateur (Chapitre 4) fait <em>réellement</em>, mécaniquement,
+            quand aucun arbre n'est visible ? Deux défauts très concrets sont apparus — aucun des
+            deux n'a besoin d'apprentissage pour être corrigé.
+          </p>
+          <p>
+            <strong>Défaut 1 : le planificateur ne peut même pas imaginer le bon geste.</strong>
+            Pour chercher un arbre invisible, le bon geste, c'est « tourner la caméra dans une
+            direction pendant plusieurs instants de suite ». Mais le planificateur tire ses 512
+            histoires imaginées en choisissant, à <em>chaque</em> instant, une action complètement
+            indépendante de la précédente — un peu comme lancer un dé à 17 faces 12 fois de suite
+            sans mémoire. La probabilité qu'un tel tirage produise 6 fois d'affilée l'action
+            « tourner » est quasiment nulle. <strong>Le problème n'est pas que le planificateur
+            choisit mal — c'est que le bon geste n'existe même pas dans la liste de choses qu'il
+            envisage.</strong>
+          </p>
+          <p>
+            La correction s'appelle l'<strong>échantillonnage collant</strong> : à chaque instant
+            imaginé, au lieu de tirer une action complètement neuve, on répète l'action précédente
+            avec une certaine probabilité. Cette seule règle fait grimper le taux de répétition
+            consécutive de 7% (tirage indépendant) à 72% (collant à 70%) — les 512 histoires
+            imaginées contiennent désormais des gestes tenus dans le temps (tourner-et-regarder,
+            marcher-vers, frapper de façon soutenue).
+          </p>
+          <p>
+            <strong>Défaut 2 : l'agent ne sait même pas qu'il est perdu.</strong> Quand un arbre
+            est visible, les 512 histoires imaginées obtiennent des scores très différents
+            (certaines s'en approchent, d'autres s'en éloignent). Quand rien n'est visible, les 512
+            scores sont quasiment identiques — le choix final devient un tirage au sort déguisé.
+            Cet écart entre les scores (leur écart-type) est un signal gratuit, déjà calculé,
+            jamais utilisé jusque-là : élevé, ça veut dire « je vois quelque chose d'utile » ;
+            proche de zéro, ça veut dire « je suis perdu ». Une petite règle a été ajoutée : après
+            plusieurs tours de suite avec ce signal proche de zéro, l'agent abandonne
+            temporairement le planificateur et <strong>tourne la caméra méthodiquement</strong>
+            jusqu'à ce que le signal remonte (un arbre est entré dans le champ de vision) ou qu'un
+            budget de tours soit épuisé.
+          </p>
+          <p>
+            À prendre pour ce que c'est : ce n'est <strong>pas de l'apprentissage</strong>. C'est
+            un réflexe écrit à la main — le genre de chose que des méthodes plus lourdes (hors de
+            portée d'un seul GPU grand public) apprennent d'elles-mêmes. Mais ça n'a pas de sens
+            d'apprendre à un agent à explorer tant qu'il ne peut même pas tourner la tête
+            correctement.
+          </p>
+
+          <h2>Les résultats : un vrai progrès sur Treechop, zéro sur le cold-start</h2>
+          <p>
+            Sur Treechop (l'agent démarre toujours en forêt), la combinaison collant+réflexe donne
+            un résultat nuancé : à un réglage modéré (collant à 50%), le taux de succès reste dans
+            la fourchette normale déjà observée au Chapitre 5, mais chaque succès rapporte environ
+            deux fois plus de récompense — le collant aide à <em>creuser</em> (continuer à couper
+            un arbre déjà trouvé) plus qu'à <em>chercher</em> (trouver plus d'arbres). À un réglage
+            plus fort (collant à 70%), l'agent se bloque trop sur un seul geste et le résultat
+            empire légèrement.
+          </p>
+          <p>
+            Sur le vrai cold-start (spawn aléatoire, sans bois de départ) : <strong>zéro bûche
+            coupée, dans toutes les configurations testées.</strong> Pire, à un certain réglage du
+            seuil, le réflexe « tourner la tête » devient pathologique : l'agent tourne la caméra
+            82 à 92% du temps, littéralement en train de tourner sur lui-même sans jamais
+            s'arrêter. L'observation la plus révélatrice : dans certains épisodes, l'agent se
+            retrouve <strong>entouré d'arbres et ne les coupe toujours pas</strong>. Ce n'est donc
+            pas (seulement) un problème de recherche — c'est un problème d'<em>approche et de
+            coupe</em> une fois la cible trouvée.
+          </p>
+          <p>
+            Une variante testée pour comprendre : donner à l'agent deux « cerveaux » séparés —
+            celui qui a fait ses preuves sur Treechop pilote la recherche de l'arbre, le nouveau
+            modèle prend le relais dès la première bûche pour fabriquer. Résultat : toujours zéro
+            bûche, mais le comportement change nettement (des gestes de bûcheron reconnaissables au
+            lieu d'un vagabondage confus). Un des épisodes montre l'agent qui apparaît dans un
+            ravin rocheux sans un seul arbre, et qui frappe la pierre à la place — un rappel qu'un
+            point de spawn sans bois du tout ne peut être résolu par aucun réflexe de recherche.
+          </p>
+
+          <h2>Une dernière tentative avant de conclure : affiner le modèle sur plus de diversité</h2>
+          <p>
+            Dernière piste testée dans cette campagne : si le signal « je suis perdu » est flou
+            sur le modèle de fabrication (contrairement au modèle Treechop où il est net), c'est
+            peut-être parce que les démonstrations d'experts utilisées pour l'entraîner montrent
+            rarement des moments où l'expert est « perdu » — les experts trouvent du bois vite, ils
+            ne traînent jamais dans le vide. En ajoutant une vingtaine de courtes parties jouées au
+            hasard (donc, statistiquement, souvent perdues) au jeu de données d'entraînement, puis
+            en réentraînant légèrement le modèle sur ce mélange, le signal « perdu vs. trouvé »
+            devient effectivement beaucoup plus net qu'avant.
+          </p>
+          <p>
+            Mais le résultat final ne change pas d'un iota : toujours zéro bûche coupée, avec ou
+            sans cet affinement. <strong>Rendre le signal plus net n'a pas rendu le comportement
+            meilleur.</strong> Cette découverte confirme ce que l'expérience des deux cerveaux
+            avait déjà suggéré : le mur n'est pas dans la <em>perception</em> (savoir qu'on est
+            perdu), il est dans le <em>comportement</em> (savoir quoi faire une fois qu'on a trouvé
+            quelque chose, ou comment couvrir du terrain quand on ne trouve rien). Le chapitre
+            suivant continue cette enquête avec des outils encore plus directs.
+          </p>
+        </div>
+
+        <div class="track-panel chapter-prose" data-track-panel="expert" role="tabpanel" id="panel-expert" aria-labelledby="tab-expert">
+          <p class="track-kicker">Piste expert</p>
+
+          <h2>Cadrage : d'une hypothèse d'exploration à un diagnostic mécanique</h2>
+          <p>
+            Le symptôme de départ (0 log sur <code>ObtainIronPickaxeDense</code>, 5 épisodes,
+            <code>docs/08_crafting.md</code>) a d'abord été traité comme un problème
+            d'exploration/récompense intrinsèque, puis re-diagnostiqué comme un défaut
+            d'implémentation du MPC lui-même — deux lectures du même symptôme, testées dans
+            l'ordre.
+          </p>
+
+          <h2>Harness : une boucle de développement à 3 agents</h2>
+          <p>
+            Avant toute expérience : <code>jepa-explorer</code> (lecture seule, propose une
+            expérience ancrée sur <code>docs/references/index.md</code> §3),
+            <code>jepa-developer</code> (implémente, config-gated, ne touche jamais un checkpoint
+            qui marche, seedé), <code>jepa-tester</code> (exécute les gates + play, rapporte
+            PASS/FAIL avec les vrais chiffres, honnête sur la variance), orchestrés par
+            <code>/jepa-loop</code>.
+          </p>
+
+          <h2>Proposition #1 — Plan2Explore, novelty offline</h2>
+          <p>
+            <strong>Idée</strong> (Sekar et al.,
+            <a href="https://arxiv.org/abs/2005.05960">arXiv:2005.05960</a>, ICML 2020) : ajouter
+            un bonus intrinsèque <code>score = goal_score + λ · novelty_score</code>,
+            <code>novelty_score</code> = désaccord d'un ensemble de k=5 têtes de prédiction
+            one-step conditionnées par l'action, sur le latent spatial <code>[D,8,8]</code>.
+          </p>
+          <p>
+            <strong>Implémentation</strong> : <code>mine_jepa/ebwm/curiosity.py::DisagreementEnsemble</code> ;
+            <code>scripts/train_curiosity.py</code> entraîne sur des latents eb-JEPA
+            <strong>figés</strong>, optimiseur séparé, seedé, sauvegarde vers
+            <code>checkpoints/curiosity_ensemble.pt</code>, ne touche jamais <code>ebwm.pt</code> ;
+            <code>DiscreteLatentPlanner</code> blend la novelty z-scorée quand
+            <code>novelty_coeff &gt; 0</code> (<code>0.0</code> par défaut = comportement original
+            bit-for-bit).
+          </p>
+          <p><strong>Résultat, A/B sur <code>MineRLTreechop-v0</code>, N=20, même <code>ebwm.pt</code> (ratio 0,927) :</strong></p>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr><th>Condition</th><th>Succès</th><th>Reward moyen</th><th>Logs</th><th>fps</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>OFF (goal-centroid seul)</td><td>6/20 = 30%</td><td>0,40</td><td>8</td><td>63</td></tr>
+                <tr><td>ON (novelty λ=1,0)</td><td>5/20 = 25%</td><td>0,25</td><td>5</td><td><strong>25</strong></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            Écart non significatif à N=20 (variance documentée 25-50% de Treechop) ; coût 2,5× le
+            fps (l'ensemble tourne sur les 512 candidats à chaque replan). Verdict :
+            <strong>FAIL</strong>.
+          </p>
+
+          <h2>Cause racine : collapse de l'ensemble pendant l'entraînement</h2>
+          <pre><code>epoch 1: val_disagree = 0,0613   (diversit&eacute; saine)
+epoch 2: val_disagree = 0,0122
+epoch 3: val_disagree = 0,0017   (collaps&eacute;)
+epoch 4-15: val_disagree &asymp; 0,0005 (mort, ne r&eacute;cup&egrave;re jamais)</code></pre>
+          <p>
+            Dès l'epoch 3, les 5 têtes convergent vers la même fonction → désaccord ≈ 0 partout →
+            bonus de novelty uniformément nul → planificateur identique au goal-centroid seul,
+            juste plus lent.
+          </p>
+          <blockquote>
+            <p>
+              <strong>Reproduction de la <em>forme</em> de Plan2Explore sans sa
+              <em>condition</em>.</strong> Plan2Explore entraîne son ensemble <strong>en
+              ligne</strong>, sur un flux de données que l'agent lui-même diversifie en explorant.
+              Entraîner sur un jeu figé de démos Treechop (même geste de bûcheron, même arbre,
+              même caméra) — aussi homogène — fait converger chaque tête vers la même solution
+              triviale à faible perte. La qualité du signal de novelty d'un ensemble est bornée
+              par la diversité de ses données d'entraînement, et un entraînement offline sur
+              latents figés issus de démos expertes détruit précisément cette diversité.
+            </p>
+          </blockquote>
+          <p>
+            Candidats retenus pour la suite, par ordre de pertinence : régularisation de désaccord
+            explicite ; RND (<a href="https://arxiv.org/abs/1810.12894">arXiv:1810.12894</a>,
+            immunisé structurellement à ce collapse car la cible ne bouge jamais) ; self-play en
+            ligne (la recette Plan2Explore réelle, plus coûteuse).
+          </p>
+
+          <h2>Ré-analyse sans le prisme de la curiosité : deux défauts mécaniques</h2>
+          <p>
+            <strong>Défaut 1 — l'échantillonnage i.i.d. ne peut pas <em>proposer</em> le bon
+            comportement.</strong> Le geste correctif pour « rien en vue » est une action tenue
+            (tourner la caméra sur plusieurs pas consécutifs). La probabilité qu'une séquence i.i.d.
+            sur 17 actions produise 6 répétitions consécutives est (1/17)⁶ — négligeable. Fix :
+            <strong>échantillonnage collant</strong> (<code>_sample_actions()</code>,
+            <code>mine_jepa/ebwm/planner.py</code>, utilisé par <code>DiscreteLatentPlanner</code>
+            et <code>SwitchingCraftPlanner</code>) : répéter l'action précédente avec probabilité
+            <code>sticky_prob</code>, sinon tirer neuf. Mesuré sur 4096 séquences : taux de
+            répétition consécutive 7% (i.i.d.) → 72% (<code>sticky_prob=0,7</code>).
+            <code>sticky_prob=0,0</code> (défaut) reproduit l'ancien comportement bit-for-bit.
+            Inspiration : iCEM (<a href="https://arxiv.org/abs/2008.06389">arXiv:2008.06389</a>),
+            bruit coloré pour actions continues, ici adapté en version discrète.
+          </p>
+          <p>
+            <strong>Défaut 2 — l'agent est aveugle à sa propre cécité.</strong>
+            <code>goal_score_std</code> (écart-type des scores sur les 512 candidats, déjà
+            calculé, jamais exploité) : élevé quand un but est visible (le classement signifie
+            quelque chose), ≈0 quand rien n'est visible (l'argmax est du bruit). Le
+            <strong>scan macro</strong> (<code>plan(..., return_info=True)</code> exposant
+            <code>goal_score_std</code> ; <code>scripts/play_ebwm.py</code> et
+            <code>scripts/play_craft.py</code> en mode chop) déclenche, après <code>patience</code>
+            replans plats consécutifs, une action caméra-yaw fixe (<code>a12</code>, +10°/replan)
+            jusqu'à récupération du signal ou expiration de <code>max_replans</code>.
+            <code>scan.enabled: false</code> par défaut. Honnêteté explicite : c'est un réflexe
+            écrit à la main, pas de l'apprentissage.
+          </p>
+
+          <h3>Calibration (PC, 3 épisodes Treechop, 750 replans/ép., seed 0)</h3>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr><th>Situation</th><th>Bande <code>goal_score_std</code></th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Perdu (mur, ciel, herbe ouverte)</td><td>0,0002 – 0,002</td></tr>
+                <tr><td>Errance, arbres au loin</td><td>0,003 – 0,01</td></tr>
+                <tr><td>Arbre/canopée plein champ</td><td>0,02 – 0,056</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p><code>flat_threshold: 0,003</code> retenu (juste au-dessus de la bande "perdu"), <code>patience: 3</code>.</p>
+
+          <h2>Gate (PC, 2026-07-08) — Treechop : progrès partiel</h2>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr><th>Condition</th><th>N</th><th>Succès</th><th>Reward moyen</th><th>fps</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>OFF (baseline fraîche)</td><td>20</td><td>45% (9/20)</td><td>0,50</td><td>65,9</td></tr>
+                <tr><td>sticky 0,7 + scan@0,003</td><td>20</td><td>25% (5/20)</td><td>0,45</td><td>65,0</td></tr>
+                <tr><td>sticky 0,5 + scan@0,003</td><td>10</td><td>40% (4/10)</td><td><strong>0,90</strong></td><td>64,6</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            Aucune différence significative (Fisher p=0,32 / p=1,0) mais direction cohérente : 0,7
+            sur-engage (a14 à 71-97%, marche indéfiniment sur un seul geste) ; 0,5 maintient le
+            succès dans la bande de variance et <strong>double la récompense par succès</strong> —
+            le collant achète de la <em>profondeur</em> (continuer à couper l'arbre atteint), pas
+            de la <em>largeur</em> (trouver plus d'arbres). fps inchangé.
+          </p>
+
+          <h2>Gate — cold-start : ÉCHEC dans toutes les configurations</h2>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr><th>Config</th><th>N</th><th>Logs</th><th>Note</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>sticky 0,5 + scan@0,003</td><td>1 (interrompu)</td><td>0</td><td>agent souvent <em>dans</em> la forêt, ne coupe pas</td></tr>
+                <tr><td>sticky 0,5 + scan@0,004</td><td>5</td><td>0</td><td>pathologique : a12 82-92%, 15-34 scans/ép. — l'agent tourne sur lui-même</td></tr>
+                <tr><td>sticky 0,5, scan off</td><td>5</td><td>0</td><td>actions variées, toujours pas de première bûche</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            Cause : sur <code>craft_wm_v4.pt</code> les bandes <code>goal_score_std</code> sont
+            <strong>comprimées</strong> (perdu ~0,002, arbre-visible ~0,010, médiane 0,0047 — écart
+            ×5) contre l'écart ×10 net de Treechop. N'importe quel seuil absolu se déclenche trop
+            peu ou trop souvent. Constat le plus net : avec scan@0,003, l'agent est parfois
+            <strong>entouré d'arbres et ne coupe toujours pas</strong> — le mur n'est pas (que) la
+            recherche, c'est le comportement d'approche-et-coupe lui-même.
+          </p>
+          <p>
+            <strong>Micro-expérience — échanger la boussole du chop</strong> : utiliser le
+            centroïde Treechop (12 056 frames reward≥0,5) encodé par l'encodeur de
+            <code>craft_wm_v4</code> au lieu du centroïde Obtain-demo comme objectif de chop.
+            Résultat : toujours 0/5. La boussole seule ne sauve pas le cold-start.
+          </p>
+          <p>
+            <strong>Agent à deux cerveaux</strong> (<code>chop_model:</code>, config-gated) :
+            <code>ebwm.pt</code> pilote le chop (17 actions de mouvement partagées),
+            <code>craft_wm_v4</code> prend le relais dès la première bûche. Résultat : toujours
+            0/5, mais comportement transformé (a14 sprint+attack 30-52% au lieu d'errance diffuse).
+            GIF de l'épisode le plus attaqué (a6=85%) : spawn dans un ravin rocheux sans arbre,
+            l'agent frappe la pierre. 2/5 épisodes meurent tôt. Le mur restant : le spawn aléatoire
+            sans bois à proximité et le rayon de recherche — précisément le terrain de la curiosité
+            en ligne.
+          </p>
+          <p>
+            Défauts par défaut conservés : <code>play_ebwm.yaml</code> → sticky 0,5 + scan on
+            (calibré, sans risque, chops plus profonds) ; <code>play_craft.yaml</code> → sticky
+            0,5, scan <strong>off</strong>, deux-cerveaux on.
+          </p>
+
+          <h2>Affinage sur données de couverture (2026-07-20) — signal amélioré, résultat inchangé</h2>
+          <p>
+            Hypothèse : les bandes comprimées de <code>craft_wm_v4.pt</code> sont un artefact de
+            couverture des données — les 40 démos expertes montrent rarement "perdu, aucun arbre
+            en vue" (les experts trouvent du bois vite). Fix testé : ~20 épisodes courts (400 pas)
+            en politique aléatoire sur <code>ObtainIronPickaxeDense-v0</code> (spawn aléatoire =
+            diversité de biome gratuite), fusionnés aux 40 démos expertes, puis fine-tune 4 epochs
+            à faible LR depuis une sauvegarde de <code>craft_wm_v4.pt</code>
+            (<code>checkpoints/craft_wm_v4_coverage.pt</code>). Aucun collapse (<code>bvar</code>
+            1,24-1,27), pas de régression de précondition (<code>dPlanks@craft</code> resté entre
+            +1,22 et +1,35 sur les epochs de fine-tune).
+          </p>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr><th></th><th>sauvegarde (original)</th><th>couverture (fine-tuné)</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Logs coupés (N=3)</td><td>0/3</td><td>0/3</td></tr>
+                <tr><td>Planches fabriquées (N=3)</td><td>0/3</td><td>0/3</td></tr>
+                <tr><td><code>goal_score_std</code> médiane</td><td>0,0034</td><td>0,0126 (×3,7)</td></tr>
+                <tr><td>Ratio p90/p10</td><td>×3,2</td><td>×5,4</td></tr>
+                <tr><td>Longueur d'épisode</td><td>3000/3000/3000</td><td>2295/3000/1070 (2 morts précoces)</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            <strong>Verdict : le signal s'est amélioré, le résultat non.</strong> La séparation des
+            bandes s'est effectivement élargie (×3,2 → ×5,4, se rapprochant du ×10 de Treechop) —
+            le mécanisme de couverture-des-données est réel — mais 0/3 logs identique sur les deux
+            checkpoints, et le checkpoint affiné meurt plus tôt sur 2/3 épisodes (plus de mouvement
+            exploratoire, pas plus de coupe).
+          </p>
+          <blockquote>
+            <p>
+              <strong>Leçon : affiner le signal « suis-je perdu ? » ne corrige pas, en soi, le
+              comportement de recherche-et-approche qui doit l'exploiter.</strong> Le diagnostic de
+              l'expérience à deux cerveaux se confirme : l'écart est comportemental
+              (recherche/approche), pas purement perceptif. Les données de couverture aident le
+              modèle à mieux <em>représenter</em> l'état « perdu » ; elles ne lui apprennent pas
+              quoi <em>en faire</em>.
+            </p>
+          </blockquote>
+          <p>
+            <code>ebwm.pt</code>, <code>craft_wm_v4.pt</code>, <code>craft_wm_v4_backup.pt</code>
+            intacts ; <code>craft_wm_v4_coverage.pt</code> est un checkpoint de comparaison séparé,
+            pas un remplacement.
+          </p>
+
+          <h2>Références (vérifiées, tirées de docs/references/index.md)</h2>
+          <ul>
+            <li>
+              Sekar, Rybkin, Daniilidis, Abbeel, Hafner, Pathak, Plan2Explore, arXiv:2005.05960
+              (ICML 2020) — le principe de novelty par désaccord d'ensemble testé et diagnostiqué
+              dans ce chapitre.
+            </li>
+            <li>
+              Burda, Edwards, Storkey, Klimov, RND, arXiv:1810.12894 (2018) — le candidat retenu
+              pour la suite, immunisé au collapse d'ensemble par construction.
+            </li>
+            <li>
+              iCEM, arXiv:2008.06389 (2020) — inspiration du bruit temporellement corrélé derrière
+              l'échantillonnage collant discret.
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="achievement" role="note" aria-label="Résultat de ce chapitre">
+        <span class="achievement-icon" aria-hidden="true">&#127942;</span>
+        <div>
+          <p class="achievement-title">Achievement : un vrai progrès documenté sur Treechop, un échec net documenté en cold-start</p>
+          <p>
+            La curiosité offline (Plan2Explore) est un échec proprement diagnostiqué (collapse
+            d'ensemble). L'échantillonnage collant + le réflexe de recherche améliorent
+            réellement la <strong>profondeur</strong> des succès sur Treechop (récompense presque
+            doublée) mais laissent le vrai cold-start à <strong>0 bûche sur toutes les
+            configurations testées</strong> — avec une observation clé : l'agent peut être entouré
+            d'arbres et ne pas les couper. Ce chapitre documente un vrai mur, pas un succès
+            déguisé.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </article>
+
+  <nav class="chapter-nav" aria-label="Navigation entre chapitres">
+    <div class="wrap chapter-nav-inner">
+      <a class="chapter-nav-link" href="index.html">&larr; Retour au parcours</a>
+    </div>
+  </nav>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>Mine-JEPA — un agent JEPA qui apprend à jouer à Minecraft à partir des pixels, documenté au fil de l'eau.</p>
+  </div>
+</footer>
+
+<script src="../script.js" defer></script>
+</body>
+</html>

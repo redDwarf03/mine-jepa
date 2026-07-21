@@ -1,0 +1,60 @@
+# Cold-start attempt #6 (CEM, docs/10): same base as configs/play_craft_commit4.yaml
+# (two-brain, sticky 0.5, scan off, commit_length=4) — only addition is the
+# planner.cem block, wired into chop_planner (DiscreteLatentPlanner on ebwm.pt,
+# the only config that has produced non-zero cold-start results so far: 3/31).
+# Generation 1 still uses sticky_prob=0.5 sampling (iCEM-lite starting pool);
+# generations 2-3 refit a per-timestep categorical table from the elite and
+# resample from it (see mine_jepa/ebwm/planner.py _refit_categorical). cem_iters=1
+# would reproduce play_craft_commit4.yaml bit-for-bit (verified before any live run).
+
+minerl_env: MineRLObtainIronPickaxeDense-v0
+actions_config: configs/minerl_actions_obtain.yaml
+
+model:
+  checkpoint: checkpoints/craft_wm_v4.pt
+
+planner:
+  n_actions: 22
+  horizon: 12
+  n_candidates: 512
+  sticky_prob: 0.5
+  w_log: 1.0
+  w_planks: 2.0
+  log_threshold: 0.05
+  commit_length: 4
+  cem:
+    iters: 3
+    elite_frac: 0.1
+    smoothing: 0.01
+
+scan:
+  enabled: false
+  flat_threshold: 0.004
+  patience: 3
+  turn_action: 12
+  max_replans: 40
+  log_std: false
+
+chop_model:
+  checkpoint: checkpoints/ebwm.pt
+  n_actions: 17
+  goal:
+    data_path: data/minerl_goal/episodes.npz
+    threshold: 0.5
+    min_frames: 10
+    mode: centroid
+
+goal:
+  data_path: data/minerl_craft/episodes.npz
+  chop_reward_threshold: 0.5
+
+agent:
+  episodes: 8
+  max_steps: 3000
+  action_repeat: 4
+  seed: 0
+
+logging:
+  save_gif: true
+  gif_episodes: 3
+  gif_path: assets/agent_play_craft_commit4_cem.gif

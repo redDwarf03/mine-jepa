@@ -1,0 +1,34 @@
+# Ablation comparison ONLY (docs/10 attempt #8, Proposal B) — same as
+# train_actor_bc.yaml but WITHOUT the attempt #3 coverage episodes, to check
+# whether folding coverage in materially changes the learned action
+# distribution. checkpoints/actor_bc_treechop_only.pt is NOT wired into any
+# planner config — comparison artifact only.
+
+seed: 0
+
+model:
+  ebwm_checkpoint: checkpoints/ebwm.pt
+
+data:
+  treechop_path: data/minerl_goal/episodes.npz
+  coverage_path: data/minerl_coverage/episodes.npz
+  include_coverage: false
+  val_fraction: 0.1
+
+actor:
+  n_actions: 17
+  hidden_dim: 256
+
+training:
+  epochs: 15
+  steps_per_epoch: 200
+  batch_size: 128
+  lr: 1.0e-3
+  weight_decay: 0.0
+  val_batches: 20
+
+checkpoint:
+  dir: checkpoints/
+  name: actor_bc_treechop_only.pt
+  min_mean_entropy: 0.3
+  max_top_action_frac: 0.9

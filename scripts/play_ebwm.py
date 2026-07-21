@@ -142,17 +142,22 @@ def main():
         print("  WARNING: novelty_coeff > 0 but no ensemble_checkpoint — curiosity disabled.")
         novelty_coeff = 0.0
 
+    cem_cfg = p_cfg.get("cem", {}) or {}
     planner = DiscreteLatentPlanner(
         model, n_actions=p_cfg["n_actions"], horizon=p_cfg["horizon"],
         n_candidates=p_cfg["n_candidates"],
         novelty_coeff=novelty_coeff, ensemble=ensemble,
         sticky_prob=float(p_cfg.get("sticky_prob", 0.0)),
         commit_length=int(p_cfg.get("commit_length", 1)),
+        cem_iters=int(cem_cfg.get("iters", 1)),
+        cem_elite_frac=float(cem_cfg.get("elite_frac", 0.1)),
+        cem_smoothing=float(cem_cfg.get("smoothing", 0.01)),
         device=device,
     )
     mode_label = f"novelty λ={novelty_coeff}" if novelty_coeff > 0.0 else "goal-centroid only"
     print(f"Planner: horizon={p_cfg['horizon']}, candidates={p_cfg['n_candidates']}, "
-          f"mode={mode_label}, sticky_prob={planner.sticky_prob}, commit_length={planner.commit_length}")
+          f"mode={mode_label}, sticky_prob={planner.sticky_prob}, commit_length={planner.commit_length}, "
+          f"cem_iters={planner.cem_iters}")
 
     scan_cfg = cfg.get("scan", {}) or {}
     scan_enabled = bool(scan_cfg.get("enabled", False))

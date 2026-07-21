@@ -1,10 +1,8 @@
-# Cold-start attempt: commit_length=4 (docs/10) + online RND (docs/09/10,
-# mine_jepa/ebwm/rnd.py) on the two-brain chop planner. Same base as
-# configs/play_craft_commit4.yaml (two-brain, sticky 0.5, scan off) — only
-# addition is the rnd: block below, wired into chop_planner (DiscreteLatentPlanner
-# on ebwm.pt). novelty_coeff=0.5 (not 1.0): a prior offline experiment
-# (docs/09_curiosity_coldstart.md) found λ=1.0 fully swamped the goal-directed
-# term — keep goal-centroid dominant, novelty as a tiebreaker for flat/lost moments.
+# Cold-start attempt #7 (docs/10): same as play_craft_commit4.yaml (two-brain,
+# sticky 0.5, scan off, commit_length=4) but the two-brain chop planner's goal
+# distance is now a TRAINED metric (checkpoints/value_projector.pt) instead of
+# ebwm.pt's raw-latent squared-L2 — isolating this one mechanism, same convention
+# as every other cold-start attempt tonight.
 
 minerl_env: MineRLObtainIronPickaxeDense-v0
 actions_config: configs/minerl_actions_obtain.yaml
@@ -28,24 +26,19 @@ scan:
   patience: 3
   turn_action: 12
   max_replans: 40
-  log_std: true
+  log_std: true   # diagnostic only (scan.enabled: false -> no behaviour change);
+                   # lets the Tester compare goal_score_std separation against the
+                   # raw-distance version's compressed bands (docs/10 attempt #2).
 
 chop_model:
   checkpoint: checkpoints/ebwm.pt
   n_actions: 17
+  distance_projector: checkpoints/value_projector.pt
   goal:
     data_path: data/minerl_goal/episodes.npz
     threshold: 0.5
     min_frames: 10
     mode: centroid
-
-rnd:
-  enabled: true
-  novelty_coeff: 0.5
-  lr: 0.001
-  buffer_size: 256
-  batch_size: 32
-  update_every: 4
 
 goal:
   data_path: data/minerl_craft/episodes.npz
@@ -60,4 +53,4 @@ agent:
 logging:
   save_gif: true
   gif_episodes: 3
-  gif_path: assets/agent_play_craft_commit4_rnd.gif
+  gif_path: assets/agent_play_craft_commit4_value.gif

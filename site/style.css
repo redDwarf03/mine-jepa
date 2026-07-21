@@ -1,0 +1,1073 @@
+/*
+  Mine-JEPA learning site — shared stylesheet.
+  Plain CSS, no preprocessor, no framework. One file for every page, every language.
+
+  Visual identity: Minecraft-coded, not generic docs styling.
+    - Hard-edged "blocky" borders + offset shadows (no blur) instead of soft modern shadows.
+    - A pixel/monospace display font for UI CHROME (nav, buttons, badges, tree-node numbers,
+      kickers) — NOT for long-form prose headings. See the note in section 1: this project's
+      chapter headings are full natural-language sentences ("Why teach an agent to play
+      Minecraft with JEPA?"), and a pixel font optimized for short arcade-style labels turns
+      unreadable/bloated at that length. Prose headings instead get a bold sans treatment with
+      a thick colored block-border accent, so the theme still reads through color/shape rather
+      than through cramming a sentence into 8x8 glyphs. (Deliberate pushback per the brief's own
+      "don't sacrifice legibility for theming" clause, generalized from body text to long
+      headings — flagged back to the team.)
+    - A grass/dirt/stone/diamond/redstone palette, in both light and dark variants.
+    - image-rendering: pixelated on the low-res gameplay GIFs.
+
+  Sections:
+    0. Self-hosted "Press Start 2P" @font-face (was referenced but never loaded before this pass)
+    1. Tokens (palette, type, space, blocky bevel/shadow primitives) + dark mode
+    2. Reset / base
+    3. Layout primitives (wrap, buttons, badges, skip link)
+    4. Header + nav + language switcher
+    5. Hero (homepage)
+    6. Learning path — crafting-tree / tech-tree layout (homepage)
+    7. Chapter page (breadcrumb, chapter header, prose, tables, code, achievement banner)
+    8. Beginner/expert track toggle
+    9. Footer
+    10. Utilities + accessibility
+*/
+
+/* ---------- 0. Self-hosted display font ----------
+   "Press Start 2P" (CodeMan38, SIL OFL), self-hosted from site/fonts/ so the pixel-UI-chrome
+   identity actually renders instead of silently falling back to Courier New for every visitor
+   (it was listed in --font-display but never loaded by any earlier build — fixed here). Two
+   subsets only (latin + latin-ext cover every accented character French UI copy uses); the
+   cyrillic/greek subsets Google serves by default are dropped since this site has no content
+   in those scripts. font-display: swap avoids invisible-text flashes on slow connections. */
+@font-face {
+  font-family: "Press Start 2P";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("fonts/press-start-2p-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Press Start 2P";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("fonts/press-start-2p-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308,
+    U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113,
+    U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* ---------- 1. Tokens ---------- */
+
+:root {
+  --font-display: "Press Start 2P", "Courier New", ui-monospace, "Cascadia Mono", monospace;
+  --font-body: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial,
+    sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono",
+    monospace;
+
+  /* Minecraft-coded palette, theme-neutral hues (no copyrighted textures/artwork) */
+  --mc-grass: #5b8c3a;
+  --mc-grass-dark: #3d6527;
+  --mc-dirt: #7c5030;
+  --mc-dirt-dark: #4a3624;
+  --mc-stone: #8d8d8d;
+  --mc-stone-dark: #5a5a5a;
+  --mc-diamond: #55d6df;
+  --mc-diamond-dark: #1f8189;
+  --mc-redstone: #b3312c;
+  --mc-redstone-dark: #7e211d;
+  --mc-gold: #e6c14d;
+  --mc-gold-dark: #a9862a;
+
+  /* Semantic tokens — light ("day") theme */
+  --color-bg: #eef1e2;
+  --color-bg-raised: #f8f6e8;
+  --color-bg-sunken: #e2e5cf;
+  --color-text: #221f16;
+  --color-text-muted: #56543f;
+  --color-border: #c3b58c;
+  --color-border-strong: var(--mc-dirt-dark);
+
+  --color-accent: var(--mc-grass-dark);
+  --color-accent-soft: #e0ead2;
+  --color-accent-contrast: #ffffff;
+
+  --color-link: var(--mc-diamond-dark);
+  --color-focus: var(--mc-diamond-dark);
+
+  --color-warn: var(--mc-gold-dark);
+  --color-warn-soft: #f6ecc9;
+  --color-warn-dark: #6b5316;
+  --color-danger: var(--mc-redstone);
+  --color-danger-soft: #f5dcd8;
+
+  /* "blueprint" tone — diamond-coded, for content that is a proposal/plan rather than a
+     measured result. Deliberately NOT the achievement banner's gold (that means "we ran this
+     and here's the honest number") and not a grey/locked treatment (nothing here is hidden or
+     gated) — diamond already reads in this palette as "the deeper, not-yet-reached tech tier",
+     which is exactly what an unexecuted proposal is. */
+  --color-plan: var(--mc-diamond-dark);
+  --color-plan-soft: #dcf2f4;
+
+  --bevel-light: rgba(255, 255, 255, 0.65);
+  --bevel-dark: rgba(0, 0, 0, 0.3);
+  --shadow-pixel: 4px 4px 0 var(--color-border-strong);
+  --shadow-pixel-sm: 3px 3px 0 var(--color-border-strong);
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2.25rem;
+  --space-7: 3.5rem;
+  --space-8: 5rem;
+
+  --max-width: 72rem;
+  --measure: 40rem; /* comfortable reading line length for prose */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #15140f;
+    --color-bg-raised: #1f1c14;
+    --color-bg-sunken: #0f0e09;
+    --color-text: #ece7d4;
+    --color-text-muted: #b3ac90;
+    --color-border: #3f3a29;
+    --color-border-strong: #96895a;
+
+    --color-accent: #7fd858;
+    --color-accent-soft: #223018;
+    --color-accent-contrast: #0b1408;
+
+    --color-link: #62e0ea;
+    --color-focus: #62e0ea;
+
+    --color-warn: #e6c14d;
+    --color-warn-soft: #362a10;
+    --color-warn-dark: #e6c14d;
+    --color-danger: #ef6a61;
+    --color-danger-soft: #351714;
+
+    --color-plan: #62e0ea;
+    --color-plan-soft: #123338;
+
+    --bevel-light: rgba(255, 255, 255, 0.2);
+    --bevel-dark: rgba(0, 0, 0, 0.55);
+    --shadow-pixel: 4px 4px 0 #000;
+    --shadow-pixel-sm: 3px 3px 0 #000;
+  }
+}
+
+/* ---------- 2. Reset / base ---------- */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: light dark;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  background: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.65;
+  font-size: 1rem;
+  overflow-x: hidden;
+  /* faint pixel-grain texture instead of a flat fill, built with gradients only (no image) */
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.015) 0 2px,
+    transparent 2px 4px
+  );
+}
+
+img,
+picture,
+video {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  line-height: 1.25;
+  font-weight: 800;
+  color: var(--color-text);
+  font-family: var(--font-body);
+}
+
+h1 {
+  font-size: clamp(1.7rem, 4vw, 2.6rem);
+  margin: 0 0 var(--space-4);
+  border-left: 6px solid var(--color-accent);
+  padding-left: var(--space-4);
+}
+
+h2 {
+  font-size: clamp(1.25rem, 2.4vw, 1.5rem);
+  margin: var(--space-6) 0 var(--space-3);
+  border-left: 5px solid var(--color-border-strong);
+  padding-left: var(--space-3);
+}
+
+h3 {
+  font-size: 1.1rem;
+  margin: var(--space-5) 0 var(--space-2);
+  padding-left: var(--space-3);
+  border-left: 4px solid var(--color-border);
+}
+
+p {
+  margin: 0 0 var(--space-4);
+}
+
+a {
+  color: var(--color-link);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.15em;
+}
+
+a:hover {
+  color: var(--color-accent);
+}
+
+ul,
+ol {
+  margin: 0 0 var(--space-4);
+  padding-left: 1.4em;
+}
+
+li {
+  margin-bottom: var(--space-2);
+}
+
+strong {
+  font-weight: 700;
+}
+
+hr {
+  border: none;
+  border-top: 3px solid var(--color-border);
+  margin: var(--space-6) 0;
+}
+
+blockquote {
+  margin: var(--space-5) 0;
+  padding: var(--space-3) var(--space-4);
+  border-left: 4px solid var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: var(--color-bg-sunken);
+  border: 1px solid var(--color-border);
+  padding: 0.1em 0.35em;
+}
+
+pre {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  line-height: 1.55;
+  background: var(--color-bg-sunken);
+  border: 2px solid var(--color-border-strong);
+  padding: var(--space-4);
+  overflow-x: auto;
+  margin: 0 0 var(--space-5);
+}
+
+pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 1em;
+}
+
+/* Any wide element (table, pre, gif) scrolls in its own box — never the body */
+.table-scroll {
+  overflow-x: auto;
+  margin: 0 0 var(--space-5);
+  border: 2px solid var(--color-border-strong);
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 28rem;
+  font-size: 0.92rem;
+}
+
+.table-scroll table {
+  margin: 0;
+  border: none;
+}
+
+th,
+td {
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+thead th {
+  background: var(--color-bg-sunken);
+  font-weight: 700;
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---------- 3. Layout primitives ---------- */
+
+.wrap {
+  max-width: var(--max-width);
+  margin-inline: auto;
+  padding-inline: clamp(1.1rem, 4vw, 2.5rem);
+}
+
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: auto;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  padding: var(--space-2) var(--space-4);
+  z-index: 100;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+}
+
+.skip-link:focus {
+  left: var(--space-3);
+  top: var(--space-3);
+}
+
+/* blocky "Minecraft button": flat fill + inset bevel (light top/left, dark bottom/right) */
+.button {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  padding: var(--space-3) var(--space-5);
+  border: 3px solid var(--color-border-strong);
+  box-shadow: inset 2px 2px 0 var(--bevel-light), inset -2px -2px 0 var(--bevel-dark),
+    var(--shadow-pixel-sm);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.button:hover {
+  filter: brightness(1.08);
+  color: var(--color-accent-contrast);
+}
+
+.button:active {
+  box-shadow: inset -2px -2px 0 var(--bevel-light), inset 2px 2px 0 var(--bevel-dark);
+  transform: translate(2px, 2px);
+}
+
+.badge {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  padding: 0.35em 0.6em;
+  border: 2px solid var(--color-border-strong);
+  vertical-align: middle;
+  background: var(--color-bg-raised);
+  color: var(--color-text);
+}
+
+.badge-order {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.badge-plan {
+  background: var(--color-plan-soft);
+  color: var(--color-plan);
+  border-color: var(--color-plan);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- 4. Header + language switcher ---------- */
+
+.site-header {
+  border-bottom: 4px solid var(--color-border-strong);
+  background: var(--color-bg-raised);
+}
+
+.site-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-block: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.site-brand {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  color: var(--color-text);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  line-height: 1.4;
+}
+
+.site-brand:hover {
+  color: var(--color-accent);
+}
+
+.brand-mark {
+  color: var(--color-accent);
+  font-size: 1.1rem;
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  flex-wrap: wrap;
+}
+
+/* language switcher — always visible, even with only one language populated */
+.lang-switch {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  border: 2px solid var(--color-border-strong);
+  padding: 2px;
+  background: var(--color-bg-sunken);
+}
+
+.lang-switch a,
+.lang-switch span {
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  padding: 0.4em 0.6em;
+  text-decoration: none;
+  color: var(--color-text-muted);
+  display: inline-block;
+}
+
+.lang-switch a[aria-current] {
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+}
+
+.lang-switch span[aria-disabled="true"] {
+  color: var(--color-text-muted);
+  opacity: 0.55;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+
+/* global "which track do you prefer" control — JS-only, invisible without it */
+.track-pref {
+  display: none;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.85rem;
+}
+
+html.js .track-pref {
+  display: flex;
+}
+
+.track-pref-label {
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  color: var(--color-text-muted);
+}
+
+.track-pref button {
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  background: var(--color-bg-sunken);
+  color: var(--color-text-muted);
+  border: 2px solid var(--color-border-strong);
+  padding: 0.4em 0.7em;
+  cursor: pointer;
+}
+
+.track-pref button[aria-pressed="true"] {
+  background: var(--color-accent);
+  border-color: var(--color-border-strong);
+  color: var(--color-accent-contrast);
+}
+
+/* ---------- 5. Hero ---------- */
+
+.hero {
+  padding-block: var(--space-7);
+  border-bottom: 4px solid var(--color-border-strong);
+  background: var(--color-bg-sunken);
+}
+
+.hero-grid {
+  display: grid;
+  gap: var(--space-6);
+  align-items: center;
+}
+
+@media (min-width: 60rem) {
+  .hero-grid {
+    grid-template-columns: 1.1fr 0.9fr;
+  }
+}
+
+.eyebrow {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.65rem;
+  color: var(--color-accent);
+  margin: 0 0 var(--space-3);
+}
+
+.lede {
+  font-size: 1.08rem;
+  color: var(--color-text-muted);
+  max-width: 34rem;
+}
+
+/* the GIF frame reads like an item frame / chest slot: thick dirt border, inset bevel */
+.hero-media {
+  margin: 0;
+  background: var(--color-bg-raised);
+  border: 4px solid var(--color-border-strong);
+  box-shadow: inset 0 0 0 3px var(--bevel-light), var(--shadow-pixel);
+  padding: var(--space-3);
+}
+
+.hero-media img {
+  width: 100%;
+  max-width: 22rem;
+  margin-inline: auto;
+  image-rendering: pixelated;
+  background: #000;
+  border: 2px solid var(--color-border-strong);
+}
+
+.hero-media figcaption {
+  padding-top: var(--space-3);
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+/* ---------- 6. Learning path — crafting-tree layout ---------- */
+
+.section {
+  padding-block: var(--space-7);
+}
+
+.section + .section {
+  border-top: 4px solid var(--color-border-strong);
+}
+
+.section-intro {
+  color: var(--color-text-muted);
+  max-width: var(--measure);
+}
+
+.section-note {
+  margin-top: var(--space-5);
+  padding: var(--space-4);
+  border: 2px dashed var(--color-border-strong);
+  background: var(--color-bg-sunken);
+}
+
+.tech-tree {
+  list-style: none;
+  margin: var(--space-6) 0 0;
+  padding: 0;
+  position: relative;
+}
+
+/* segmented, notched connector track between nodes — stands in for a crafting-tree "wire" */
+.tech-tree::before {
+  content: "";
+  position: absolute;
+  left: 1.5rem;
+  top: 0.6rem;
+  bottom: 0.6rem;
+  width: 6px;
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--color-border-strong) 0 10px,
+    transparent 10px 16px
+  );
+}
+
+.tech-tree--single::before {
+  display: none;
+}
+
+/* Every .tech-node rendered here is a real, finished, clickable chapter — there is no
+   draft/review/"locked" visual state and there must never be one (an earlier build had
+   greyed-out locked nodes for chapters that didn't exist yet; it was never requested and
+   confused the user). The tree only ever grows by adding another real node when the Explainer
+   ships a real chapter — it never pre-declares chapters that don't exist yet. */
+.tech-node {
+  position: relative;
+  margin: 0 0 var(--space-6);
+  padding-left: 3.75rem;
+}
+
+.tech-node:last-child {
+  margin-bottom: 0;
+}
+
+/* decorative crafting-recipe visualization: [prereq slots] -> [this chapter's slot].
+   Wraps (rather than a fixed single row) so a chapter with several prerequisites — expected
+   as the tree grows past a linear chain — reflows onto a second line on narrow viewports
+   instead of silently overflowing its container (the page itself must never scroll
+   horizontally; see body { overflow-x: hidden }). */
+.recipe-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  margin-bottom: var(--space-2);
+  min-height: 2.4rem;
+}
+
+.recipe-slot {
+  width: 2.1rem;
+  height: 2.1rem;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  background: var(--color-bg-sunken);
+  border: 2px solid var(--color-border-strong);
+  box-shadow: inset 2px 2px 0 var(--bevel-light), inset -2px -2px 0 var(--bevel-dark);
+  color: var(--color-text-muted);
+}
+
+.recipe-slot-output {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.recipe-arrow {
+  font-family: var(--font-display);
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  flex: none;
+}
+
+.node-card {
+  background: var(--color-bg-raised);
+  border: 3px solid var(--color-border-strong);
+  box-shadow: var(--shadow-pixel);
+  padding: var(--space-4) var(--space-5);
+}
+
+.node-title {
+  margin: 0 0 var(--space-2);
+  font-size: 1.1rem;
+  font-family: var(--font-body);
+  font-weight: 800;
+  border-left: none;
+  padding-left: 0;
+}
+
+.node-title a {
+  text-decoration: none;
+}
+
+.node-title a:hover {
+  text-decoration: underline;
+}
+
+.node-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-2);
+}
+
+.node-prereqs {
+  margin: var(--space-2) 0 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.tech-tree-empty {
+  border: 3px dashed var(--color-border-strong);
+  padding: var(--space-5);
+  color: var(--color-text-muted);
+  max-width: var(--measure);
+  background: var(--color-bg-sunken);
+}
+
+/* ---------- 7. Chapter page ---------- */
+
+.breadcrumb {
+  border-bottom: 2px solid var(--color-border);
+  padding-block: var(--space-3);
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.breadcrumb a {
+  text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+.chapter {
+  padding-block: var(--space-7);
+}
+
+.chapter-header {
+  max-width: var(--measure);
+  margin-bottom: var(--space-6);
+}
+
+.chapter-kicker {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin: 0 0 var(--space-3);
+}
+
+.chapter-prereqs {
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+}
+
+.chapter-prose {
+  max-width: var(--measure);
+}
+
+/* In-article gameplay GIF — same "item frame" treatment as .hero-media, sized down and
+   track-agnostic (sits above the tracks, applies to both, so it isn't duplicated per track). */
+.chapter-media {
+  margin: 0 0 var(--space-6);
+  max-width: 26rem;
+  background: var(--color-bg-raised);
+  border: 4px solid var(--color-border-strong);
+  box-shadow: inset 0 0 0 3px var(--bevel-light), var(--shadow-pixel);
+  padding: var(--space-3);
+}
+
+.chapter-media img {
+  width: 100%;
+  image-rendering: pixelated;
+  background: #000;
+  border: 2px solid var(--color-border-strong);
+}
+
+.chapter-media figcaption {
+  padding-top: var(--space-3);
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.chapter-prose h2:first-child,
+.chapter-prose h3:first-child {
+  margin-top: 0;
+}
+
+/* achievement-unlocked style banner, driven by chapter status (structural, not editorial) */
+.achievement {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin: var(--space-6) 0;
+  padding: var(--space-4) var(--space-5);
+  border: 3px solid var(--color-border-strong);
+  background: var(--color-warn-soft);
+  box-shadow: var(--shadow-pixel-sm);
+  max-width: var(--measure);
+}
+
+.achievement-icon {
+  font-size: 1.6rem;
+  flex: none;
+}
+
+.achievement-title {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--color-warn-dark);
+  margin: 0 0 0.3em;
+}
+
+.achievement p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-text);
+}
+
+/* "blueprint" banner — the honest counterpart to .achievement for a chapter (or a passage
+   inside one) that reports a PROPOSAL, not a measured result. Dashed border reuses this
+   stylesheet's existing "not yet materialized" convention (see .section-note,
+   .tech-tree-empty) instead of inventing a new visual grammar; diamond tone instead of the
+   achievement's gold keeps the two banners impossible to confuse at a glance. This never
+   gates or greys out a chapter or nav entry — it only labels specific proposal content
+   honestly as not-yet-run. */
+.blueprint {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin: var(--space-6) 0;
+  padding: var(--space-4) var(--space-5);
+  border: 3px dashed var(--color-plan);
+  background: var(--color-plan-soft);
+  max-width: var(--measure);
+}
+
+.blueprint-icon {
+  font-size: 1.6rem;
+  flex: none;
+}
+
+.blueprint-title {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--color-plan);
+  margin: 0 0 0.3em;
+}
+
+.blueprint p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-text);
+}
+
+/* Stands in for .chapter-media's GIF slot on a chapter that has no footage to show because
+   nothing was run yet — an honest empty item-frame rather than a placeholder image or a
+   silently-missing figure. */
+.blueprint-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-4);
+  border: 2px dashed var(--color-plan);
+  background: var(--color-bg-sunken);
+  color: var(--color-text-muted);
+  text-align: center;
+  font-size: 0.85rem;
+}
+
+.blueprint-slot-icon {
+  font-size: 1.8rem;
+}
+
+.chapter-nav {
+  border-top: 4px solid var(--color-border-strong);
+  padding-block: var(--space-5);
+}
+
+.chapter-nav-inner {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.chapter-nav-link {
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.chapter-nav-link:hover {
+  text-decoration: underline;
+}
+
+/* ---------- 8. Beginner / expert track toggle ---------- */
+
+.tracks {
+  margin-top: var(--space-2);
+}
+
+.track-tabs {
+  display: none; /* progressive enhancement: no JS = no tabs, both tracks just read top to bottom */
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+  border-bottom: 3px solid var(--color-border-strong);
+}
+
+html.js .track-tabs {
+  display: flex;
+}
+
+.track-tab {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  background: var(--color-bg-sunken);
+  border: 2px solid var(--color-border-strong);
+  border-bottom: none;
+  color: var(--color-text-muted);
+  padding: var(--space-3) var(--space-4);
+  margin-right: var(--space-2);
+  cursor: pointer;
+  transform: translateY(3px);
+}
+
+.track-tab[aria-selected="true"] {
+  color: var(--color-accent-contrast);
+  background: var(--color-accent);
+  transform: translateY(0);
+}
+
+.track-kicker {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-accent);
+  background: var(--color-accent-soft);
+  border: 2px solid var(--color-accent);
+  padding: 0.3em 0.7em;
+  margin-bottom: var(--space-3);
+}
+
+html.js .track-kicker {
+  display: none; /* the tab bar already says which track you're in once JS runs */
+}
+
+.track-panel {
+  display: block;
+}
+
+.track-panel + .track-panel {
+  margin-top: var(--space-7);
+  padding-top: var(--space-6);
+  border-top: 2px dashed var(--color-border);
+}
+
+html.js .track-panel {
+  display: none;
+}
+
+html.js .track-panel.is-active {
+  display: block;
+}
+
+html.js .track-panel + .track-panel {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+/* ---------- 9. Footer ---------- */
+
+.site-footer {
+  border-top: 4px solid var(--color-border-strong);
+  padding-block: var(--space-6);
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  background: var(--color-bg-sunken);
+}
+
+.site-footer p {
+  margin: 0 0 var(--space-2);
+}
+
+/* ---------- 10. Misc ---------- */
+
+.callout {
+  background: var(--color-bg-sunken);
+  border: 3px solid var(--color-border-strong);
+  box-shadow: var(--shadow-pixel-sm);
+  padding: var(--space-5);
+  max-width: var(--measure);
+}
+
+.callout p:last-child {
+  margin-bottom: 0;
+}
+
+.callout h2:first-child,
+.callout h3:first-child {
+  margin-top: 0;
+}
+
+.callout > .badge {
+  margin-bottom: var(--space-2);
+}
+
+.callout-danger {
+  background: var(--color-danger-soft);
+  border-color: var(--color-danger);
+}
+
+.callout-plan {
+  background: var(--color-plan-soft);
+  border-color: var(--color-plan);
+}
+
+.callout-plan h2,
+.callout-plan h3 {
+  border-left-color: var(--color-plan);
+}

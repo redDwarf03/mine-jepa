@@ -1,0 +1,35 @@
+# Cold-start attempt #8, Proposal B — train a BC actor (mine_jepa/ebwm/actor.py)
+# on frozen ebwm.pt latents to PROPOSE MPC candidates for DiscreteLatentPlanner /
+# SwitchingCraftPlanner (docs/10_coldstart_engineering.md). Treechop demos +
+# attempt #3 coverage episodes (searching/wandering exposure).
+
+seed: 0
+
+model:
+  ebwm_checkpoint: checkpoints/ebwm.pt   # frozen — never trained here
+
+data:
+  treechop_path: data/minerl_goal/episodes.npz      # same data ebwm.pt itself trained on
+  coverage_path: data/minerl_coverage/episodes.npz  # attempt #3's random-spawn "lost" frames
+  include_coverage: true
+  coverage_chunk_size: 400  # collect_minerl_coverage.yaml's max_steps_per_episode (see
+                             # train_value_projector.py's episode_ranges() docstring)
+  val_fraction: 0.1          # held out by EPISODE (no frame leakage into validation)
+
+actor:
+  n_actions: 17       # the 17 shared movement actions (0-16, identical in both action maps)
+  hidden_dim: 256
+
+training:
+  epochs: 15
+  steps_per_epoch: 200
+  batch_size: 128
+  lr: 1.0e-3
+  weight_decay: 0.0
+  val_batches: 20
+
+checkpoint:
+  dir: checkpoints/
+  name: actor_bc.pt
+  min_mean_entropy: 0.3      # nats; log(17) ~= 2.83 is the max possible
+  max_top_action_frac: 0.9   # no single action may own >90% of held-out argmaxes

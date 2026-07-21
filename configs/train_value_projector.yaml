@@ -1,0 +1,63 @@
+# Cold-start attempt #7 — train a DistanceProjector (arXiv:2601.00844) so Euclidean
+# distance in a projected space approximates true action-count-to-goal, instead of
+# ebwm.pt's untrained raw-latent squared-L2 (docs/10_coldstart_engineering.md).
+
+seed: 42
+
+model:
+  ebwm_checkpoint: checkpoints/ebwm.pt   # frozen — never trained here
+
+data:
+  treechop_path: data/minerl_goal/episodes.npz      # same data ebwm.pt itself trained on
+  coverage_path: data/minerl_coverage/episodes.npz  # attempt #3's random-spawn "lost" frames
+  coverage_chunk_size: 400  # collect_minerl_coverage.yaml's max_steps_per_episode. The
+                             # coverage npz's `dones` array is all-False (shard-merge bug,
+                             # see episode_ranges() docstring) — this splits its 8000 frames
+                             # back into the ~20 independent 400-step episodes they really are.
+  k_max: 75           # cap on the regressed distance (~ upper end of a chop approach
+                       # sequence at horizon=12/action_repeat=4 -> ~48 real steps per
+                       # replan block; 75 gives headroom without the target range
+                       # blowing up the MLP's regression scale)
+  val_fraction: 0.1    # held out by EPISODE (no frame leakage into validation)
+
+# Reused verbatim: scripts/play_ebwm.py::build_goal_latents with this exact block —
+# the eventual live two-brain chop_model.goal in configs/play_craft_commit4_value.yaml
+# must match, so the trained metric's goal anchor is identical to the deployed one.
+goal:
+  data_path: data/minerl_goal/episodes.npz
+  threshold: 0.5
+  min_frames: 10
+  mode: centroid
+
+# Photometric augmentation (cold-start attempt #7 follow-up): applied to the raw
+# frame BEFORE the frozen ebwm.pt encoder, TRAINING TIME ONLY (never at validation —
+# the mandatory gate below always measures real, unmodified-frame behaviour). Off
+# by default so this config still reproduces attempt #7's original run bit-for-bit;
+# see configs/train_value_projector_colorjitter.yaml for the augmented run.
+augmentation:
+  color_jitter:
+    enabled: false
+    brightness: 0.5
+    contrast: 0.5
+    saturation: 0.3
+    gamma_range: [0.5, 2.0]
+
+projector:
+  hidden_dim: 256
+  proj_dim: 32
+
+training:
+  epochs: 15
+  steps_per_epoch: 200
+  batch_size: 128
+  lr: 1.0e-3
+  weight_decay: 0.0
+  near_weight: 1.0
+  far_weight: 1.0
+  val_batches: 20     # held-out validation batches for the mandatory gate
+  brightness_corr_samples: 500  # held-out frames for the offline brightness-confound check
+
+checkpoint:
+  dir: checkpoints/
+  name: value_projector.pt
+  min_separation_ratio: 1.3   # far_mean/near_mean must clear this to save the checkpoint

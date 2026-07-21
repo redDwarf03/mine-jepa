@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Le raccourci que le modèle essaie toujours de trouver (et comment on l'en empêche) — Mine-JEPA</title>
+<meta name="description" content="Chapitre 2 du parcours Mine-JEPA : le collapse représentationnel — pourquoi JEPA peut tricher en écrasant toutes les images vers le même embedding constant, comment le projet le détecte (batch_var) et s'en protège (EMA + VICReg).">
+<link rel="stylesheet" href="../style.css">
+<script>document.documentElement.classList.add("js");</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Aller au contenu</a>
+
+<header class="site-header">
+  <div class="wrap site-header-inner">
+    <a class="site-brand" href="index.html"><span class="brand-mark" aria-hidden="true">&#9935;</span> Mine-JEPA</a>
+    <div class="header-controls">
+      <nav class="lang-switch" aria-label="Langue du site">
+        <a href="index.html" aria-current="true" lang="fr" hreflang="fr">FR</a>
+        <span aria-disabled="true" lang="en" title="Anglais — pas encore disponible">EN</span>
+      </nav>
+      <div class="track-pref" data-track-pref>
+        <span class="track-pref-label" id="track-pref-label">Afficher :</span>
+        <button type="button" data-track-pref-value="beginner" aria-pressed="true" aria-describedby="track-pref-label">Débutant</button>
+        <button type="button" data-track-pref-value="expert" aria-pressed="false" aria-describedby="track-pref-label">Expert</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <nav class="breadcrumb" aria-label="Fil d'Ariane">
+    <div class="wrap">
+      <a href="index.html">Parcours d'apprentissage</a>
+      <span aria-hidden="true">/</span>
+      <span>Chapitre 2</span>
+    </div>
+  </nav>
+
+  <article class="chapter">
+    <div class="wrap">
+
+      <header class="chapter-header">
+        <p class="chapter-kicker">
+          Chapitre 2
+
+        </p>
+        <h1>Le raccourci que le modèle essaie toujours de trouver (et comment on l'en empêche)</h1>
+        <p class="chapter-prereqs">
+          Prérequis : <a href="01-c-est-quoi-jepa.html">Qu'est-ce que JEPA, et pourquoi apprendre à un programme à jouer à Minecraft avec ça ?</a>
+        </p>
+      </header>
+
+      <div class="tracks" data-tracks>
+        <div class="track-tabs" role="tablist" aria-label="Niveau de lecture">
+          <button class="track-tab" role="tab" id="tab-beginner" aria-controls="panel-beginner" aria-selected="true" data-track-tab="beginner">Débutant</button>
+          <button class="track-tab" role="tab" id="tab-expert" aria-controls="panel-expert" aria-selected="false" tabindex="-1" data-track-tab="expert">Expert</button>
+        </div>
+
+        <div class="track-panel is-active chapter-prose" data-track-panel="beginner" role="tabpanel" id="panel-beginner" aria-labelledby="tab-beginner">
+          <p class="track-kicker">Piste débutant</p>
+
+          <h2>Un modèle qui « gagne » sans rien apprendre</h2>
+          <p>
+            Dans le Chapitre 1, on a posé le jeu d'entraînement de JEPA : regarder une image, la
+            compresser en une courte liste de nombres (un <strong>embedding</strong>), prédire à
+            quoi ressemblera l'embedding de l'image <em>suivante</em>, et être noté sur la
+            précision de cette prédiction. Plus l'erreur est basse, mieux c'est censé être.
+          </p>
+          <p>
+            Sauf qu'il existe une façon d'obtenir une note parfaite à ce jeu sans rien apprendre
+            du tout sur Minecraft.
+          </p>
+          <p>
+            Imagine un élève qui remarque que son correcteur ne vérifie jamais si une réponse est
+            <em>juste</em>, mais seulement si elle <em>correspond exactement à ce qu'il avait
+            écrit la fois précédente</em>. Cet élève n'a alors qu'à écrire le même mot — disons
+            « banane » — à chaque question, à chaque contrôle, pour toujours. Si « banane » est
+            jugé être une « prédiction » acceptable de lui-même, cet élève obtient un score
+            parfait à tous les coups, sans avoir rien compris à aucune des matières testées.
+          </p>
+          <p>
+            C'est exactement le piège dans lequel JEPA peut tomber. On appelle ça le
+            <strong>collapse</strong> (effondrement) : l'encodeur apprend à écraser <em>toutes</em>
+            les images — quoi qu'il se passe réellement dans le jeu — vers exactement le même
+            vecteur de sortie, disons <code>[0, 0, 0, ..., 0]</code>. Si chaque image donne le
+            même vecteur, alors prédire « le vecteur de l'image suivante » devient trivial : c'est
+            encore ce même vecteur constant. L'erreur entre la prédiction et la cible tombe à
+            zéro. La courbe d'entraînement a l'air magnifique. Et le modèle n'a strictement rien
+            appris sur Minecraft — il ne sait pas distinguer un arbre d'un zombie ou d'un ciel
+            dégagé, parce qu'il n'a jamais regardé ce qui différencie ces images entre elles.
+          </p>
+          <p>
+            C'est un problème sérieux parce qu'un modèle « collapsé » est <em>activement
+            trompeur</em> si on ne surveille que la courbe de perte (« loss »). Une perte proche
+            de zéro ressemble à un succès. La seule façon de détecter le piège, c'est de vérifier
+            autre chose : est-ce que les sorties du modèle sont réellement <em>différentes</em>
+            pour des entrées réellement différentes ?
+          </p>
+
+          <h2>Comment on le détecte</h2>
+          <p>
+            La parade consiste à mesurer en permanence à quel point les embeddings du modèle sont
+            <em>dispersés</em> sur un lot (« batch ») d'images différentes — une quantité que le
+            projet appelle <code>batch_var</code> (variance du batch). Si des images qui se
+            ressemblent peu dans le jeu (être debout dans un désert vs. être debout dans une
+            forêt) produisent aussi des embeddings très différents, <code>batch_var</code> reste
+            raisonnablement élevé. Si le modèle a basculé dans le raccourci « je réponds toujours
+            banane », <code>batch_var</code> s'écroule vers zéro — chaque image est projetée vers
+            (presque) le même point, il n'y a plus rien à disperser.
+          </p>
+
+          <h2>Deux garde-fous, pas seulement une surveillance</h2>
+          <p>
+            Se contenter de surveiller le chiffre ne suffit pas : on veut aussi rendre le collapse
+            difficile à atteindre en premier lieu. Mine-JEPA combine deux contre-mesures :
+          </p>
+          <p>
+            <strong>1. Une cible d'évaluation « à la traîne » (EMA).</strong> Plutôt que d'avoir
+            un encodeur qui se note lui-même contre une copie de lui-même mise à jour exactement à
+            la même vitesse (ce qui rend très facile pour les deux copies de glisser ensemble vers
+            la même réponse paresseuse), l'encodeur « cible » — celui qui produit le corrigé —
+            n'avance qu'à petits pas, via une moyenne mobile de poids appelée <strong>EMA</strong>
+            (Exponential Moving Average, moyenne mobile exponentielle). C'est comme séparer un
+            élève du corrigé par un décalage dans le temps : le corrigé se met à jour un peu après
+            l'élève, ce qui empêche l'élève de copier le même raccourci dans les deux à la fois.
+          </p>
+          <p>
+            <strong>2. Une pénalité explicite « disperse-toi » (VICReg).</strong> En plus de l'EMA,
+            la recette d'entraînement ajoute une pénalité directe (issue d'une technique appelée
+            VICReg) qui punit le modèle chaque fois que ses embeddings pour des images différentes
+            commencent à se regrouper trop près les uns des autres. C'est une règle qui dit, en
+            somme : « tu n'as pas le droit de donner la même réponse à tout, même si ça te ferait
+            bien noter à court terme. »
+          </p>
+
+          <h2>Ce qui s'est vraiment passé lors du premier entraînement de ce projet</h2>
+          <p>
+            Ce n'est pas un risque théorique dont l'équipe s'inquiétait dans l'abstrait — c'est
+            quelque chose qui a été mesuré directement pendant l'entraînement de la Phase 1
+            (30 epochs, sur une RTX 5060 Ti, sur 32 676 transitions de jeu Crafter). Au moment de
+            la vérification, <code>batch_var</code> valait <strong>1,13</strong> — largement
+            au-dessus du seuil d'alerte documenté (<code>batch_var &lt; 1e-4</code>) — et la perte
+            de validation finale était de <strong>0,080</strong>. En d'autres mots : la perte a
+            baissé <em>et</em> les embeddings sont restés dispersés. Cette combinaison, c'est ce à
+            quoi ressemble « le modèle apprend vraiment quelque chose, il ne triche pas », dans les
+            chiffres.
+          </p>
+          <p>
+            L'équipe n'a pas fait confiance aux chiffres seuls, non plus : un test indépendant a
+            suivi (un « linear probe » — sonde linéaire : un classifieur très simple peut-il lire
+            la santé de l'agent directement sur les embeddings figés, sans rien y ajouter ?).
+            Résultat : <strong>90,8&nbsp;%</strong>, contre une base de référence à
+            <strong>86,9&nbsp;%</strong> — soit environ <strong>3,9 points de pourcentage</strong>
+            de mieux. C'est une preuve indépendante que les embeddings contiennent vraiment une
+            information exploitable sur l'état du jeu, et pas seulement une variance qui a l'air
+            saine.
+          </p>
+        </div>
+
+        <div class="track-panel chapter-prose" data-track-panel="expert" role="tabpanel" id="panel-expert" aria-labelledby="tab-expert">
+          <p class="track-kicker">Piste expert</p>
+
+          <h2>Collapse : mécanisme, et pourquoi les architectures à embedding joint y sont particulièrement exposées</h2>
+          <p>
+            Les méthodes auto-supervisées basées sur la reconstruction (autoencodeurs, prédiction
+            pixel/token masqué à la BERT/MAE) sont structurellement protégées du collapse
+            représentationnel : on ne peut pas reconstruire une image à partir d'un code constant,
+            donc la perte elle-même interdit la solution triviale. JEPA n'a aucune protection de ce
+            genre par construction — le context encoder et le predictor sont optimisés
+            conjointement en espace latent, sans aucune ancre vers les pixels bruts dans la perte,
+            donc la paire est libre de co-adapter n'importe quelle solution qui minimise
+            <code>‖ŝ_{t+1} - s_y‖²</code>, y compris le minimum global à
+            <code>s_x = s_y = ŝ_{t+1} = const</code>. Les méthodes contrastives (SimCLR) évitent ça
+            via des paires négatives explicites (un terme répulsif qui force les entrées
+            différentes à s'écarter), ce que JEPA omet délibérément — le compromis accepté par ce
+            projet : pas de négatifs, pas besoin de gros batchs, mais un risque de collapse plus
+            élevé qu'il faut gérer architecturalement.
+          </p>
+
+          <h2>Signal surveillé</h2>
+          <p>
+            <code>batch_var = embeddings.var(dim=0).mean()</code> — variance moyenne par dimension
+            sur un batch d'entraînement. Ce projet documente deux seuils, à ne pas confondre :
+          </p>
+          <ul>
+            <li>
+              <code>docs/03_representation_collapse.md</code> fixe le <strong>seuil d'alerte
+              opérationnel</strong> à <code>batch_var &lt; 1e-4</code> — c'est le seuil que le
+              gate de la Phase 1 utilise réellement (« &gt; 1e-4 » requis pour passer, mesuré à
+              1,178 au moment de la sonde, per <code>CLAUDE.md</code>).
+            </li>
+            <li>
+              La section « Risk #1 : COLLAPSE » de <code>CLAUDE.md</code> (la règle d'architecture
+              générale du projet) fixe une alarme plus extrême, « <code>batch_var &lt; 1e-6</code> :
+              collapse en cours », comme signal de collapse déjà largement engagé plutôt que comme
+              seuil de passage du gate.
+            </li>
+          </ul>
+          <p>
+            Ce chapitre traite <code>1e-4</code> comme le seuil opérationnel du gate Phase 1, et
+            <code>1e-6</code> comme le plancher d'alarme au-delà duquel le collapse n'est plus une
+            hypothèse mais un fait. Ce contrôle est fait à chaque epoch comme un gate permanent,
+            pas comme une vérification ponctuelle.
+          </p>
+
+          <h2>Contre-mesure 1 — Target encoder EMA</h2>
+          <pre><code>θ̄_{t+1} ← 0.99 · θ̄_t + 0.01 · θ_t</code></pre>
+          <p>
+            <code>θ</code> (context encoder) reçoit les gradients normalement ; <code>θ̄</code>
+            (target encoder) n'est mis à jour que via cette EMA, avec <code>@torch.no_grad()</code>
+            imposé à l'étape de mise à jour — aucun chemin de gradient n'existe de la perte vers
+            <code>θ̄</code> directement. Cela découple la vitesse de changement de la cible de
+            prédiction de la vitesse de changement des entrées du predictor, ce qui supprime le
+            chemin de collapse le plus facile : si les deux encodeurs bougeaient en lockstep sous
+            gradient, la paire pourrait co-glisser vers une constante avec perte nulle et aucun
+            signal de gradient pour s'en échapper. Avec une cible qui dérive lentement, le
+            predictor ne peut pas « s'endormir » sur une solution triviale fixe puisque la cible
+            elle-même continue de bouger — une forme d'auto-distillation par momentum,
+            structurellement identique à l'astuce du target network dans DINO/BYOL, utilisée ici
+            dans le même but anti-collapse.
+          </p>
+
+          <h2>Contre-mesure 2 — VICReg (Bardes, Ponce, LeCun, arXiv:2105.04906, ICLR 2022)</h2>
+          <p>
+            Deux termes de régularisation explicites ajoutés à l'objectif, en s'appuyant sur la
+            recette documentée localement dans <code>ES2025-19.pdf</code> (ESANN 2025) :
+          </p>
+          <p><strong>Terme de variance</strong> (anti-collapse direct) :</p>
+          <pre><code>L_std = mean( max(0, 1 - std(s_x, dim=0)) )</code></pre>
+          <p>
+            Nul quand chaque dimension de l'embedding a un std ≥ 1 ; augmente quand la variance
+            chute (collapse en cours), fournissant un signal de gradient qui s'oppose activement
+            au collapse plutôt que de simplement le détecter après coup.
+          </p>
+          <p><strong>Terme de covariance</strong> (anti-redondance) :</p>
+          <pre><code>L_cov = mean( off_diagonal( cov(s_x)^2 ) )</code></pre>
+          <p>
+            Pénalise la corrélation entre dimensions de l'embedding — sans lui, un modèle pourrait
+            satisfaire le terme de variance tout en ayant chaque dimension qui encode le même
+            signal unidimensionnel, ce qui est fonctionnellement proche du collapse même avec un
+            <code>batch_var</code> nominalement élevé.
+          </p>
+
+          <h2>L'objectif total de la Phase 1 de Mine-JEPA</h2>
+          <pre><code>L = L_JEPA + λ_std · L_std + λ_cov · L_cov
+    λ_std = 1.0, λ_cov = 0.04   (configs/train_encoder.yaml)</code></pre>
+          <p>
+            <code>λ_std</code> est fixé un ordre de grandeur au-dessus de <code>λ_cov</code> parce
+            que le collapse en variance est le risque existentiel ; la décorrélation n'est qu'un
+            raffinement secondaire.
+          </p>
+
+          <h2>Dynamique d'entraînement mesurée (run réel, Crafter, 32 676 transitions, RTX 5060 Ti)</h2>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr><th>Epoch</th><th>total</th><th>jepa</th><th>std_loss</th><th>cov_loss</th><th>batch_var</th><th>val_loss</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>1</td><td>0.190</td><td>0.134</td><td>0.040</td><td>0.434</td><td>1.057</td><td>0.250</td></tr>
+                <tr><td>2</td><td>0.119</td><td>0.101</td><td>0.001</td><td>0.405</td><td>1.124</td><td>0.191</td></tr>
+                <tr><td>3</td><td>0.106</td><td>0.091</td><td>0.001</td><td>0.347</td><td>1.128</td><td>0.122</td></tr>
+                <tr><td>4</td><td>0.094</td><td>0.081</td><td>0.001</td><td>0.303</td><td>1.133</td><td>0.114</td></tr>
+                <tr><td>5</td><td>0.084</td><td>0.073</td><td>0.001</td><td>0.271</td><td>1.150</td><td>0.098</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            Lecture : <code>batch_var</code> <em>monte</em> (1,057→1,150) au fil de l'entraînement
+            plutôt que de décroître vers zéro — l'inverse de la signature du collapse.
+            <code>std_loss</code> sature près de son plancher (~0,001) dès l'epoch 2, ce qui
+            indique que la contrainte de variance est satisfaite tôt et à faible coût, laissant le
+            terme de prédiction JEPA (qui continue de baisser, 0,134→0,073) comme objectif
+            contraignant. <code>cov_loss</code> baisse de façon monotone (0,434→0,271), cohérent
+            avec une décorrélation progressive entre dimensions.
+          </p>
+          <p>
+            Le résultat du gate Phase 1 rapporté dans <code>CLAUDE.md</code>, après le run complet
+            de 30 epochs : <strong>val_loss=0,080, batch_var=1,13</strong> — nettement au-delà du
+            seuil d'alerte de 1e-4. <code>CLAUDE.md</code> note aussi une mesure distincte,
+            <code>batch_var</code> = 1,178 « au moment de la sonde » (probe), un chiffre
+            légèrement différent du 1,13 final — les deux tracent le même run mais à des instants
+            de mesure différents, ce qui est cohérent avec le fait que <code>batch_var</code>
+            continue de fluctuer légèrement pendant l'entraînement plutôt que de converger vers
+            une valeur unique figée.
+          </p>
+          <p>
+            Corroboration indépendante via <code>scripts/probe.py</code> : une sonde linéaire
+            entraînée sur les embeddings figés prédit la santé de l'agent à
+            <strong>90,8&nbsp;%</strong>, contre une base à <strong>86,9&nbsp;%</strong> — soit
+            <strong>+3,9 points de pourcentage</strong> (90,8 − 86,9 ; <code>CLAUDE.md</code>
+            arrondit cet écart à « +3,8&nbsp;% », un léger écart d'arrondi par rapport au calcul
+            direct des deux pourcentages qu'il rapporte lui-même — les deux valeurs mesurées,
+            90,8&nbsp;% et 86,9&nbsp;%, sont elles bien vérifiées). C'est une preuve que la
+            variance conservée est un signal <em>pertinent pour la tâche</em>, pas juste du bruit
+            qui a une variance non nulle par hasard.
+          </p>
+
+          <h2>La signature de défaillance contre laquelle on se protège</h2>
+          <p>
+            Pour contraste (non exécuté comme une expérience d'ablation documentée, mais présenté
+            comme le motif attendu en l'absence d'EMA/VICReg) : <code>batch_var</code> décroissant
+            de ~1,05 vers <code>1e-9</code> au fil des epochs d'entraînement, tandis que la perte
+            JEPA chute simultanément vers zéro — le piège de diagnostic étant que la seule courbe
+            de perte a alors l'air d'un succès. C'est pourquoi <code>batch_var</code> est suivi
+            comme un diagnostic permanent et obligatoire (selon les instructions de la section
+            Risk #1 de <code>CLAUDE.md</code>), et non comme une vérification de débogage
+            occasionnelle.
+          </p>
+
+          <h2>Références (vérifiées, tirées de docs/references/index.md)</h2>
+          <ul>
+            <li>
+              Bardes, Ponce, LeCun, VICReg, arXiv:2105.04906 (ICLR 2022) — la régularisation
+              variance/covariance utilisée directement dans <code>mine_jepa/ebwm/losses.py</code>.
+            </li>
+            <li>
+              ES2025-19 (ESANN 2025, PDF local) — la recette anti-collapse adaptée dans
+              <code>docs/03_representation_collapse.md</code>.
+            </li>
+            <li>
+              Sobal et al., arXiv:2211.10831 (2022) — la tendance des JEPA à trop s'attacher à des
+              features lentes et non pertinentes pour la tâche ; contexte utile pour comprendre
+              pourquoi la variance seule ne garantit pas des représentations utiles (motive le
+              terme de covariance et des choix de masquage ultérieurs, non résolus par VICReg
+              seul).
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="achievement" role="note" aria-label="Résultat de ce chapitre">
+        <span class="achievement-icon" aria-hidden="true">&#127942;</span>
+        <div>
+          <p class="achievement-title">Succès &mdash; pas de collapse détecté</p>
+          <p>
+            <code>batch_var</code> mesuré à <strong>1,13</strong> en fin d'entraînement (seuil
+            d'alerte : <code>&lt; 1e-4</code>) et sonde linéaire à <strong>90,8&nbsp;%</strong>
+            contre une base à 86,9&nbsp;% : l'encodeur n'a pas trouvé le raccourci du « je réponds
+            toujours banane ».
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </article>
+
+  <nav class="chapter-nav" aria-label="Navigation entre chapitres">
+    <div class="wrap chapter-nav-inner">
+      <a class="chapter-nav-link" href="index.html">&larr; Retour au parcours</a>
+      <a class="chapter-nav-link" href="03-le-modele-du-monde.html">Chapitre suivant : Apprendre au modèle à imaginer la suite &rarr;</a>
+    </div>
+  </nav>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>Mine-JEPA — un agent JEPA qui apprend à jouer à Minecraft à partir des pixels, documenté au fil de l'eau.</p>
+  </div>
+</footer>
+
+<script src="../script.js" defer></script>
+</body>
+</html>

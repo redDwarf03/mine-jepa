@@ -1,0 +1,53 @@
+# Cold-start attempt #7 follow-up — same DistanceProjector recipe as
+# configs/train_value_projector.yaml, but with aggressive photometric augmentation
+# (brightness/contrast/saturation/gamma jitter) applied to training frames before the
+# frozen ebwm.pt encoder, so the projector cannot shortcut on scene brightness
+# instead of tree-proximity (docs/10_coldstart_engineering.md, attempt #7 finding:
+# r=-0.57 brightness correlation live). Saves to a SEPARATE checkpoint —
+# checkpoints/value_projector.pt (attempt #7's original, unaugmented) is untouched.
+
+seed: 0
+
+model:
+  ebwm_checkpoint: checkpoints/ebwm.pt   # frozen — never trained here
+
+data:
+  treechop_path: data/minerl_goal/episodes.npz
+  coverage_path: data/minerl_coverage/episodes.npz
+  coverage_chunk_size: 400
+  k_max: 75
+  val_fraction: 0.1
+
+goal:
+  data_path: data/minerl_goal/episodes.npz
+  threshold: 0.5
+  min_frames: 10
+  mode: centroid
+
+augmentation:
+  color_jitter:
+    enabled: true
+    brightness: 0.5      # per-sample factor in [1-0.5, 1+0.5]
+    contrast: 0.5
+    saturation: 0.3
+    gamma_range: [0.5, 2.0]
+
+projector:
+  hidden_dim: 256
+  proj_dim: 32
+
+training:
+  epochs: 15
+  steps_per_epoch: 200
+  batch_size: 128
+  lr: 1.0e-3
+  weight_decay: 0.0
+  near_weight: 1.0
+  far_weight: 1.0
+  val_batches: 20
+  brightness_corr_samples: 500
+
+checkpoint:
+  dir: checkpoints/
+  name: value_projector_colorjitter.pt
+  min_separation_ratio: 1.3

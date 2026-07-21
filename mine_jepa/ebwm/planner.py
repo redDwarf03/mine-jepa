@@ -32,6 +32,57 @@ steps 2..H was discarded. commit_length>1 returns the first M actions of the
 winning sequence instead of 1, so the caller can execute several before
 replanning. commit_length=1 (default) is the exact original code path: same
 scoring, same argmax, same single-int return.
+
+Phase 5+ cold-start attempt #6 (CEM, arXiv:2512.24497): plan() was single-generation
+random/sticky-shooting — sample N candidates ONCE, score, argmax. cem_iters>1 turns
+this into iterative refinement (iCEM-lite for DISCRETE/categorical actions, not the
+classical continuous-Gaussian CEM): generation 1 uses the existing _sample_actions()
+(so sticky_prob still seeds a temporally-correlated starting pool); the top
+cem_elite_frac fraction by score become the elite set; a [horizon, n_actions]
+categorical table is refit from the elite's empirical per-timestep action
+frequencies (+cem_smoothing Laplace floor, renormalised) so a low-probability
+action never hits exactly 0 (premature degenerate convergence); generations 2..
+cem_iters sample fresh candidates independently per timestep from that table
+(the temporal correlation now comes from the refit distribution itself, not from
+sticky repetition). The single best-scoring sequence seen across ALL generations
+(not just the last) is what gets returned. cem_iters=1 (default) skips the refit
+loop entirely and is bit-for-bit the original single-generation code path — the
+scoring/rollout logic itself (_score) is unchanged, refactored out of plan() only
+so both code paths call it instead of duplicating it.
+
+Phase 5+ cold-start attempt #7 (trained distance metric, arXiv:2601.00844,
+mine_jepa/ebwm/value_head.py): _score()'s goal distance was always an UNTRAINED
+raw-latent squared-L2 — attempts #1-#6 all worked around it going flat/
+undiscriminating with no tree in view, never at the metric itself. distance_projector
+(optional, default None) swaps that raw distance for DistanceProjector.pairwise_dist,
+a small MLP trained (frozen ebwm.pt latents only, see scripts/train_value_projector.py)
+so Euclidean distance in its projection space approximates true action-count-to-goal.
+distance_projector=None (default) is bit-for-bit the original raw-L2 scoring path —
+verified with a fixed-seed comparison, same discipline as every other change here.
+
+Phase 5+ cold-start attempt #8, Proposal A (action-pool priming, docs/10): attempts
+#4-#7 diagnosed the wall as BEHAVIOURAL, not perceptual — the world model already
+scores situations correctly, but the 512 i.i.d./sticky-sampled candidate sequences
+essentially never contain a sustained "clean" gesture (sprint-forward-attack for
+~12 steps, a continuous camera sweep, walking backward) for the argmax to select in
+the first place. action_pool_priming (optional dict, default None/disabled) has
+_sample_actions() overwrite a fixed leading slice of the SAME N candidates it would
+have produced anyway with hand-authored full-horizon macros built from the 17 shared
+movement-action indices (see _build_primed_macros) — same shape, same downstream
+_score() call, no bonus/weighting on them. Disabled (no dict, or enabled: false) is
+bit-for-bit the original sticky/i.i.d. sampling — verified with a fixed-seed
+comparison, same discipline as sticky_prob/commit_length/cem_iters/distance_projector.
+
+Phase 5+ cold-start attempt #8, Proposal B (BC actor prior, mine_jepa/ebwm/actor.py):
+Proposal A's macros are hand-authored; this swaps "hand-authored" for "learned from
+demonstrations + coverage episodes" — a small BCActor classifier on the SAME frozen
+model's latents proposes a further leading slice of the candidate pool, drawn i.i.d.
+per-timestep from its predicted action distribution conditioned on the CURRENT
+observation (see _sample_actor_macros). NOT a repeat of Phase 4's failed pure-BC
+policy: the actor only proposes here, _score()'s world-model-based MPC still
+evaluates and re-plans every step. actor=None / actor_n_samples<=0 (default) never
+calls the actor and is bit-for-bit the original/Proposal-A sampling — verified with
+a fixed-seed comparison, same discipline as every prior config-gated change here.
 """
 from __future__ import annotations
 
@@ -40,12 +91,85 @@ from typing import TYPE_CHECKING
 import torch
 
 if TYPE_CHECKING:
+    from mine_jepa.ebwm.actor import BCActor
     from mine_jepa.ebwm.curiosity import DisagreementEnsemble
+    from mine_jepa.ebwm.value_head import DistanceProjector
+
+
+def _build_primed_macros(cfg: dict, horizon: int, device) -> torch.Tensor:
+    """
+    Hand-authored 'clean' macro sequences for action-pool priming (docs/10 attempt
+    #8, Proposal A). Each row is a FULL-horizon repeated-action gesture built from
+    the 17 shared movement-action indices (configs/minerl_actions_obtain.yaml /
+    minerl_actions.yaml, identical 0-16 in both):
+      - forward+attack (n_forward_attack): half a14 (sprint+forward+attack, the
+        lumberjack gesture), half a7 (forward+attack, no sprint) for variety.
+      - camera-turn (n_turn): a third pure a12 (turn right) for the full horizon,
+        a third pure a11 (turn left), a third half-right-then-half-left (a scan
+        that sweeps both ways within one sequence) — collectively covering the
+        yaw range in both directions rather than betting on one.
+      - backward (n_backward): pure a2 (back) for the full horizon.
+    Returns [M, H] (M = sum of the three counts, possibly 0 rows). These go through
+    the exact same _score() rollout/argmax as every other candidate — no scoring
+    change, only what's in the menu.
+    """
+    n_fa = int(cfg.get("n_forward_attack", 30))
+    n_turn = int(cfg.get("n_turn", 30))
+    n_back = int(cfg.get("n_backward", 30))
+    rows = []
+    if n_fa > 0:
+        half = n_fa // 2
+        rows.append(torch.full((half, horizon), 14, dtype=torch.long, device=device))
+        rows.append(torch.full((n_fa - half, horizon), 7, dtype=torch.long, device=device))
+    if n_turn > 0:
+        third = n_turn // 3
+        rem = n_turn - 2 * third
+        rows.append(torch.full((third, horizon), 12, dtype=torch.long, device=device))
+        rows.append(torch.full((third, horizon), 11, dtype=torch.long, device=device))
+        half_h = horizon // 2
+        if rem > 0:
+            scan = torch.cat([
+                torch.full((rem, half_h), 12, dtype=torch.long, device=device),
+                torch.full((rem, horizon - half_h), 11, dtype=torch.long, device=device),
+            ], dim=1)
+            rows.append(scan)
+    if n_back > 0:
+        rows.append(torch.full((n_back, horizon), 2, dtype=torch.long, device=device))
+    if not rows:
+        return torch.empty(0, horizon, dtype=torch.long, device=device)
+    return torch.cat(rows, dim=0)
+
+
+def _sample_actor_macros(
+    actor: "BCActor", obs_latent_flat: torch.Tensor, n_samples: int,
+    horizon: int, temperature: float, device,
+) -> torch.Tensor:
+    """
+    [n_samples, H] action sequences (docs/10 attempt #8, Proposal B) drawn i.i.d.
+    per-timestep from a frozen BCActor's predicted action distribution, conditioned
+    on the CURRENT observation's flattened latent `obs_latent_flat` [1, F] — a
+    LEARNED prior over what to propose, in the same role as _build_primed_macros'
+    hand-authored macros. The actor is a single-step classifier, not a sequence
+    model: the SAME per-action distribution is reused at every timestep and every
+    row here — combining this with sticky_prob's temporal correlation (holding a
+    sampled action for several steps in a row) is a natural follow-up, kept out of
+    scope for the first live sanity pass to keep the mechanism auditable.
+    """
+    if n_samples <= 0:
+        return torch.empty(0, horizon, dtype=torch.long, device=device)
+    probs = actor.action_probs(obs_latent_flat, temperature=temperature).squeeze(0)  # [n_actions]
+    flat = torch.multinomial(probs, n_samples * horizon, replacement=True)
+    return flat.reshape(n_samples, horizon)
 
 
 def _sample_actions(
     n_candidates: int, horizon: int, n_actions: int,
     sticky_prob: float, device,
+    action_pool_priming: dict | None = None,
+    actor: "BCActor | None" = None,
+    actor_n_samples: int = 0,
+    actor_temperature: float = 1.0,
+    obs_latent_flat: torch.Tensor | None = None,
 ) -> torch.Tensor:
     """
     Sample [N, 1, H] candidate action sequences.
@@ -56,15 +180,49 @@ def _sample_actions(
     uniform draw. I.i.d. sequences almost never contain sustained gestures like
     "turn for 6 steps then walk" — sticky sampling puts them in the candidate pool,
     which is what lets MPC *consider* searching/approaching behaviours at all.
+
+    action_pool_priming (docs/10 attempt #8, Proposal A): optional dict, default
+    None/disabled. When {"enabled": True, ...}, overwrites a fixed LEADING slice of
+    the sticky/i.i.d. pool above (same total N, same shape) with the hand-authored
+    macros from _build_primed_macros — so the argmax has a chance to pick a genuine
+    sustained gesture instead of only i.i.d./sticky noise. Disabled (None, or
+    enabled: false) never touches the tensor below this point — bit-for-bit the
+    original sampling.
+
+    actor / actor_n_samples (docs/10 attempt #8, Proposal B): when actor is not
+    None and actor_n_samples > 0, a FURTHER leading slice (placed right after
+    action_pool_priming's, so both can coexist) is overwritten with sequences
+    drawn from _sample_actor_macros — a learned prior instead of hand-authored
+    macros. actor=None / actor_n_samples<=0 (default) never touches the tensor
+    here either — bit-for-bit the original/Proposal-A sampling.
     """
     if sticky_prob <= 0.0:
-        return torch.randint(0, n_actions, (n_candidates, 1, horizon), device=device)
-    actions = torch.empty(n_candidates, 1, horizon, dtype=torch.long, device=device)
-    actions[:, 0, 0] = torch.randint(0, n_actions, (n_candidates,), device=device)
-    for h in range(1, horizon):
-        fresh = torch.randint(0, n_actions, (n_candidates,), device=device)
-        keep = torch.rand(n_candidates, device=device) < sticky_prob
-        actions[:, 0, h] = torch.where(keep, actions[:, 0, h - 1], fresh)
+        actions = torch.randint(0, n_actions, (n_candidates, 1, horizon), device=device)
+    else:
+        actions = torch.empty(n_candidates, 1, horizon, dtype=torch.long, device=device)
+        actions[:, 0, 0] = torch.randint(0, n_actions, (n_candidates,), device=device)
+        for h in range(1, horizon):
+            fresh = torch.randint(0, n_actions, (n_candidates,), device=device)
+            keep = torch.rand(n_candidates, device=device) < sticky_prob
+            actions[:, 0, h] = torch.where(keep, actions[:, 0, h - 1], fresh)
+
+    m = 0
+    if action_pool_priming and action_pool_priming.get("enabled", False):
+        macros = _build_primed_macros(action_pool_priming, horizon, device)  # [M,H]
+        m = min(macros.shape[0], n_candidates)
+        if m > 0:
+            actions[:m, 0] = macros[:m]
+
+    if actor is not None and actor_n_samples > 0 and obs_latent_flat is not None:
+        budget = max(0, n_candidates - m)
+        macros2 = _sample_actor_macros(
+            actor, obs_latent_flat, min(actor_n_samples, budget), horizon,
+            actor_temperature, device,
+        )
+        m2 = macros2.shape[0]
+        if m2 > 0:
+            actions[m:m + m2, 0] = macros2
+
     return actions
 
 
@@ -79,6 +237,14 @@ class DiscreteLatentPlanner:
         ensemble: "DisagreementEnsemble | None" = None,
         sticky_prob: float = 0.0,
         commit_length: int = 1,
+        cem_iters: int = 1,
+        cem_elite_frac: float = 0.1,
+        cem_smoothing: float = 0.01,
+        distance_projector: "DistanceProjector | None" = None,
+        action_pool_priming: dict | None = None,
+        actor: "BCActor | None" = None,
+        actor_n_samples: int = 0,
+        actor_temperature: float = 1.0,
         device=None,
     ):
         self.model = model
@@ -89,7 +255,88 @@ class DiscreteLatentPlanner:
         self.ensemble = ensemble
         self.sticky_prob = sticky_prob
         self.commit_length = commit_length
+        # None/disabled (default): _sample_actions() is bit-for-bit the original
+        # sticky/i.i.d. pool (docs/10 attempt #8, Proposal A).
+        self.action_pool_priming = action_pool_priming
+        # None/0 (default): _sample_actions() never calls the actor (docs/10
+        # attempt #8, Proposal B) — bit-for-bit the original/Proposal-A sampling.
+        self.actor = actor
+        self.actor_n_samples = int(actor_n_samples)
+        self.actor_temperature = float(actor_temperature)
+        # cem_iters<=1: exact original single-generation code path (verified
+        # bit-for-bit, docs/10 attempt #6). >1: iCEM-lite refit loop below.
+        self.cem_iters = max(1, int(cem_iters))
+        self.cem_elite_frac = cem_elite_frac
+        self.cem_smoothing = cem_smoothing
+        # None (default): _score() uses the original raw-latent squared-L2 goal
+        # distance, bit-for-bit (docs/10 attempt #7). Set: a trained DistanceProjector
+        # replaces that distance with a learned cost-to-goal metric.
+        self.distance_projector = distance_projector
         self.device = device or next(model.parameters()).device
+
+    def _score(self, obs: torch.Tensor, goal_latents: torch.Tensor, actions: torch.Tensor):
+        """
+        Unrolls `actions` [N,1,H] through the world model and scores each sequence.
+        Returns (scores [N], goal_score_std: float, novelty_mean: float or None).
+        Exact scoring/rollout block from the original single-generation plan(),
+        factored out so the CEM refit loop can call it once per generation
+        instead of duplicating it.
+        """
+        N, H = actions.shape[0], self.horizon
+        predicted, _ = self.model.unroll(
+            obs, actions, nsteps=H, unroll_mode="autoregressive",
+            ctxt_window_time=1, compute_loss=False,
+        )
+        final = predicted[:, :, -1]
+
+        F = final.shape[1] * final.shape[2] * final.shape[3]
+        final_flat = final.reshape(N, F)
+        goals_flat = goal_latents.reshape(goal_latents.shape[0], F)
+        if self.distance_projector is not None:
+            # Trained cost-to-goal metric (docs/10 attempt #7): pairwise_dist
+            # already returns [N, K] Euclidean distances in projection space.
+            dist = self.distance_projector.pairwise_dist(final_flat, goals_flat)
+        else:
+            # Original path (bit-for-bit): mean-squared-L2 in raw latent space.
+            final_sq = (final_flat ** 2).sum(dim=1, keepdim=True)
+            goals_sq = (goals_flat ** 2).sum(dim=1).unsqueeze(0)
+            cross = final_flat @ goals_flat.t()
+            dist = (final_sq - 2 * cross + goals_sq) / F
+        goal_scores = -dist.min(dim=1).values
+        goal_score_std = float(goal_scores.std().item())
+
+        if self.novelty_coeff > 0.0 and self.ensemble is not None:
+            rollout_states = predicted[:, :, 1:]
+            action_enc = self.model.action_encoder(actions)
+            dis = self.ensemble.disagreement(rollout_states, action_enc)
+            novelty_scores = dis.mean(dim=1)
+
+            g_mu, g_std = goal_scores.mean(), goal_scores.std().clamp(min=1e-8)
+            n_mu, n_std = novelty_scores.mean(), novelty_scores.std().clamp(min=1e-8)
+            scores = (goal_scores - g_mu) / g_std + self.novelty_coeff * (novelty_scores - n_mu) / n_std
+            novelty_mean = float(novelty_scores.mean().item())
+        else:
+            scores = goal_scores
+            novelty_mean = None
+
+        return scores, goal_score_std, novelty_mean
+
+    def _refit_categorical(self, actions: torch.Tensor, scores: torch.Tensor) -> torch.Tensor:
+        """
+        Elite-frequency categorical table [H, n_actions] for the next CEM generation:
+        top cem_elite_frac fraction of `actions` [N,1,H] by `scores`, per-timestep
+        action-frequency counts among the elite, +cem_smoothing Laplace floor (no
+        action's probability collapses to exactly 0 after one generation), each
+        timestep row renormalised to sum to 1.
+        """
+        n_elite = max(1, int(actions.shape[0] * self.cem_elite_frac))
+        elite_idx = torch.topk(scores, n_elite).indices
+        elite_actions = actions[elite_idx, 0]
+        table = torch.zeros(self.horizon, self.n_actions, device=self.device)
+        for h in range(self.horizon):
+            table[h] = torch.bincount(elite_actions[:, h], minlength=self.n_actions).float()
+        table = table + self.cem_smoothing
+        return table / table.sum(dim=1, keepdim=True)
 
     @torch.no_grad()
     def plan(self, obs_init: torch.Tensor, goal_latents: torch.Tensor,
@@ -99,11 +346,11 @@ class DiscreteLatentPlanner:
             obs_init     : [1, 3, 1, 64, 64] — current frame (T=1 context)
             goal_latents : [K, D, H', W'] — K success-scene prototypes (reward>0 frames)
             return_info  : if True, also return {"goal_score_std": float} — the std of
-                           the goal scores across the N candidates. Near-zero std means
-                           every imagined future looks equally (un)promising, i.e. no
-                           goal is in view — the signal the scan macro triggers on.
+                           the goal scores across the N generation-1 candidates. Near-zero
+                           std means every imagined future looks equally (un)promising,
+                           i.e. no goal is in view — the signal the scan macro triggers on.
         Returns (self.commit_length == 1, the default — original contract, unchanged):
-            action (int) — 1st action of the best sequence
+            action (int) — 1st action of the best sequence found
             (action, info) when return_info=True
         Returns (self.commit_length > 1):
             actions (list[int], length min(commit_length, horizon)) — the first M
@@ -113,65 +360,63 @@ class DiscreteLatentPlanner:
 
         Nearest-neighbor scoring: each sequence is scored by its distance to the
         CLOSEST success prototype (min over K), not a blurry average centroid. The
-        planner thus seeks "the most reachable success scene" → more reactive behavior
+        planner thus seeks "the most reachable success scene" -> more reactive behavior
         (orienting/stopping toward a specific trunk).
 
         When novelty_coeff > 0 and an ensemble is supplied, the score blends in
-        Plan2Explore disagreement:  score = goal_score + λ · novelty_score
+        Plan2Explore disagreement:  score = goal_score + lambda * novelty_score
         Both terms are z-score normalised across candidates before blending so
-        that the relative weight is controlled by λ alone (not by raw magnitudes).
+        that the relative weight is controlled by lambda alone (not by raw magnitudes).
+
+        CEM (cem_iters > 1, docs/10 attempt #6): generation 1 samples via
+        _sample_actions() (sticky_prob still applies here); the top cem_elite_frac
+        sequences by score refit a per-timestep categorical table
+        (_refit_categorical); generations 2..cem_iters sample fresh, independent-
+        per-timestep candidates from that table and repeat score -> elite -> refit.
+        The single best-scoring sequence across ALL generations is returned
+        (tracked, not just the last generation's argmax). cem_iters=1 (default)
+        skips this loop entirely -> bit-for-bit the original behaviour.
         """
         N, H = self.n_candidates, self.horizon
         obs = obs_init.expand(N, -1, -1, -1, -1).contiguous()       # [N,3,1,64,64]
-        actions = _sample_actions(N, H, self.n_actions, self.sticky_prob, self.device)
+        # docs/10 attempt #8, Proposal B: the actor needs the CURRENT frame's
+        # latent, not the expanded [N,...] batch — one cheap single-frame encode,
+        # skipped entirely when no actor is attached (self.actor is None).
+        obs_latent_flat = None
+        if self.actor is not None and self.actor_n_samples > 0:
+            z0 = self.model.encode(obs_init).squeeze(2)              # [1,D,H',W']
+            obs_latent_flat = z0.reshape(1, -1)
+        actions = _sample_actions(
+            N, H, self.n_actions, self.sticky_prob, self.device, self.action_pool_priming,
+            actor=self.actor, actor_n_samples=self.actor_n_samples,
+            actor_temperature=self.actor_temperature, obs_latent_flat=obs_latent_flat,
+        )
 
-        # Autoregressive rollout: unroll H steps, keep all predicted states
-        predicted, _ = self.model.unroll(
-            obs, actions, nsteps=H, unroll_mode="autoregressive",
-            ctxt_window_time=1, compute_loss=False,
-        )                                                            # [N, D, 1+H, H', W']
-        final = predicted[:, :, -1]                                 # [N, D, H', W']
-
-        # MSE distance to each prototype via ||a-b||² = |a|² - 2a·b + |b|² (efficient)
-        F = final.shape[1] * final.shape[2] * final.shape[3]
-        final_flat = final.reshape(N, F)                            # [N, F]
-        goals_flat = goal_latents.reshape(goal_latents.shape[0], F)  # [K, F]
-        final_sq = (final_flat ** 2).sum(dim=1, keepdim=True)        # [N, 1]
-        goals_sq = (goals_flat ** 2).sum(dim=1).unsqueeze(0)         # [1, K]
-        cross = final_flat @ goals_flat.t()                         # [N, K]
-        dist = (final_sq - 2 * cross + goals_sq) / F                # [N, K]
-        goal_scores = -dist.min(dim=1).values                       # [N]: dist to nearest
-
-        if self.novelty_coeff > 0.0 and self.ensemble is not None:
-            # Compute disagreement over the H predicted steps (skip context step 0)
-            # predicted: [N, D, 1+H, H', W'] → rollout states [N, D, H, H', W']
-            rollout_states = predicted[:, :, 1:]                    # [N, D, H, H', W']
-            # action_enc: [N, E, H]
-            action_enc = self.model.action_encoder(actions)
-            # disagreement: [N, H] → mean over H → [N]
-            dis = self.ensemble.disagreement(rollout_states, action_enc)  # [N, H]
-            novelty_scores = dis.mean(dim=1)                        # [N]
-
-            # z-score normalise both terms (std-safe: add 1e-8)
-            g_mu, g_std = goal_scores.mean(), goal_scores.std().clamp(min=1e-8)
-            n_mu, n_std = novelty_scores.mean(), novelty_scores.std().clamp(min=1e-8)
-            scores = (goal_scores - g_mu) / g_std + self.novelty_coeff * (novelty_scores - n_mu) / n_std
-            novelty_mean = float(novelty_scores.mean().item())
-        else:
-            scores = goal_scores
-            novelty_mean = None
-
+        scores, goal_score_std, novelty_mean = self._score(obs, goal_latents, actions)
         best = scores.argmax()
-        info = {"goal_score_std": float(goal_scores.std().item())}
+        best_score = scores[best]
+        best_seq = actions[best, 0].clone()                        # [H]
+
+        for _ in range(1, self.cem_iters):
+            table = self._refit_categorical(actions, scores)        # [H, n_actions]
+            samples = torch.multinomial(table, N, replacement=True)  # [H, N]
+            actions = samples.t().unsqueeze(1)                       # [N, 1, H]
+            scores, _, _ = self._score(obs, goal_latents, actions)
+            gen_best = scores.argmax()
+            if scores[gen_best] > best_score:
+                best_score = scores[gen_best]
+                best_seq = actions[gen_best, 0].clone()
+
+        info = {"goal_score_std": goal_score_std}
         if novelty_mean is not None:
             info["novelty_mean"] = novelty_mean
         if self.commit_length <= 1:
-            action = int(actions[best, 0, 0].item())
+            action = int(best_seq[0].item())
             if return_info:
                 return action, info
             return action
         M = min(self.commit_length, H)
-        committed = actions[best, 0, :M].tolist()
+        committed = best_seq[:M].tolist()
         if return_info:
             return committed, info
         return committed
@@ -298,7 +543,10 @@ class SwitchingCraftPlanner:
 
     def __init__(self, model, chop_goal, item_weights, log_idx, n_actions=22,
                  horizon=12, n_candidates=512, log_threshold=0.05,
-                 sticky_prob=0.0, commit_length: int = 1, device=None):
+                 sticky_prob=0.0, commit_length: int = 1,
+                 action_pool_priming: dict | None = None,
+                 actor: "BCActor | None" = None, actor_n_samples: int = 0,
+                 actor_temperature: float = 1.0, device=None):
         self.model = model
         self.chop_goal = chop_goal              # [1, D, H', W'] visual latent centroid
         self.item_weights = item_weights        # {idx: weight} for the craft objective
@@ -309,6 +557,17 @@ class SwitchingCraftPlanner:
         self.log_threshold = log_threshold      # normalised; 0.05 ≈ 0.5 raw logs
         self.sticky_prob = sticky_prob
         self.commit_length = commit_length
+        # None/disabled (default): _sample_actions() is bit-for-bit the original
+        # sticky/i.i.d. pool (docs/10 attempt #8, Proposal A).
+        self.action_pool_priming = action_pool_priming
+        # None/0 (default): _sample_actions() never calls the actor (docs/10
+        # attempt #8, Proposal B) — bit-for-bit the original/Proposal-A sampling.
+        # NB: only attach an actor trained on THIS planner's own model's latent
+        # space (e.g. an ebwm.pt-trained actor must not be attached here when
+        # `model` is craft_wm_v4 — different encoder, same shape, different geometry).
+        self.actor = actor
+        self.actor_n_samples = int(actor_n_samples)
+        self.actor_temperature = float(actor_temperature)
         self.device = device or next(model.parameters()).device
 
     @torch.no_grad()
@@ -322,7 +581,15 @@ class SwitchingCraftPlanner:
         sequence instead of a single int."""
         N, H = self.n_candidates, self.horizon
         obs = obs_init.expand(N, -1, -1, -1, -1).contiguous()
-        actions = _sample_actions(N, H, self.n_actions, self.sticky_prob, self.device)
+        obs_latent_flat = None
+        if self.actor is not None and self.actor_n_samples > 0:
+            z0 = self.model.encode(obs_init).squeeze(2)               # [1,D,H',W']
+            obs_latent_flat = z0.reshape(1, -1)
+        actions = _sample_actions(
+            N, H, self.n_actions, self.sticky_prob, self.device, self.action_pool_priming,
+            actor=self.actor, actor_n_samples=self.actor_n_samples,
+            actor_temperature=self.actor_temperature, obs_latent_flat=obs_latent_flat,
+        )
         predicted, _ = self.model.jepa.unroll(
             obs, actions, nsteps=H, unroll_mode="autoregressive",
             ctxt_window_time=1, compute_loss=False,
