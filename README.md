@@ -4,6 +4,9 @@
 
 The agent trains a Joint-Embedding Predictive Architecture entirely on raw gameplay trajectories, builds a latent world model, and uses Model Predictive Control to plan action sequences in latent space — all on a consumer 8 GB GPU.
 
+🌐 **Interactive Learning Site (English & French):** [**https://reddwarf03.github.io/mine-jepa/**](https://reddwarf03.github.io/mine-jepa/)  
+*Features dual-track reading (Beginner & Expert modes), real gameplay GIFs, and continuously updated research findings.*
+
 ![eb-JEPA agent playing MineRL Treechop](assets/agent_play_ebwm.gif)
 
 *eb-JEPA MPC agent on MineRLTreechop-v0 — chops trees autonomously, up to 2 logs/episode. 25% success on the released checkpoint (varies 25–50% across training draws).*
@@ -293,13 +296,19 @@ The full analysis is in [`docs/07_cua_landscape_june2026.md`](docs/07_cua_landsc
 
 ---
 
-## Learning site (in progress)
+## Interactive Learning Site
 
-A public, step-by-step tutorial site is being built at [`site/`](site/) — the same real project
-history as the docs below, but written twice per chapter: once for a curious 16-year-old, once
-for an ML specialist, side by side. Currently French-only (English planned), local-only (not yet
-deployed), and growing one chapter at a time as new results land. Run it locally with
-`python -m http.server` from the repo root and open `site/fr/index.html`.
+Explore the project story and technical concepts through the online interactive tutorial at **[https://reddwarf03.github.io/mine-jepa/](https://reddwarf03.github.io/mine-jepa/)**!
+
+- **Dual-Track Reading**: Choose between **Beginner** mode (analogies & visual intuition) and **Expert** mode (equations, PyTorch architecture, VICReg math, and latent MPC planning) — switchable anytime.
+- **Multilingual**: Available in **[English](https://reddwarf03.github.io/mine-jepa/en/index.html)** and **[Français](https://reddwarf03.github.io/mine-jepa/fr/index.html)**.
+- **Unfiltered & Timestamped**: Documents the real story as it happens — successes, failed attempts, and ongoing open problems — automatically timestamped with the latest publication date.
+
+You can also run the site locally:
+```bash
+python -m http.server 8000
+# Open http://localhost:8000/site/index.html
+```
 
 ---
 
