@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cinquième confirmation pour le raccourci de luminosité, une fausse alerte qui n'en était pas une, et une énigme à 144 qui reste sans réponse — Mine-JEPA</title>
+<meta name="description" content="Chapitre 15 du parcours Mine-JEPA : un test de ratios de couleur par tuile spatiale ferme pour de bon la piste de correction photométrique (5ᵉ confirmation indépendante du raccourci luminosité/composition de scène) ; séparément, le sauvetage anti-noyade est confirmé à N=20 (noyade 60%→15%), une fausse alerte de panne d'infrastructure est corrigée, et une récompense isolée de 144 reste un mystère non résolu.">
+<link rel="stylesheet" href="../style.css">
+<script>document.documentElement.classList.add("js");</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Aller au contenu</a>
+
+<header class="site-header">
+  <div class="wrap site-header-inner">
+    <a class="site-brand" href="index.html"><span class="brand-mark" aria-hidden="true">&#9935;</span> Mine-JEPA</a>
+    <div class="header-controls">
+      <span class="last-updated" title="Date de mise à jour">Mis à jour le : 2026-07-22</span>
+      <nav class="lang-switch" aria-label="Langue du site">
+        <a href="15-cinquieme-confirmation-fausse-alerte.html" aria-current="true" lang="fr" hreflang="fr">FR</a>
+        <span aria-disabled="true" lang="en" title="Traduction anglaise pas encore disponible pour ce chapitre">EN</span>
+      </nav>
+      <div class="track-pref" data-track-pref>
+        <span class="track-pref-label" id="track-pref-label">Afficher :</span>
+        <button type="button" data-track-pref-value="beginner" aria-pressed="true" aria-describedby="track-pref-label">Débutant</button>
+        <button type="button" data-track-pref-value="expert" aria-pressed="false" aria-describedby="track-pref-label">Expert</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <nav class="breadcrumb" aria-label="Fil d'Ariane">
+    <div class="wrap">
+      <a href="index.html">Parcours d'apprentissage</a>
+      <span aria-hidden="true">/</span>
+      <span>Chapitre 15</span>
+    </div>
+  </nav>
+
+  <article class="chapter">
+    <div class="wrap">
+
+      <header class="chapter-header">
+        <p class="chapter-kicker">Chapitre 15</p>
+        <h1>Cinquième confirmation pour le raccourci de luminosité, une fausse alerte qui n'en était pas une, et une énigme à 144 qui reste sans réponse</h1>
+        <p class="chapter-prereqs">
+          Prérequis :
+          <a href="01-c-est-quoi-jepa.html">Qu'est-ce que JEPA, et pourquoi apprendre à un programme à jouer à Minecraft avec ça ?</a>,
+          <a href="02-le-piege-du-collapse.html">Le raccourci que le modèle essaie toujours de trouver (et comment on l'en empêche)</a>,
+          <a href="03-le-modele-du-monde.html">Apprendre au modèle à imaginer la suite</a>,
+          <a href="04-planifier-en-imagination.html">Essayer 512 avenirs dans sa tête avant d'appuyer sur un bouton</a>,
+          <a href="05-le-vrai-minecraft.html">Le grand saut vers le vrai Minecraft : quatre échecs, puis un agent qui coupe des arbres</a>,
+          <a href="06-apprendre-a-fabriquer.html">Apprendre à fabriquer : la règle est comprise, le premier arbre reste hors de portée</a>,
+          <a href="07-la-curiosite-en-panne.html">La curiosité en panne, puis deux rustines qui marchent à moitié</a>,
+          <a href="08-le-mur-est-comportemental.html">Le mur est comportemental : une vraie première réussite, puis quatre preuves qu'affiner le signal ne suffit pas — et une cinquième qui confirme le diagnostic</a>,
+          <a href="09-les-prochaines-pistes.html">Après les pistes A et C : la politique apprise a été promue, puis testée (suite au Chapitre 10)</a>,
+          <a href="10-le-negatif-le-plus-net.html">La piste apprise a été testée : elle non plus ne suffit pas — mais elle élimine deux explications</a>,
+          <a href="11-la-boussole-a-l-envers.html">La campagne fait une pause : la boussole ne s'est pas éteinte, elle pointe à l'envers</a>,
+          <a href="12-la-memoire-des-lieux-visites.html">Deux pistes du menu passées à l'épreuve : la réparation de la boussole échoue une troisième fois, la mémoire des lieux visités produit le deuxième vrai succès de la campagne</a>,
+          <a href="13-le-sauvetage-aveugle.html">L'alarme à noyade fonctionne parfaitement ; le geste de sauvetage, lui, ne sait pas où est la terre ferme</a>
+          et
+          <a href="14-un-geant-du-web-a-l-epreuve.html">Un géant du web à l'épreuve : CLIP repère bien la forêt, mais lui aussi confond ça avec la luminosité</a>
+        </p>
+      </header>
+
+      <figure class="chapter-media">
+        <div class="blueprint-slot" role="img" aria-label="Emplacement vide : ce chapitre combine un diagnostic hors-ligne sur les mêmes 251 images fixes déjà utilisées aux Chapitres 11 et 14, et un lot de confirmation en jeu réel qui réutilise exactement le mécanisme frontière + anti-noyade déjà montré en image aux Chapitres 12 et 13 — sans qu'aucune bûche n'ait été coupée dans ce nouveau lot, il n'y a pas de nouvelle séquence de jeu distincte à montrer ici.">
+          <span class="blueprint-slot-icon" aria-hidden="true">&#128269;</span>
+          <p aria-hidden="true">Pas de capture d'écran propre à ce chapitre</p>
+        </div>
+        <figcaption>
+          Ce chapitre est en deux temps : un test de couleur hors-ligne sur des images fixes (pas
+          d'agent en train de jouer), puis un lot de 20 parties réelles qui reprend le même
+          agent, la même caméra et le même mécanisme de sauvetage anti-noyade déjà illustrés en
+          image aux Chapitres 12 et 13 — ce lot confirme que la noyade recule, mais ne coupe
+          aucun bois, donc n'a pas de nouvelle séquence « succès » à montrer.
+        </figcaption>
+      </figure>
+
+      <div class="tracks" data-tracks>
+        <div class="track-tabs" role="tablist" aria-label="Niveau de lecture">
+          <button class="track-tab" role="tab" id="tab-beginner" aria-controls="panel-beginner" aria-selected="true" data-track-tab="beginner">Débutant</button>
+          <button class="track-tab" role="tab" id="tab-expert" aria-controls="panel-expert" aria-selected="false" tabindex="-1" data-track-tab="expert">Expert</button>
+        </div>
+
+        <div class="track-panel is-active chapter-prose" data-track-panel="beginner" role="tabpanel" id="panel-beginner" aria-labelledby="tab-beginner">
+          <p class="track-kicker">Piste débutant</p>
+
+          <h2>Là où on en était</h2>
+          <p>
+            Le Chapitre 14 s'est terminé sur une décision : la piste la plus lourde du menu du
+            Chapitre 11 (construire un second modèle du monde, plus lent, pour « trouver une
+            forêt » — une idée surnommée <strong>H-JEPA</strong>) était désormais justifiée par de
+            vraies preuves, pas seulement par un argument plausible, parce que même le
+            réentraînement le plus direct et le plus soigné du modèle existant avait échoué à
+            corriger proprement le raccourci de luminosité. Avant de se lancer dans ce chantier
+            coûteux, ce chapitre raconte trois choses qui se sont passées juste avant et juste
+            après cette décision : une relecture qui a évité de construire un outil inutile, un
+            dernier test bon marché qui a fermé la porte pour de bon, et deux découvertes séparées
+            faites en repassant à plus grande échelle un mécanisme du Chapitre 13.
+          </p>
+
+          <h2>Une relecture avant de construire quoi que ce soit</h2>
+          <p>
+            Une idée, déjà évoquée sans être testée, consistait à construire à la main un petit
+            outil de vision qui repérerait le feuillage d'un arbre par sa teinte particulière (les
+            verts et les bruns typiques d'un tronc et de son feuillage) plutôt que d'utiliser la
+            boussole cassée du projet. Avant de passer du temps à le construire, quelqu'un a relu
+            calmement tout ce que les chapitres précédents avaient déjà appris. Le raisonnement :
+            CLIP, au Chapitre 14, est un modèle géant entraîné spécifiquement pour résister aux
+            changements de lumière sur des centaines de millions de photos — et il a quand même
+            buté sur le même raccourci. Un outil fait maison, bien plus simple, avait donc de très
+            fortes chances de ne faire que répéter la même leçon une cinquième fois, à un coût réel
+            de travail, sans apporter d'information nouvelle. Recommandation : ne pas le construire,
+            et investir plutôt dans les deux seuls mécanismes du projet qui ont déjà produit de
+            vrais résultats sans passer par un jugement visuel direct — la mémoire des lieux
+            visités (Chapitre 12) et l'exécution plus longue d'un bon plan (Chapitre 8).
+          </p>
+
+          <h2>Un dernier test bon marché, quand même</h2>
+          <p>
+            Une idée plus étroite et bien moins coûteuse a tout de même été testée directement,
+            parce qu'elle réutilisait un outil déjà construit et déjà validé : le petit détecteur de
+            noyade du Chapitre 13 fonctionne en comparant des <strong>rapports</strong> de couleur
+            (le bleu contre le rouge et le vert) plutôt que des valeurs brutes — c'est précisément
+            ce qui le rend capable de repérer une noyade aussi bien en plein jour que de nuit.
+            Est-ce que ce même tour de calcul, appliqué non plus à l'écran entier mais à chaque
+            petit morceau de l'image pris séparément, pourrait repérer un feuillage d'arbre de la
+            même façon, indépendamment de la luminosité de la scène ?
+          </p>
+          <p>
+            Le test a repris exactement les mêmes 251 images déjà utilisées à chaque diagnostic
+            précédent (Chapitre 11 et 14), avec les mêmes étiquettes posées à la main (« arbre
+            proche » ou « pas d'arbre »).
+          </p>
+
+          <h2>Le résultat : à moitié bon, et pire que jamais sur l'autre moitié</h2>
+          <p>
+            La première moitié du test réussit : ce calcul par petits morceaux sépare bien les
+            images avec arbre proche des images sans arbre — un vrai résultat directionnel correct,
+            dans la bonne fourchette attendue.
+          </p>
+          <p>
+            Mais la deuxième moitié — vérifier que ce score n'est pas juste une façon détournée de
+            mesurer la luminosité — échoue presque aussi mal que le pire résultat vu jusqu'ici,
+            celui de CLIP au Chapitre 14. Sur le petit jeu d'images étiquetées à la main, la
+            corrélation avec la luminosité est quasiment aussi forte, dans l'autre sens. Et surtout,
+            cette fois, le problème n'est pas limité au petit jeu de test : il apparaît largement,
+            sur les 251 images, aussi bien sur les scènes du jeu de coupe d'arbres d'origine que sur
+            celles du jeu de fabrication.
+          </p>
+
+          <div class="callout callout-danger">
+            <span class="badge badge-danger">Testé — NO-GO (5ᵉ confirmation)</span>
+            <p>
+              Le calcul de couleur par petits morceaux sépare bien les images avec et sans arbre
+              (la première moitié du test réussit), mais son score reste presque aussi lié à la
+              luminosité que le pire résultat vu jusqu'ici (CLIP, Chapitre 14) — et cette fois le
+              problème touche l'ensemble des 251 images, pas seulement le petit jeu de test. C'est
+              la <strong>cinquième</strong> façon différente de s'attaquer à ce raccourci qui bute
+              sur le même mur.
+            </p>
+          </div>
+
+          <h2>L'explication la plus nette de toute l'enquête</h2>
+          <p>
+            Le tour du rapport de couleur marche pour l'eau parce que la teinte de l'eau recouvre
+            <strong>tout l'écran</strong> de la même façon — c'est exactement le genre de décalage
+            global que diviser des couleurs entre elles permet d'annuler. Mais le problème ici n'est
+            pas un décalage global : c'est que, dans ce jeu comme dans la réalité, <strong>les
+            forêts denses sont, par nature, des scènes plus sombres, et les prairies ouvertes des
+            scènes plus claires</strong>. Ce n'est pas un artefact d'un calcul particulier, c'est une
+            caractéristique du monde lui-même que le jeu imite. Aucun calcul de couleur, aussi malin
+            soit-il — appris, tout fait, ou fabriqué à la main pour résister aux changements de
+            lumière — ne peut démêler « c'est sombre » de « c'est une forêt » quand les deux choses
+            sont, dans les données disponibles, presque la même chose.
+          </p>
+          <p>
+            Ce résultat ferme, cette fois pour de bon, toute la piste « peut-être qu'un calcul de
+            couleur plus malin réglerait le problème ». Cinq façons différentes de s'y attaquer — un
+            petit module appris, ce même module réentraîné sur d'autres exemples, une variation
+            artificielle de la luminosité pendant l'entraînement, un modèle géant tout fait, et
+            maintenant ce calcul par petits morceaux — ont toutes buté sur le même mur. La
+            correction de la boussole (piste n°1 du menu du Chapitre 11) reste fermée, et cette fois
+            avec une raison plus solide qu'avant : ce n'est pas qu'aucune tentative n'a encore
+            trouvé le bon réglage, c'est que ce genre de correction n'a structurellement aucune
+            chance de fonctionner sur ce problème précis.
+          </p>
+
+          <h2>Séparément : le sauvetage anti-noyade repassé à grande échelle <span class="badge badge-order">Confirmé à N=20</span></h2>
+          <p>
+            Le Chapitre 13 avait laissé le geste de sauvetage anti-noyade avec un verdict
+            encourageant, mais testé sur seulement 6 parties. Un lot bien plus grand — 20 parties,
+            combinant la mémoire des lieux visités du Chapitre 12 et le sauvetage anti-noyade
+            corrigé du Chapitre 13 — a maintenant été exécuté, avec un objectif précis : est-ce que
+            ce sauvetage tient toujours à cette échelle, et, question restée ouverte jusqu'ici,
+            est-ce que réduire les noyades permet enfin de couper du bois ?
+          </p>
+          <p>
+            <strong>La noyade est réellement corrigée à grande échelle</strong> : 3 parties sur 20
+            se terminent par une noyade (15%), contre 12 sur 20 (60%) dans le tout premier lot du
+            Chapitre 12. Les parties qui vont jusqu'au bout sans être coupées court passent de 8 sur
+            20 (40%) à 12 sur 20 (60%). Le sauvetage tient donc, pas seulement sur les 6 parties où
+            il avait été validé, mais à une échelle bien plus grande.
+          </p>
+          <p>
+            <strong>Mais couper du bois reste à zéro</strong> : 0 bûche sur 20, 0 planche sur 20 —
+            alors même que davantage de parties ont maintenant une vraie chance équitable de
+            chercher un arbre. Ce n'est pas un recul significatif par rapport au chapitre précédent
+            (1 réussite sur 20) — la différence entre 0 et 1 sur 20 essais ne dit rien de fiable à
+            cette taille d'échantillon — mais ça confirme, une fois de plus, le constat déjà posé :
+            survivre plus longtemps et savoir chercher/s'approcher efficacement sont deux problèmes
+            séparés. Réparer l'un n'a pas automatiquement réparé l'autre.
+          </p>
+
+          <h2>Une leçon de méthode : une fausse alerte n'est pas un vrai arrêt</h2>
+          <p>
+            Le compte-rendu qui accompagnait ce lot de 20 parties affirmait, à l'origine, que le
+            test avait été interrompu par une « panne d'infrastructure grave » après seulement 4
+            épisodes. Une vérification indépendante a montré que c'était <strong>faux</strong> : le
+            programme qui pilote ces parties lance un processus Minecraft séparé pour chaque
+            épisode, un par un. Un incident technique passager sur un seul épisode n'arrête donc
+            jamais le programme qui orchestre l'ensemble — il passe simplement à l'épisode suivant.
+            Les journaux bruts confirment que les 20 épisodes se sont bien déroulés du début à la
+            fin, sans aucune intervention. La leçon retenue : une erreur qui touche un seul épisode
+            dans cet outil n'est pas la même chose qu'une panne qui arrête tout le lot — il faut
+            vérifier que le programme d'ensemble a réellement continué avant de déclarer un arrêt
+            complet.
+          </p>
+
+          <h2>L'énigme du reward=144</h2>
+          <p>
+            Un détail curieux figurait déjà dans les journaux de ce même lot de tests, sans avoir
+            encore été creusé : un épisode avait affiché, une seule fois, une récompense de 144 — un
+            chiffre bien plus haut que tout ce qui a jamais été vu ailleurs dans cette campagne (une
+            réussite normale rapporte une récompense de 9). Le programme de jeu a reçu un nouvel
+            outil d'observation, activable au choix, qui affiche désormais le maximum atteint pour
+            <strong>chaque objet</strong> de l'inventaire au cours d'un épisode, pas seulement le
+            bois et les planches suivis jusqu'ici. Un nouveau lot de 12 parties a été lancé avec cet
+            outil activé, sur la même configuration : récompense de 0,000 sur les 12 épisodes, et le
+            seul objet jamais apparu dans un inventaire, sur l'ensemble du lot, était de la
+            <strong>terre ordinaire</strong> (entre 1 et 30 unités par épisode, ramassée sans le
+            vouloir en marchant ou en attaquant) — un objet qui ne rapporte strictement aucune
+            récompense dans ce jeu. L'épisode d'origine qui avait affiché 144 avait déjà pris fin
+            avant que cet outil n'existe, donc son état exact au moment précis reste irrécupérable.
+            Ce chiffre ne s'est jamais reproduit sur ces 12 nouveaux essais et reste, pour l'instant,
+            un événement isolé et non expliqué — parqué comme une curiosité documentée, sans effet
+            sur les conclusions de la campagne, plutôt que poursuivi sans un échantillon bien plus
+            grand.
+          </p>
+
+          <h2>Et maintenant</h2>
+          <p>
+            Ce chapitre referme une longue ligne d'enquête (les corrections de score basées sur la
+            couleur ou la luminosité) tout en apportant, séparément, une bonne nouvelle solide à
+            grande échelle (le sauvetage anti-noyade) et une énigme non résolue qui ne change rien
+            au diagnostic principal. Comme toujours dans ce projet : les bons résultats et les
+            résultats décevants sont rapportés avec la même précision, et rien n'est habillé pour
+            paraître mieux qu'il ne l'est.
+          </p>
+        </div>
+
+        <div class="track-panel chapter-prose" data-track-panel="expert" role="tabpanel" id="panel-expert" aria-labelledby="tab-expert">
+          <p class="track-kicker">Piste expert</p>
+
+          <h2>Contexte</h2>
+          <p>
+            Le Chapitre 14 a conclu que la condition posée pour engager la piste candidate 3 du
+            menu du Chapitre 11 (H-JEPA hiérarchique) était remplie par des preuves empiriques, pas
+            seulement par un argument plausible : même le fine-tuning direct de <code>ebwm.pt</code>
+            avec augmentation photométrique n'avait produit qu'un résultat mixte. Ce chapitre couvre
+            l'attempt #15 (<code>CLAUDE.md#Phase 5+</code>, aucune entrée correspondante dans
+            <code>docs/10_coldstart_engineering.md</code> à ce jour — écart de documentation signalé
+            explicitement dans <code>CLAUDE.md</code> lui-même) : une réévaluation de la proposition
+            H-JEPA, un test offline étroit qui en découle, et un lot de confirmation N=20 combinant
+            les mécanismes des Chapitres 12-13.
+          </p>
+
+          <h2>Réévaluation de la proposition H-JEPA, sans code</h2>
+          <p>
+            Une proposition Explorer pour H-JEPA littéral avait été soumise. Avant tout
+            développement, une réévaluation à froid a noté que CLIP (Chapitre 14) — un modèle de
+            400M images conçu spécifiquement pour résister à la variation photométrique — avait déjà
+            échoué au même double gate qu'affronterait une heuristique de teinte/contour construite
+            à la main. En conséquence : construire cette heuristique était jugé très probablement
+            destiné à ne produire qu'une 5ᵉ confirmation, à un coût d'ingénierie réel, sans
+            information nouvelle — <strong>recommandation de ne pas la construire</strong>.
+            Recommandation complémentaire : les deux seuls mécanismes non basés sur un jugement
+            visuel qui fonctionnent dans la campagne (<code>FrontierTracker</code>,
+            <code>commit_length</code>) sont le meilleur investissement suivant, plutôt que de
+            greffer davantage de biais de contenu visuel dessus.
+          </p>
+
+          <h2>Test offline étroit : ratios de chrominance par tuile spatiale</h2>
+          <p>
+            Une idée plus ciblée et moins coûteuse issue de cette réévaluation a été testée
+            directement : <code>mine_jepa/ebwm/hazard.py</code> utilise des <strong>ratios de
+            canaux invariants à la luminosité</strong> (pas des valeurs brutes) — un choix qui
+            fonctionne pour l'eau parce que la teinte sous-marine est un décalage global et uniforme
+            sur toute la frame. Ce même tour fonctionne-t-il pour le feuillage, calculé <strong>par
+            tuile spatiale</strong> plutôt que sur la frame entière ?
+            <code>scripts/diagnose_chroma_tile_generalization.py</code>, sur le même jeu de 251
+            frames et le même étiquetage manuel que chaque diagnostic précédent (attempts #10, #14).
+          </p>
+
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr><th>Gate</th><th>Résultat</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Direction (ratio de séparation)</td><td><strong>PASSÉ</strong> — 1,482 (seuil ≥ 1,3)</td></tr>
+                <tr><td>Indépendance à la luminosité (jeu étiqueté à la main)</td><td><strong>ÉCHOUÉ</strong> — r = -0,925</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p>
+            <strong>Résultat : MIXTE au niveau des gates, mais le gate de luminosité échoue presque
+            aussi mal que le pire cas de CLIP.</strong>
+          </p>
+
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr><th>Source</th><th>Corrélation avec la luminosité</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Jeu étiqueté à la main (chrominance par tuile)</td><td>-0,925</td></tr>
+                <tr><td>CLIP, pour mémoire (Chapitre 14)</td><td>-0,947</td></tr>
+                <tr><td>Ensemble des 251 frames</td><td>-0,585</td></tr>
+                <tr><td>&nbsp;&nbsp;dont Treechop</td><td>-0,748</td></tr>
+                <tr><td>&nbsp;&nbsp;dont Obtain spawn</td><td>-0,600</td></tr>
+                <tr><td>&nbsp;&nbsp;dont Obtain coverage</td><td>-0,671</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p>
+            Sur le jeu étiqueté à la main, la corrélation (-0,925) est quasiment à égalité avec le
+            pire cas de toute la campagne, CLIP (-0,947, signe opposé). Et surtout, cette fois le
+            problème n'est pas limité au petit jeu étiqueté : il apparaît largement sur les 251
+            frames, aussi bien sur les scènes Treechop que sur les scènes Obtain.
+          </p>
+
+          <div class="callout callout-danger">
+            <span class="badge badge-danger">Testé — NO-GO (5ᵉ confirmation)</span>
+            <p>
+              Le gate de direction passe (ratio 1,482), mais le gate d'indépendance à la luminosité
+              échoue largement (r = -0,925 sur le jeu étiqueté, quasiment à égalité avec le pire cas
+              de la campagne), et cet effet se généralise sur les 251 frames, pas seulement sur le
+              petit jeu de test. Cinquième mécanisme indépendant à buter sur le même raccourci.
+            </p>
+          </div>
+
+          <h2>Interprétation, la plus nette de la campagne</h2>
+          <blockquote>
+            <p>
+              <strong>Leçon : la normalisation par ratio élimine exactement l'échelle de luminosité
+              GLOBALE, comme conçu (pourquoi elle marche pour l'eau) — mais elle ne peut pas éliminer
+              une confusion COMPOSITIONNELLE où les étiquettes de vérité-terrain elles-mêmes
+              corrèlent le type de scène avec la luminosité (forêts sombres contre champs ouverts
+              clairs est la composition de scène réelle de ce domaine, pas un artefact d'un
+              mécanisme de notation particulier). Ceci signifie que la confusion de luminosité n'est
+              réparable par AUCUNE caractéristique photométrique mono-frame — apprise, prête à
+              l'emploi, ou conçue à la main pour être invariante — sans structure supplémentaire
+              (multi-frame, spatiale/géométrique, ou une modalité différente).</strong>
+            </p>
+          </blockquote>
+          <p>
+            Ceci ferme définitivement la piste « peut-être qu'un calcul de caractéristique plus
+            malin répare ça » ; la piste candidate 1 du menu du Chapitre 11 reste fermée, pour une
+            raison plus solide qu'avant.
+          </p>
+
+          <h2>Lot de confirmation N=20 : frontier + hazard combinés, taux de coupe mesuré pour la première fois sur cette combinaison <span class="badge badge-order">Confirmé à N=20</span></h2>
+          <p>
+            <code>configs/play_craft_commit4_hazard.yaml</code> (recherche par frontière du
+            Chapitre 12 + sauvetage anti-noyade corrigé de l'attempt #13, Chapitre 13) exécuté à
+            N=20.
+          </p>
+
+          <p>
+            <strong>Note de processus, corrigée.</strong> Le compte-rendu du dispatch Tester
+            affirmait une « panne d'infrastructure grave » ayant arrêté le lot à l'épisode 4 —
+            <strong>faux</strong>, vérifié indépendamment : <code>play_minerl_multi.py</code> lance
+            un processus Java/Malmo séparé par épisode, donc une erreur transitoire de machine à
+            états Malmo sur un seul épisode ne tue pas l'orchestrateur, qui passe simplement à
+            l'épisode suivant. Le lot a exécuté ses 20 épisodes de bout en bout (« FINAL RESULTS —
+            20/20 episodes succeeded ») sans aucune intervention. Leçon : une erreur par épisode
+            dans ce harnais n'équivaut pas à un échec de lot — vérifier le processus orchestrateur
+            lui-même avant de déclarer un arrêt dur.
+          </p>
+
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr><th>Métrique</th><th>Attempt #12 (référence, Chapitre 12)</th><th>Ce lot, N=20</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Noyade (<code>MineRLAgent0 drowned</code>)</td><td>12/20 (60%)</td><td><strong>3/20 (15%)</strong></td></tr>
+                <tr><td>Autres terminaisons précoces (chute, mob, etc.)</td><td>—</td><td>5/20 (25%)</td></tr>
+                <tr><td>Épisodes pleine longueur (« fair-shot »)</td><td>8/20 (40%)</td><td><strong>12/20 (60%)</strong></td></tr>
+                <tr><td>Bûches / planches</td><td>1/20</td><td>0/20</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p>
+            <strong>Noyade : 3/20 (15%)</strong>, confirmé via de vrais messages Malmo
+            <code>MineRLAgent0 drowned</code> — en baisse depuis le taux de référence de l'attempt
+            #12 original (12/20, 60%). Le correctif de l'attempt #13 tient à N=20, pas seulement au
+            N=6 où il avait été confirmé.
+          </p>
+          <p>
+            <strong>Coupe/fabrication : 0/20 bûches, 0/20 planches</strong> — malgré davantage
+            d'épisodes bénéficiant d'une chance équitable, aucune coupe sur ce lot (contre 1/20 pour
+            l'attempt #12). Pas une régression significative à ce N (un test de Fisher ne
+            distinguerait pas 0/20 de 1/20) — la variance habituelle à petit N de cette campagne.
+            Confirme à nouveau le diagnostic établi : réduire la confusion de noyade augmente les
+            épisodes à chance équitable mais ne se convertit pas automatiquement en coupe — survie et
+            efficacité de recherche/approche restent des problèmes séparés.
+          </p>
+
+          <h2>L'anomalie reward=144.000 — investiguée, non reproduite, non résolue</h2>
+          <p>
+            <code>play_craft.py</code> a reçu un diagnostic optionnel <code>logging.full_inventory</code>
+            (défaut désactivé, bit-pour-bit inchangé si non activé) traçant/affichant la valeur
+            maximale atteinte pour <strong>chaque</strong> clé d'inventaire par épisode, pas
+            seulement bûche/planches. Un nouveau lot N=12 avec ce diagnostic activé (même
+            configuration) a montré : reward=0,000 sur les 12 épisodes, et le SEUL objet
+            d'inventaire jamais non nul sur tout le lot était <code>dirt</code> (1-30 par épisode,
+            ramassé incidemment en marchant/attaquant) — <code>dirt</code> n'est PAS dans la table de
+            récompense (<code>RewardForPossessingItem</code> ne couvre que
+            log/planks/stick/crafting_table/wooden_pickaxe/cobblestone/furnace/stone_pickaxe/iron_ore/iron_ingot/iron_pickaxe),
+            donc rapporte zéro récompense et constitue une fausse piste pour le mystère d'origine. Le
+            processus de l'épisode d'origine avait déjà pris fin avant que ce diagnostic n'existe,
+            son état exact reste donc irrécupérable — le mécanisme qui a produit 144 ne s'est pas
+            reproduit sur 12 nouvelles tentatives et reste un événement isolé, non caractérisé.
+            N'affecte aucune conclusion de campagne (le taux de coupe est ce qui compte, et ceci lui
+            est orthogonal) — parqué comme curiosité documentée, non poursuivi en l'absence d'un
+            échantillon beaucoup plus grand.
+          </p>
+
+          <h2>Où ça laisse la campagne</h2>
+          <p>
+            <code>ebwm.pt</code> et <code>craft_wm_v4.pt</code> restent intacts sur l'ensemble de ce
+            chapitre : le test de chrominance par tuile est un diagnostic offline sans paramètre
+            appris ; le lot de confirmation N=20 et le diagnostic <code>full_inventory</code>
+            réutilisent des mécanismes déjà entraînés/câblés sans modifier aucun checkpoint
+            principal.
+          </p>
+
+          <h2>Références</h2>
+          <p>
+            Ce chapitre ne s'appuie sur aucune référence bibliographique nouvelle : le test de
+            chrominance par tuile réutilise l'heuristique de couleur déjà construite et calibrée
+            pour l'attempt #13 (Chapitre 13), sans méthode publiée sous-jacente ; le lot de
+            confirmation N=20 et le diagnostic <code>reward=144</code> sont des
+            exécutions/instrumentations empiriques du projet, pas l'application d'une référence
+            externe.
+          </p>
+        </div>
+      </div>
+
+      <div class="achievement" role="note" aria-label="Résultat de ce chapitre">
+        <span class="achievement-icon" aria-hidden="true">&#127942;</span>
+        <div>
+          <p class="achievement-title">Achievement : la piste couleur fermée pour de bon (5ᵉ confirmation), le sauvetage anti-noyade confirmé à grande échelle</p>
+          <p>
+            Un test de ratios de couleur par tuile spatiale réussit son gate de direction mais
+            échoue le gate de luminosité presque aussi mal que le pire cas de la campagne (CLIP,
+            Chapitre 14) — la <strong>cinquième</strong> confirmation indépendante que ce raccourci
+            ne se répare par aucune caractéristique photométrique mono-frame, et la piste de
+            correction de score est désormais fermée pour de bon. Séparément, un lot de 20 parties
+            confirme que le sauvetage anti-noyade du Chapitre 13 tient réellement à grande échelle
+            (noyade 60%→15%, épisodes à chance équitable 40%→60%) — mais le taux de coupe reste à
+            zéro, confirmant que survie et recherche/approche restent deux problèmes distincts. Ce
+            même chapitre corrige aussi une fausse alerte de processus (un lot faussement déclaré
+            interrompu par une panne, en réalité exécuté en entier) et documente honnêtement une
+            récompense isolée de 144 jamais reproduite, sans effet sur les conclusions.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </article>
+
+  <nav class="chapter-nav" aria-label="Navigation entre chapitres">
+    <div class="wrap chapter-nav-inner">
+      <a class="chapter-nav-link" href="index.html">&larr; Retour au parcours</a>
+    </div>
+  </nav>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>Mine-JEPA — un agent JEPA qui apprend à jouer à Minecraft à partir des pixels, documenté au fil de l'eau.</p>
+    <p class="footer-links">
+      Auteur : <a href="https://x.com/reddwarf03" target="_blank" rel="noopener">@reddwarf03 (X/Twitter)</a> ·
+      <a href="https://github.com/redDwarf03" target="_blank" rel="noopener">redDwarf03 (GitHub)</a> |
+      <a href="https://github.com/redDwarf03/mine-jepa" target="_blank" rel="noopener">Repository GitHub</a>
+    </p>
+  </div>
+</footer>
+
+<script src="../script.js" defer></script>
+</body>
+</html>

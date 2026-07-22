@@ -89,13 +89,24 @@ class FrontierTracker:
     def __init__(
         self, cell_size: float = 4.0, move_step: float = 1.0,
         sprint_mult: float = 1.6, lookahead_cells: float = 2.0,
-        n_headings: int = 12,
+        n_headings: int = 12, tie_break: str = "first", seed: int | None = None,
     ):
         self.cell_size = cell_size
         self.move_step = move_step
         self.sprint_mult = sprint_mult
         self.lookahead_cells = lookahead_cells
         self.n_headings = n_headings
+        # docs/10 cold-start attempt #16 candidate (Coverage-Value Predictor,
+        # Gate 1 fix): "first" (default) reproduces the ORIGINAL frontier_heading_deg
+        # tie-break EXACTLY (smallest heading index wins ties) -- byte-for-byte the
+        # behavior every already-validated attempt #12/#13 config depends on.
+        # "random" picks uniformly among ALL headings tied for the minimum visit
+        # count, via a seeded, non-global RNG (self._rng below), so a sparse grid
+        # where most candidates tie at visit_count==0 doesn't collapse to a single
+        # heading by construction (the bug that made 54/57 attempt #16 rows
+        # uncertifiable for Gate 1).
+        self.tie_break = tie_break
+        self._rng = np.random.default_rng(seed)
         self.x = 0.0
         self.y = 0.0
         self.yaw_deg = 0.0
@@ -146,8 +157,12 @@ class FrontierTracker:
         """
         Samples n_headings candidate directions around the full circle, each
         projected lookahead_cells*cell_size ahead of the CURRENT dead-reckoned
-        position, and returns the one whose target cell has been visited least
-        (ties broken by the first checked, i.e. the smallest heading angle).
+        position, and returns the one whose target cell has been visited least.
+
+        tie_break="first" (default, bit-for-bit the original behavior): ties
+        broken by the first checked, i.e. the smallest heading angle.
+        tie_break="random" (docs/10 attempt #16 Gate-1 fix): among ALL headings
+        tied for the minimum visit count, picks uniformly via self._rng.
 
         Returns (heading_deg, target_cell, target_visit_count).
         """
@@ -155,6 +170,7 @@ class FrontierTracker:
         best_cell = self._cell(self.x, self.y)
         best_count = None
         look = self.lookahead_cells * self.cell_size
+        candidates: list[tuple[float, tuple[int, int], int]] = []
         for i in range(self.n_headings):
             heading = 360.0 * i / self.n_headings
             rad = math.radians(heading)
@@ -162,9 +178,36 @@ class FrontierTracker:
             ty = self.y + look * math.cos(rad)
             cell = self._cell(tx, ty)
             count = self.visits.get(cell, 0)
+            candidates.append((heading, cell, count))
             if best_count is None or count < best_count:
                 best_heading, best_cell, best_count = heading, cell, count
+        if self.tie_break == "random" and candidates:
+            min_count = min(c for _, _, c in candidates)
+            tied = [c for c in candidates if c[2] == min_count]
+            if len(tied) > 1:
+                idx = int(self._rng.integers(len(tied)))
+                best_heading, best_cell, best_count = tied[idx]
         return best_heading, best_cell, best_count if best_count is not None else 0
+
+    def all_headings_visits(self) -> list[tuple[float, tuple[int, int], int]]:
+        """Same lookahead-cell projection as frontier_heading_deg(), but returns
+        ALL n_headings candidates as (heading_deg, target_cell, visit_count)
+        instead of only the least-visited one. Used by the transition-logging
+        diagnostic (docs/10 cold-start attempt #16 candidate: Coverage-Value
+        Predictor gate) to record the full local visitation histogram at a
+        scan-macro trigger tick, not just the argmax choice. Pure read, no state
+        change — safe to call in addition to frontier_heading_deg()/
+        heading_delta_deg() in the same tick."""
+        look = self.lookahead_cells * self.cell_size
+        out = []
+        for i in range(self.n_headings):
+            heading = 360.0 * i / self.n_headings
+            rad = math.radians(heading)
+            tx = self.x + look * math.sin(rad)
+            ty = self.y + look * math.cos(rad)
+            cell = self._cell(tx, ty)
+            out.append((heading, cell, self.visits.get(cell, 0)))
+        return out
 
     def heading_delta_deg(self) -> float:
         """Signed shortest turn (degrees, in [-180, 180]) from the current yaw to

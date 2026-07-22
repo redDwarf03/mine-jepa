@@ -375,34 +375,94 @@ chopping still 0/20, within this campaign's established noise:**
   the standing diagnosis again: removing the drowning confound increases fair-shot episodes but
   does not by itself convert into chopping — survival and search/approach effectiveness remain
   separate problems.
-- **Open anomaly, not yet explained**: one episode logged `reward=144.000` despite its own
-  summary showing `planks crafted: no` and `chop=188 craft=0` (never left chop mode). The
-  underlying env's `RewardForPossessingItem` reward chain covers 11 items up to `iron_pickaxe`
-  (log=1 through iron_pickaxe=256) — `play_craft.py`'s own summary line only tracks
-  logs/planks specifically, so this episode may have picked up real reward-chain progress
-  (e.g. cobblestone/other items) that the script's summary doesn't surface. One sampled Malmo
-  log in this batch's time window shows the reward counter climbing to 21. Not reconciled with
-  the specific episode yet — flagged as an open item, not asserted as a hidden success or
-  dismissed as a bug.
+- **The `reward=144.000` anomaly — investigated, NOT reproduced, remains unexplained.**
+  `play_craft.py` gained an optional `logging.full_inventory` diagnostic (default off, bit-
+  for-bit unchanged when unset) that tracks/prints the max value of EVERY inventory key per
+  episode, not just log/planks. A fresh N=12 batch with it enabled (same config) showed:
+  reward=0.000 on all 12 episodes, and the ONLY inventory item ever non-zero across the whole
+  batch was `dirt` (1-30 per episode, picked up incidentally while walking/attacking) — dirt is
+  NOT in the reward table (`RewardForPossessingItem` covers log/planks/stick/crafting_table/
+  wooden_pickaxe/cobblestone/furnace/stone_pickaxe/iron_ore/iron_ingot/iron_pickaxe only), so it
+  earns zero reward and is a red herring for the original mystery. The original episode's
+  process had already exited before this diagnostic existed, so its exact state is
+  unrecoverable — the mechanism that produced 144 did not recur in 12 fresh attempts and stays
+  a one-off, uncharacterized event. Doesn't affect any campaign conclusion (chop rate is what
+  matters, and this is orthogonal to it) — parked as a documented curiosity, not pursued
+  further absent a much larger sample.
 
-▶ **Status — five independent confirmations of a domain-composition brightness confound;
-two cheap next actions dispatched (N=20 confirmation batch + this chromaticity test, the
-latter now concluded); H-JEPA (if pursued) must not rely on single-frame visual scoring:**
-- Of the 4 post-#10 candidate directions: **#1 closed, more firmly than before** (attempt #11's
-  original finding, reinforced by #14's direct-retrain, #14 Phase 1's CLIP test, and #15's
-  chromaticity test — 5 mechanistically different approaches, same wall); **#2** has the
-  campaign's only two non-zero chopping successes (`commit_length=4` alone, 9.7%, and attempt
-  #12's 1/20) **plus attempt #13's hazard-avoidance, fixed at N=6** — a combined
-  frontier+hazard confirmation batch at N=20 is in flight (measuring real chop rate, not just
-  survival, for the first time on this combination). **#3 (H-JEPA) — the better-justified
-  direction if the coverage-only path plateaus, but must be built around a signal that is NOT a
-  single-frame photometric score** (per #15's conclusion) — e.g. multi-frame/temporal state,
-  dead-reckoned geometry (already proven viable via `FrontierTracker`), or an entirely
-  different modality. **#4 (BC fine-tuning) deprioritized.**
-- **Site**: French chapters 1-14 complete and live (chapter 13 = attempt #13, chapter 14 =
-  attempt #14 Phase 1/CLIP only — Phase 2's conclusion above is NOT yet on the site or in
-  `docs/10`, a known gap). English translation (handled by a separate tool, not this session's
-  agents) lags — a known, flagged, not-yet-actioned gap.
+Phase 5+ — Cold-start attempt #16: Coverage-Value Predictor (CVP), the first candidate-3
+mechanism built under the "no single-frame photometric scoring" constraint (per #15) —
+**offline aggregate gates encouraging, per-trial trained regressor NO-GO at this sample size**:
+- Design (Explorer proposal, externally reviewed and refined — see the exchange above): a
+  small MLP predicting `Δunique_cells` (exploration payoff) per candidate heading from
+  non-photometric features only (classical per-quadrant frame-diff flow + `FrontierTracker`'s
+  local visitation histogram) — a genuine JEPA-shaped predictor (input+action → future state)
+  with the target swapped from pixels to geometry, feeding the already-validated frontier scan
+  macro rather than replacing its handoff to the chop planner.
+- **Instrumentation + data collection**: `scan.frontier.log_transitions` (config-gated, default
+  off) added to `scripts/play_craft.py`; two batches collected. First (N=12, 57 rows) hit a
+  real, previously-unnoticed bug: `FrontierTracker.frontier_heading_deg()` breaks ties toward
+  the smallest heading index, and since sparse-grid cells are almost always tied at 0 visits,
+  54/57 triggers "chose" heading 0.0° by construction, not genuine preference — Gate 1
+  (dynamic range across headings) was uncertifiable on this data. Fixed via a config-gated
+  `tie_break="random"` option (seeded, default `"first"` = old behavior verified unchanged) and
+  re-collected (N=14, 44 rows, all 12 headings represented, 1-7 rows each).
+- **Offline gates on the re-collected data**: Gate 2 (brightness does not dominate the target)
+  **passed on BOTH batches independently** (r≈0.10, opposite signs — the most reproducible
+  non-confound result in the campaign's history). Gate 1 (dynamic range) improved substantially
+  post-fix but rests on small per-heading samples (1-7 rows) — assessed as "encouraging, not a
+  rock-solid confirmation."
+- **The actual trained model — NO-GO, and thoroughly checked, not just badly tuned.** Combined
+  both CSVs (~101 rows), trained a small MLP (~1.9K params) with mandatory 5-fold CV against a
+  trivial "always predict the mean" baseline. Default config: model MAE 1.590 vs. baseline
+  1.169 (worse). An 8-way hyperparameter sweep (smaller nets, heavier regularization) never
+  once beat the baseline (best ratio 1.06, still worse). A from-scratch linear Ridge-regression
+  sweep confirmed this isn't an MLP-overfitting artifact: as regularization strength increases,
+  the model's error only approaches the baseline as it's forced toward predicting a near-
+  constant — it never surpasses it. **Diagnosis: predicting one specific noisy trial's outcome
+  from 4 coarse scene-level features is a much harder task than the aggregate statistics Gates
+  1-2 checked, and isn't learnable at N≈100 with this feature set** — not evidence the
+  aggregate signal is fake, just that per-row prediction needs substantially more data (likely
+  several hundred rows, not tuning) to be learnable, if it's learnable at all with these
+  features.
+- Per the dispatch's own honesty discipline, the model was correctly NOT wired into
+  `play_craft.py`, no `scan.macro: "learned_frontier"` was added, and no live episode was
+  spent testing a model the CV gate said doesn't work. No checkpoint written
+  (`checkpoints/coverage_predictor.pt` does not exist). `ebwm.pt`/`craft_wm_v4.pt` untouched.
+
+▶ **Status — campaign has now run 16 numbered attempts; the central chop-planner metric
+(confirmed backwards in attempt #10) is the one major mechanism never yet fixed, and is
+increasingly the last unexamined lever:**
+- **#1 (encoder/scoring correction) closed, 5-fold confirmed**: attempts #7, #11, #14 (Phase
+  1 CLIP + Phase 2 direct retrain), and #15 (ratio-normalized chromaticity) each independently
+  hit a brightness/domain-composition confound. No single-frame photometric feature — learned,
+  off-the-shelf, or hand-designed-invariant — fixes it.
+- **#2 (coverage/execution) has the campaign's only real positive results**:
+  `commit_length=4` alone (9.7% pooled), attempt #12's frontier search (1/20, later confirmed
+  at N=20 with attempt #13's hazard fix layered on: drowning 60%→15%, fair-shot episodes
+  40%→60%, but chop rate stayed at 0/20 — diminishing returns from coverage alone, exactly the
+  condition that justified trying #3). Attempt #16 (CVP) extended this line under the
+  no-photometric-scoring constraint and found real aggregate signal (Gate 2, twice) but no
+  learnable per-trial model yet at this sample size.
+- **#3 (H-JEPA proper) not built** — attempt #16 was the cheap, non-photometric first probe
+  the standing diagnosis called for; it didn't produce a deployable mechanism, but it also
+  didn't fail for a photometric reason, so the door isn't closed the way #1 is. Next-cheapest
+  version if resumed: collect substantially more transition rows (~several hundred) before
+  retraining, per the CVP dispatch's own recommendation.
+- **The named-but-untouched issue**: attempt #10 confirmed `ebwm.pt`'s own goal-centroid score
+  (used live by the two-brain chop planner once search finds something) reverses direction on
+  Obtain's spawn distribution. Every attempt #11-#16 has worked AROUND this (search mechanisms,
+  hazard avoidance, coverage prediction) rather than fixing it directly — attempt #15's
+  reassessment explicitly named this as "the next branch, not to be silently dropped" once
+  search-side options were exhausted. With #1 closed and #2/#3 both showing diminishing returns
+  without touching it, this is now the most load-bearing unexamined mechanism in the campaign.
+  **Not yet decided whether/how to attack it directly — ask the user.**
+- **Site**: French chapters 1-14 complete and live — chapter 13 covers attempt #13's full
+  three-round story, chapter 14 covers both of attempt #14's phases (CLIP + the direct
+  fine-tune conclusion). `docs/10_coldstart_engineering.md` has attempts #13-#14 in full detail.
+  **Not yet caught up**: attempts #15 (chromaticity + Explorer reassessment) and #16 (CVP) have
+  no site chapter and no `docs/10` entry yet — the actual documentation gap. English translation
+  (separate tool, not this session's agents) lags similarly.
 
 ⚠️ Phase 4 on **NVIDIA PC only**. MineRL requires Java 8.
 Installation: DO NOT use `uv pip install minerl` directly.

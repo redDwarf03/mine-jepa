@@ -1,13 +1,17 @@
-# Cold-start attempt #13 (docs/10, CLAUDE.md): hazard-awareness on top of the
-# attempt #12 frontier config. The attempt #12 N=20 diagnostic found 12/20
-# episodes ended in a confirmed drowning death (`MineRLAgent0 drowned`,
-# independently verified against the raw Malmo client logs) — mostly during the
-# frontier/bushwhack scan macros' blind forward cruises, which have no
-# collision/hazard awareness by design. hazard_avoidance adds a calibrated
-# pixel-heuristic drowning detector (mine_jepa/ebwm/hazard.py) that overrides
-# whatever the planner/scan macro just picked with a jump+retreat escape
-# whenever the POV shows the underwater signature. Everything else identical to
-# configs/play_craft_commit4_frontier.yaml.
+# Cold-start attempt #16 candidate (Coverage-Value Predictor), Gate-1 fix:
+# clone of configs/play_craft_commit4_hazard.yaml with ONE change --
+# scan.frontier.tie_break: random. The prior batch (logs/coverage_transitions.csv,
+# 57 rows) found frontier_heading_deg()'s original tie-break (mine_jepa/ebwm/
+# frontier.py, ties resolved toward the smallest heading index) returned
+# heading 0.0deg on 54/57 triggers by construction, because every candidate
+# tied at visit_count==0 in this sparse-grid regime -- making Gate 1 (dynamic
+# range of realized payoff BY chosen heading) uncertifiable from that data.
+# tie_break: random breaks ties uniformly among ALL tied candidates via a
+# seeded RNG (mine_jepa/ebwm/frontier.py FrontierTracker.__init__), so this
+# config's collected CSV should show real heading diversity. Everything else
+# byte-for-byte identical to play_craft_commit4_hazard.yaml -- this file
+# exists ONLY to isolate the tie_break change from the validated production
+# configs, which keep tie_break: first (the default) untouched.
 
 minerl_env: MineRLObtainIronPickaxeDense-v0
 actions_config: configs/minerl_actions_obtain.yaml
@@ -47,54 +51,38 @@ scan:
     jump_action: 8
     jump_every: 4
     max_ticks: 30
+    # Gate-1 fix (this config's one change vs. play_craft_commit4_hazard.yaml):
+    # break ties among candidate headings uniformly at random instead of always
+    # picking the smallest heading index. tie_break_seed defaults to
+    # agent.seed (0) if unset -- kept explicit here for clarity.
+    tie_break: random
+    tie_break_seed: 0
     # Cold-start attempt #16 candidate (Coverage-Value Predictor) offline
     # validation-gate instrumentation, docs/10_coldstart_engineering.md. Logs
     # one CSV row per scan-macro trigger tick (chosen heading, local visitation
     # histogram, a classical frame-diff flow summary, brightness, and the
     # REALIZED delta_unique_cells ~log_transitions_k ticks later). Does not
-    # change chop/craft behaviour in any way — pure logging, additive.
+    # change chop/craft behaviour in any way -- pure logging, additive.
+    # Written to a NEW path so the prior tie_break=first batch
+    # (logs/coverage_transitions.csv, 57 rows) is not overwritten.
     log_transitions: true
     log_transitions_k: 20
-    log_transitions_path: logs/coverage_transitions.csv
+    log_transitions_path: logs/coverage_transitions_tiebreak.csv
 
 # Cold-start attempt #13: calibrated against TWO real drowning deaths, one
 # bright daytime, one dark night (docs/10, mine_jepa/ebwm/hazard.py docstring
-# has the full calibration data from both rounds — an initial absolute-
+# has the full calibration data from both rounds -- an initial absolute-
 # threshold version was recalibrated to relative/ratio thresholds after it
 # missed the night drowning). Zero false positives across ~5900 pooled
 # survived frames from three episodes (bright daytime, dusk, forest, sky-only).
-#
-# Attempt #13 follow-up (first round): the initial N=5 sanity run showed the
-# detector staying correctly triggered for 260+ ticks in one episode, but the
-# agent still died — the blind jump/retreat_action escape has no sense of
-# which direction is dry. Escape is now steered toward the last dead-reckoned
-# position (shared FrontierTracker instance, mine_jepa/ebwm/frontier.py) at
-# which detect_underwater() was last False this episode, turning until
-# aligned (align_deg) then walking forward, jump interleaved throughout
-# either way. jump_action/retreat_action are kept as the fallback for the
-# "spawned directly in water, no dry position recorded yet" case.
-#
-# Attempt #13 follow-up (second round, N=6): reading the per-tick
-# [hazard-escape] trace found the old align_deg=20 was far narrower than one
-# escape turn commitment's actual sweep (~80deg at this config's
-# commit_length=4/action_repeat=4/jump_every=2), so almost every check
-# overshot the alignment window and flipped sign next check, oscillating
-# forever instead of converging (observed directly: delta alternating
-# -52.2/+27.8deg for 18 consecutive replans in one episode). align_deg raised
-# to 85 (>= the ~80deg sweep) so a turn can only ever shrink |delta|, never
-# flip its sign. The same trace also showed hazard_last_dry_pos occasionally
-# jumping to a point right next to the agent's own still-submerged position —
-# a single spurious "underwater=False" reading corrupting the memory — fixed
-# with dry_anchor_debounce (require 2 consecutive not-underwater replan
-# checks before trusting/overwriting the anchor).
 hazard_avoidance:
   enabled: true
   ratio_thresh: 1.02
   rel_rg_thresh: 0.15
-  patience: 1               # react immediately — drowning is time-critical
+  patience: 1               # react immediately -- drowning is time-critical
   max_ticks: 60             # bounded escape budget per trigger before rechecking
   jump_every: 2             # jump (surface, refill air) every other tick
-  jump_action: 5            # pure jump, no forward — don't swim further from land
+  jump_action: 5            # pure jump, no forward -- don't swim further from land
   retreat_action: 2         # blind fallback only, if no dry position recorded yet
   align_deg: 85.0           # turn toward the remembered dry point until within this many degrees
   dry_anchor_debounce: 2    # consecutive not-underwater checks required before trusting the anchor
@@ -117,12 +105,12 @@ goal:
   chop_reward_threshold: 0.5
 
 agent:
-  episodes: 5
+  episodes: 14
   max_steps: 3000
   action_repeat: 4
   seed: 0
 
 logging:
   save_gif: true
-  gif_episodes: 5
-  gif_path: assets/agent_play_craft_commit4_hazard.gif
+  gif_episodes: 14
+  gif_path: assets/agent_play_craft_commit4_hazard_tiebreak.gif

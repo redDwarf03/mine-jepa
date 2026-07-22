@@ -1710,3 +1710,259 @@ candidate directions: #1 is closed (attempt #11), #2 has the campaign's only two
 chopping successes plus attempt #13's hazard-avoidance fix, #3 (H-JEPA) is now the
 better-justified next direction per the Explorer's own stated condition for revisiting it
 (not yet actioned), and #4 (BC fine-tuning) remains deprioritized.
+
+## Cold-start attempt #15 (PC, 2026-07-22) — H-JEPA proposal reassessed with all new evidence,
+plus one narrower idea tested directly: ratio-normalized chromaticity per spatial tile — a 5th
+confirmation that closes the "smarter feature engineering" line of inquiry
+
+Attempt #14 left candidate direction 3 (H-JEPA) as the better-justified next step per the
+Explorer's own stated condition. Before committing engineering effort to it, a reassessment
+pass reconsidered the whole post-attempt-#10 menu with all evidence gathered since, including
+one narrower, cheaper idea the H-JEPA proposal itself had raised in passing.
+
+**Reassessment, read-only, no code written.** Given that CLIP (Radford et al., arXiv:2103.00020)
+— a 400M-image model built and pretrained specifically to be robust to photometric variation —
+had already failed the exact same dual gate (direction + brightness-independence) a hand-rolled
+hue/edge heuristic would face, building that heuristic was judged very likely to just be a 5th
+confirmation of the same confound at real engineering cost, not new information. **Recommendation:
+do not build the hand-rolled visual heuristic.** The reassessment also recommended that the
+campaign's only two working, non-visual-scoring mechanisms — `FrontierTracker` coverage and
+`commit_length` — are the better-justified place to invest next, rather than grafting still more
+visual content bias onto them.
+
+**One narrower, cheaper idea from the reassessment WAS tested directly**, because it was cheap
+enough to check before ruling out the whole feature-engineering line: does
+`mine_jepa/ebwm/hazard.py`'s proven trick — lighting-invariant channel RATIOS rather than raw
+RGB values, which works for detecting water because underwater tint is a uniform frame-global
+cast — also work for foliage if computed **per spatial tile** instead of over the whole frame at
+once? A per-tile ratio could in principle pick out a patch of green canopy against a bright sky
+the same way the whole-frame version picks out a uniform blue-tinted underwater frame.
+`scripts/diagnose_chroma_tile_generalization.py` tests this over the same 251-frame set and
+hand-labeled ground truth every prior diagnostic in this campaign has used.
+
+**Result: MIXED, but the brightness gate failed almost as badly as CLIP's worst case.**
+
+| Gate | Threshold | Result |
+|---|---|---|
+| Direction (separation ratio) | ≥ 1.3 | **PASSED — 1.482** |
+| Brightness-independence, labeled set | low \|r\| | **FAILED — r = -0.925** |
+| Brightness-independence, full population | low \|r\| | **FAILED — r = -0.585** (treechop -0.748, obtain_spawn -0.600, obtain_coverage -0.671) |
+
+The labeled-set brightness correlation (-0.925) is essentially tied with CLIP's worst-in-campaign
+result (-0.947, opposite sign) — this is not a marginal failure, it is close to the ceiling of how
+bad the confound has looked anywhere in this campaign. Critically, the full-population failure
+(-0.585) is not confined to the small hand-labeled subset — it holds broadly, including within
+each of the three separately-sampled frame sources individually.
+
+> **LESSON — the sharpest interpretation yet of why this keeps happening**: ratio-normalization
+> removes GLOBAL brightness scaling exactly as designed, which is why it works for water (a
+> uniform frame-wide tint is precisely the kind of variation a ratio cancels). But it cannot
+> remove a COMPOSITIONAL confound, where the ground-truth labels themselves correlate scene
+> type with brightness — dark forests versus bright open fields is the actual scene composition
+> of this domain, not an artifact of any one scoring mechanism's math. **This means the
+> brightness confound is not fixable by ANY purely photometric single-frame feature — learned,
+> off-the-shelf, or hand-designed to be lighting-invariant — without additional structure
+> (multiple frames, spatial/geometric reasoning, or a different modality entirely).** This closes
+> the "maybe a cleverer feature trick fixes it" line of inquiry definitively, for a stronger
+> reason than attempt #14 left it: not just "every mechanism tried so far has failed" but "the
+> class of purely photometric single-frame features cannot succeed here by construction of the
+> domain's own scene composition."
+
+No checkpoint touched — this is a pure offline read-only diagnostic (`ebwm.pt`, `craft_wm_v4.pt`
+never loaded). Candidate direction 1 (encoder/scoring correction) stays closed, now for a
+structurally stronger reason than before attempt #15.
+
+*Previous: `docs/09_curiosity_coldstart.md`; commit_length through attempt #14's mixed
+encoder-fine-tune result. Current: attempt #15 — the H-JEPA proposal reassessed and the
+hand-rolled heuristic it suggested was judged not worth building; the one cheaper narrower idea
+(per-tile ratio-normalized chromaticity) it did motivate was tested directly and failed the
+brightness gate almost as badly as CLIP, the 5th independent confirmation of the confound and
+the first to pin down WHY purely photometric single-frame features cannot fix it (a compositional,
+not a magnitude, confound). Next: a real confirmation batch of the frontier+hazard combination
+(below), then attempt #16, candidate direction 3's first concrete probe.
+
+## Confirmation batch (PC, 2026-07-22) — frontier + hazard combined at N=20, measuring real chop
+rate for the first time on this combination: drowning fix holds at scale, chopping still 0/20
+
+Attempts #12 and #13 individually validated coverage-driven search (frontier, 1/20 at N=20) and
+drowning avoidance (hazard, 6/6 survival at N=6) separately. This batch runs both together
+(`configs/play_craft_commit4_hazard.yaml`, frontier search plus the final, round-3 fixed
+hazard-avoidance from attempt #13) at N=20, the first time the combination is measured at the
+project's own confirmation-batch scale rather than a small sanity check.
+
+**Process note, corrected after independent verification.** The Tester's own report on this
+batch claimed a "hard infrastructure failure" halting the run at episode 4. This was **wrong**:
+`play_minerl_multi.py` launches one Java/Malmo process per episode by design, so one episode's
+transient Malmo state-machine error does not kill the orchestrator, which simply moves on to the
+next episode. The raw log shows the batch ran all 20 episodes end-to-end (`FINAL RESULTS —
+20/20 episodes succeeded`) with no intervention required. **Lesson: a per-episode error in this
+harness is not the same as a batch-level failure — confirm the orchestrator process's own exit
+status before declaring a hard stop**, not just the presence of an error message in the stream.
+
+**Drowning: fixed, and holds at scale.** 3/20 (15%) drowned, confirmed via real `MineRLAgent0
+drowned` Malmo server messages — down from attempt #12's original, un-hazard-protected 12/20
+(60%) baseline. **The attempt #13 fix generalizes from the N=6 it was confirmed at to a real
+N=20 confirmation batch, not just the small sample it was built on.** Other early terminations
+(unrelated causes — fall/mob/etc., out of scope for this fix): 5/20 (25%). Full-length "fair
+shot" episodes: 12/20 (60%), up from roughly 8/20 (40%) in attempt #12's original batch.
+
+**Chopping/crafting: 0/20 logs, 0/20 planks** — despite more episodes getting a fair, undrowned
+shot at searching, no chops occurred in this batch (versus attempt #12's 1/20). This is not a
+significant regression at this N (a Fisher exact test would not distinguish 0/20 from 1/20) — it
+is this campaign's usual small-N variance. **It does confirm the standing diagnosis again**:
+removing the drowning confound increases the number of episodes that get a fair search
+opportunity, but does not by itself convert into chopping — survival and search/approach
+effectiveness remain separate problems, with diminishing returns from improving coverage/survival
+alone.
+
+**A `reward=144.000` anomaly from this line of work, investigated and not reproduced.**
+`scripts/play_craft.py` gained an optional `logging.full_inventory` diagnostic (config-gated,
+default off, bit-for-bit unchanged when unset) that tracks and prints the max value of EVERY
+inventory key per episode, not just log/planks, specifically to chase down an anomalous
+reward=144 reading that had appeared once in this line of work with no wood ever recorded. A
+fresh N=12 batch with the diagnostic enabled (same config) showed: reward=0.000 on all 12
+episodes, and the **only** inventory item ever non-zero across the entire batch was `dirt`
+(1-30 per episode, picked up incidentally while walking/attacking). Dirt is **not** in the
+reward table (`RewardForPossessingItem` covers only log, planks, stick, crafting_table,
+wooden_pickaxe, cobblestone, furnace, stone_pickaxe, iron_ore, iron_ingot, iron_pickaxe) — it
+earns zero reward and is a red herring for the original mystery, not an explanation of it. The
+original anomalous episode's process had already exited before this diagnostic existed, so its
+exact internal state is unrecoverable — the mechanism that produced 144 did not recur across 12
+fresh attempts and remains a one-off, uncharacterized event. It does not affect any campaign
+conclusion (the chop rate is what matters, and this is orthogonal to it) — parked as a documented
+curiosity, not pursued further absent a much larger sample that reproduces it.
+
+No checkpoint touched (`ebwm.pt`, `craft_wm_v4.pt` read-only throughout; frontier and hazard
+have no learned parameters). `configs/play_craft_commit4_hazard.yaml` is the same config attempt
+#13 introduced, unchanged.
+
+*Previous: `docs/09_curiosity_coldstart.md`; commit_length through attempt #15's closure of the
+feature-engineering line. Current: the frontier+hazard combination confirmed at real N=20 scale
+— drowning down from 60% to 15% (the attempt #13 fix generalizes), fair-shot episodes up from
+~40% to 60%, chopping unchanged at effectively zero (0/20 vs. attempt #12's 1/20, not a
+significant difference) — diminishing returns from coverage/survival improvements alone,
+motivating a different kind of mechanism next. A separate reward=144 anomaly was investigated
+and not reproduced, parked as an unexplained one-off. Next: attempt #16, candidate direction 3's
+first concrete, non-photometric probe.
+
+## Cold-start attempt #16 (PC, 2026-07-22) — Coverage-Value Predictor (CVP): candidate
+direction 3's first mechanism built under the "no single-frame photometric scoring" constraint
+— offline aggregate gates encouraging, per-trial trained regressor NO-GO at this sample size
+
+With candidate direction 1 (scoring fixes) closed five-fold by attempt #15 and candidate
+direction 2 (coverage/execution alone) showing diminishing returns in the frontier+hazard
+confirmation batch above, an Explorer proposal — externally reviewed and refined before
+implementation — designed the campaign's first candidate-3-flavoured mechanism: a **Coverage-
+Value Predictor (CVP)**, a small learned model that predicts *which direction is worth exploring*
+without ever looking at a single raw frame's photometric content, deliberately built to avoid
+the exact failure mode that closed direction 1.
+
+**Design.** A small MLP predicts `Δunique_cells` (the exploration payoff `FrontierTracker` would
+gain) per candidate heading, from two non-photometric feature families only: classical
+per-quadrant frame-DIFFERENCE optical flow (motion, not appearance) and `FrontierTracker`'s own
+local visitation histogram (where has this episode already been). This is a genuinely
+JEPA-shaped predictor — input state plus candidate action predicting a future outcome — with the
+prediction target swapped from pixels to geometry, feeding into the already-validated frontier
+scan macro rather than replacing its handoff to the chop planner.
+
+**Instrumentation and data collection.** `scan.frontier.log_transitions` (config-gated, default
+off) was added to `scripts/play_craft.py` to record per-trigger transition rows. The first
+collection batch (N=12 episodes, 57 rows) hit a real, previously-unnoticed bug:
+`FrontierTracker.frontier_heading_deg()`'s tie-break defaults to the smallest heading index, and
+because sparse-grid cells are almost always tied at zero visits early in exploration, 54 of 57
+triggers "chose" heading 0.0° purely by construction of the tie-break rule, not genuine
+preference among headings. This made Gate 1 (dynamic range of the target across headings)
+uncertifiable on this data — with 54/57 rows all at the same heading, there was no real spread to
+measure. **Fix**: a config-gated `tie_break="random"` option (seeded, default `"first"` verified
+unchanged from the prior behaviour), followed by a re-collection (N=14 episodes, 44 rows, with
+real diversity — all 12 possible headings represented, 1-7 rows each).
+
+**Offline gates on the re-collected data.**
+
+- **Gate 2 (brightness does not dominate the prediction target) passed on BOTH batches
+  independently**: r ≈ 0.10 in each, with opposite signs between the two batches — the most
+  reproducible non-confound result anywhere in this campaign's history, and a direct contrast
+  with every direction-1 attempt's confound.
+- **Gate 1 (dynamic range across headings) improved substantially after the tie-break fix**, but
+  rests on small per-heading samples (1-7 rows each) — assessed honestly as "encouraging, not a
+  rock-solid confirmation," not inflated into a pass it hadn't fully earned.
+
+**The actual trained model — NO-GO, and thoroughly checked, not just a tuning failure.**
+Combining both CSVs (~101 rows total), a small MLP (~1.9K parameters) was trained with mandatory
+5-fold cross-validation against a trivial "always predict the mean" baseline.
+
+| Configuration | MAE | vs. baseline |
+|---|---|---|
+| Trivial mean-prediction baseline | 1.169 | — |
+| Default MLP | 1.590 | worse |
+| Best of an 8-way hyperparameter sweep (smaller nets, heavier regularization) | best ratio 1.06 | still worse |
+| Linear Ridge-regression sweep, from scratch | approaches baseline only as regularization forces a near-constant prediction | never surpasses it |
+
+The Ridge sweep in particular rules out "this is just an MLP overfitting artifact" — as
+regularization strength increases and the model is forced toward predicting something closer to
+a constant, it approaches the trivial baseline's error but never beats it, at any point on the
+sweep.
+
+> **LESSON: predicting one specific noisy trial's outcome from four coarse scene-level features
+> is a substantially harder task than the aggregate statistics Gates 1-2 checked, and is not
+> learnable at N≈100 with this feature set.** This is not evidence that the aggregate signal
+> (Gate 2's brightness-independence, in particular) is fake — it is evidence that per-row
+> prediction needs substantially more data, likely several hundred rows rather than roughly a
+> hundred, to be learnable at all with these features, if it is learnable with them at any
+> sample size.
+
+Per the campaign's own honesty discipline, the model was correctly **not** wired into
+`scripts/play_craft.py` — no `scan.macro: "learned_frontier"` option was added, and no live
+episode was spent testing a model the cross-validation gate had already shown does not work. No
+checkpoint was written (`checkpoints/coverage_predictor.pt` does not exist). `ebwm.pt` and
+`craft_wm_v4.pt` were untouched throughout.
+
+*Previous: `docs/09_curiosity_coldstart.md`; commit_length through the frontier+hazard N=20
+confirmation batch and attempt #15's closure of the feature-engineering line. Current: attempt
+#16, candidate direction 3's first concrete, non-photometric probe — real, reproducible aggregate
+signal on brightness-independence (Gate 2, twice) and improved but not yet rock-solid dynamic
+range (Gate 1), but the actual trained per-trial regressor does not beat a trivial mean-prediction
+baseline at any point in an 8-way sweep or a from-scratch linear sanity check — a thoroughly
+checked NO-GO, not a tuning artifact, and not deployed. Next: see the campaign status recap below.
+
+## Cold-start campaign status after attempt #16 — sixteen attempts in, three of four candidate
+directions assessed, the central chop-planner metric still the one major mechanism never
+directly fixed
+
+- **Candidate direction 1 (encoder/scoring correction) is closed, five-fold confirmed.**
+  Attempts #7, #11, #14 (both its CLIP and its direct-fine-tune phases), and #15 (ratio-normalized
+  chromaticity) each independently hit a brightness/domain-composition confound, via five
+  mechanistically different approaches — a small head on frozen latents, the same head sourced
+  from Obtain data, an off-the-shelf 400M-image model this project never trained, direct
+  retraining of the encoder itself with real photometric augmentation, and a hand-designed
+  lighting-invariant per-tile feature. Attempt #15 additionally pinned down *why*: the confound is
+  compositional (scene type correlates with brightness in this domain) rather than a magnitude
+  artifact of any one scoring mechanism, which no purely photometric single-frame feature can fix
+  by construction.
+- **Candidate direction 2 (coverage/execution) has the campaign's only real positive results, but
+  shows diminishing returns.** `commit_length=4` alone (9.7% pooled), attempt #12's frontier
+  search (1/20, no lock-in), and attempt #13's hazard-avoidance fix (drowning 60%→15% at N=6,
+  reconfirmed at 60%→15% in the N=20 combined batch above) are all genuine, verified wins on their
+  own narrow terms. But layering the hazard fix on top of frontier search — more episodes getting
+  a fair, undrowned shot at searching — did not convert into more chopping (0/20 vs. attempt #12's
+  1/20): the ceiling on pure coverage/survival improvement without touching search intelligence or
+  scoring appears to have been reached.
+- **Candidate direction 3 (H-JEPA proper) has had its first concrete probe, not yet a deployable
+  mechanism.** Attempt #16 (CVP) tested whether a small non-photometric predictor could learn
+  exploration payoff per heading — real aggregate signal on the brightness-independence gate
+  (reproduced twice, opposite-signed, the most reproducible non-confound result in the campaign)
+  but no learnable per-trial model at N≈100. The door on this direction is not closed the way
+  direction 1 is: the failure was a data-scale limitation, not a confound. The next-cheapest step
+  if resumed is collecting substantially more transition rows (several hundred) before retraining,
+  per the CVP dispatch's own recommendation, rather than a literal hierarchical H-JEPA model from
+  scratch.
+- **The named-but-still-untouched issue.** Attempt #10 confirmed that `ebwm.pt`'s own
+  goal-centroid score — the mechanism still used live by the two-brain chop planner once search
+  finds something — reverses direction on Obtain's spawn distribution. Every attempt from #11
+  through #16 has worked AROUND this fact (via search mechanisms, hazard avoidance, or coverage
+  prediction) rather than fixing it directly. Attempt #15's reassessment explicitly named this as
+  "the next branch, not to be silently dropped" once search-side options were exhausted. With
+  direction 1 closed and directions 2 and 3 both showing either diminishing returns or an
+  unresolved data-scale gap without ever touching it, this is now the single most load-bearing
+  unexamined mechanism in the entire campaign. Not yet decided whether or how to attack it
+  directly.

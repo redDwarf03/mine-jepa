@@ -12,6 +12,7 @@ MALMOBUSY workaround).
 Usage: run.bat scripts/play_craft.py --config configs/play_craft.yaml --episodes 1
 """
 import argparse
+import csv
 import logging
 import time
 from collections import deque
@@ -32,6 +33,7 @@ from mine_jepa.ebwm.hazard import detect_underwater
 from mine_jepa.ebwm.planner import DiscreteLatentPlanner, SwitchingCraftPlanner
 from mine_jepa.ebwm.rnd import RNDModule
 from scripts.play import load_action_map, make_minerl_env
+from scripts.train_value_projector import brightness_of
 
 
 def parse_args():
@@ -102,6 +104,54 @@ def build_chop_goal(wm, goal_cfg: dict, device, log_idx: int) -> torch.Tensor:
         lat_sum = s if lat_sum is None else lat_sum + s
         n += lat.size(0)
     return (lat_sum / n).unsqueeze(0)                            # [1,D,H',W']
+
+
+def quadrant_flow_stats(frames: list) -> dict:
+    """Classical, non-learned frame-difference-magnitude motion proxy over a
+    short window of raw POV frames, computed separately per image quadrant.
+
+    Deliberately NOT ebwm.pt's latent space (docs/10 cold-start attempt #16
+    candidate: Coverage-Value Predictor gate is specifically testing whether a
+    cheap, non-photometric-scoring signal like this correlates with realized
+    exploration payoff, independent of the single-frame goal-centroid scoring
+    5 prior attempts — #7, #11, #14 Phase1/Phase2, #15 — showed is confounded
+    with brightness on this domain). Returns zeros if fewer than 2 frames are
+    available (e.g. right at episode start)."""
+    keys = [f"flow_{q}_{stat}" for q in ("tl", "tr", "bl", "br") for stat in ("mean", "var")]
+    if len(frames) < 2:
+        return {k: 0.0 for k in keys}
+    h, w = frames[0].shape[:2]
+    hh, hw = h // 2, w // 2
+    quads = {
+        "tl": (slice(0, hh), slice(0, hw)), "tr": (slice(0, hh), slice(hw, w)),
+        "bl": (slice(hh, h), slice(0, hw)), "br": (slice(hh, h), slice(hw, w)),
+    }
+    per_quad = {q: [] for q in quads}
+    for i in range(1, len(frames)):
+        diff = np.abs(frames[i].astype(np.float32) - frames[i - 1].astype(np.float32))
+        for q, (rs, cs) in quads.items():
+            per_quad[q].append(diff[rs, cs].mean())
+    out = {}
+    for q in quads:
+        vals = np.array(per_quad[q], dtype=np.float32)
+        out[f"flow_{q}_mean"] = float(vals.mean())
+        out[f"flow_{q}_var"] = float(vals.var())
+    return out
+
+
+def write_transition_row(writer, ep: int, pt: dict, k_ticks: int, delta_cells: int) -> None:
+    """One finalized row for the scan.frontier.log_transitions CSV — column
+    order MUST match the header written in main() below."""
+    cell = pt["chosen_cell"]
+    flow = pt["flow"]
+    row = (
+        [ep, pt["trigger_step"], pt["chosen_heading_deg"], cell[0], cell[1],
+         pt["chosen_visit_count"], pt["brightness"]]
+        + [flow[f"flow_{q}_{stat}"] for q in ("tl", "tr", "bl", "br") for stat in ("mean", "var")]
+        + pt["hist_counts"]
+        + [pt["unique_cells_at_trigger"], k_ticks, delta_cells]
+    )
+    writer.writerow(row)
 
 
 def apply_action(env, action_int: int, action_map: list):
@@ -274,7 +324,37 @@ def main():
             sprint_mult=float(frontier_cfg.get("sprint_mult", 1.6)),
             lookahead_cells=float(frontier_cfg.get("lookahead_cells", 2.0)),
             n_headings=int(frontier_cfg.get("n_headings", 12)),
+            # docs/10 attempt #16 Gate-1 fix: "first" (default) is byte-for-byte
+            # the original tie-break every validated attempt #12/#13 config
+            # depends on; "random" is opt-in only via frontier_cfg.tie_break.
+            tie_break=str(frontier_cfg.get("tie_break", "first")),
+            seed=frontier_cfg.get("tie_break_seed", cfg.get("agent", {}).get("seed", 0)),
         )
+
+    # Transition logging (docs/10 cold-start attempt #16 candidate: Coverage-
+    # Value Predictor, offline validation gate ONLY — no predictor is built or
+    # trained here). Absent/false (default) = zero extra computation, zero new
+    # file writes, byte-for-byte the previous behaviour. Only meaningful when
+    # the "frontier" scan macro actually runs (frontier_tracker must exist);
+    # silently disabled otherwise even if the key is set.
+    log_transitions = bool(frontier_cfg.get("log_transitions", False)) and frontier_tracker is not None
+    transitions_k = int(frontier_cfg.get("log_transitions_k", 20))
+    transitions_file, transitions_writer = None, None
+    if log_transitions:
+        transitions_path = Path(frontier_cfg.get("log_transitions_path", "logs/coverage_transitions.csv"))
+        transitions_path.parent.mkdir(parents=True, exist_ok=True)
+        transitions_file = open(transitions_path, "w", newline="")
+        transitions_writer = csv.writer(transitions_file)
+        transitions_writer.writerow(
+            ["episode", "trigger_step", "chosen_heading_deg", "chosen_cell_x", "chosen_cell_y",
+             "chosen_visit_count", "brightness"]
+            + [f"flow_{q}_{stat}" for q in ("tl", "tr", "bl", "br") for stat in ("mean", "var")]
+            + [f"hist_heading{i}_visits" for i in range(frontier_tracker.n_headings)]
+            + ["unique_cells_at_trigger", "k_ticks_elapsed", "realized_delta_unique_cells"]
+        )
+        print(f"Transition logging: ON -> {transitions_path} (k={transitions_k} ticks, "
+              f"Coverage-Value Predictor offline gate, no predictor trained)")
+
     if scan_enabled:
         if scan_macro == "turn":
             macro_desc = f"turn_action=a{scan_cfg.get('turn_action', 12)}"
@@ -437,6 +517,8 @@ def main():
         frontier_ticks = 0
         if frontier_tracker is not None:
             frontier_tracker.reset()   # per-episode memory only, fresh spawn
+        pov_buffer = deque([pov] if log_transitions else [], maxlen=8)
+        pending_transitions = []   # scan-trigger rows awaiting their realized outcome
         hazard_flat_count, hazard_active, hazard_ticks, hazard_triggers = 0, False, 0, 0
         # Last dead-reckoned (x, y) at which detect_underwater() was False this
         # episode ("last known dry moment") — None until the first dry reading,
@@ -510,6 +592,20 @@ def main():
                         # are both rechecked every replan.
                         align_deg = float(frontier_cfg.get("alignment_deg", 15.0))
                         delta = frontier_tracker.heading_delta_deg()
+                        if log_transitions and scan_replans == 0:
+                            # scan_replans==0 = the FIRST frontier replan of this
+                            # scanning session, i.e. the actual trigger tick (it
+                            # was just reset to 0 above when scanning started).
+                            heading_c, cell_c, count_c = frontier_tracker.frontier_heading_deg()
+                            pending_transitions.append({
+                                "trigger_step": step,
+                                "chosen_heading_deg": heading_c, "chosen_cell": cell_c,
+                                "chosen_visit_count": count_c,
+                                "brightness": float(brightness_of([pov])[0]),
+                                "flow": quadrant_flow_stats(list(pov_buffer)),
+                                "hist_counts": [c for _, _, c in frontier_tracker.all_headings_visits()],
+                                "unique_cells_at_trigger": frontier_tracker.n_unique_cells,
+                            })
                         if abs(delta) > align_deg:
                             steer_action = (
                                 int(frontier_cfg.get("turn_right_action", 12)) if delta > 0
@@ -638,6 +734,20 @@ def main():
                     step += 1
                     if record:
                         gif_frames.append(pov)
+                    if log_transitions:
+                        pov_buffer.append(pov)
+                        if pending_transitions:
+                            still_pending = []
+                            for pt in pending_transitions:
+                                if step - pt["trigger_step"] >= transitions_k:
+                                    delta_cells = frontier_tracker.n_unique_cells - pt["unique_cells_at_trigger"]
+                                    write_transition_row(
+                                        transitions_writer, ep, pt, step - pt["trigger_step"], delta_cells
+                                    )
+                                    transitions_file.flush()   # survive a mid-batch crash
+                                else:
+                                    still_pending.append(pt)
+                            pending_transitions = still_pending
                     if done:
                         if hazard_active:
                             hazard_died_during_escape = True
@@ -659,6 +769,18 @@ def main():
                     break
             if done:
                 break
+
+        if log_transitions:
+            # Episode ended before some pending triggers reached transitions_k
+            # ticks — finalize them anyway with whatever K actually elapsed,
+            # rather than silently discarding real (if truncated) outcomes.
+            for pt in pending_transitions:
+                delta_cells = frontier_tracker.n_unique_cells - pt["unique_cells_at_trigger"]
+                write_transition_row(
+                    transitions_writer, ep, pt, step - pt["trigger_step"], delta_cells
+                )
+            pending_transitions = []
+            transitions_file.flush()
 
         fps = step / (time.perf_counter() - t0)
         log_gain = max_log - start_log
@@ -708,6 +830,10 @@ def main():
     print(f"  Mean steps        : {np.mean(all_steps):.0f}")
     gate = craft_rate >= 0.3
     print(f"\n  Planks milestone  : {'PASSED' if gate else 'NOT PASSED'}  (>=30% craft planks)")
+
+    if transitions_file is not None:
+        transitions_file.close()
+        print(f"\nTransition log closed -> {transitions_path}")
 
 
 if __name__ == "__main__":
