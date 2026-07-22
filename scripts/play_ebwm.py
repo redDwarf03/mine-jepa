@@ -68,18 +68,61 @@ def preprocess(obs: np.ndarray, device: torch.device) -> torch.Tensor:
 
 
 @torch.no_grad()
+def build_obtain_log_gain_goal(model, g: dict, device) -> torch.Tensor:
+    """
+    Cold-start attempt #11 (docs/10): centroid of 'log count increased' frames from
+    a real MineRLObtainIronPickaxe demos npz (data/minerl_craft/episodes.npz),
+    encoded by `model` (any frozen eb-JEPA world model, e.g. ebwm.pt) — the
+    Obtain-domain analog of scripts/play_craft.py::build_chop_goal's default
+    branch (same inventory-log-gain logic, different encoder). Used when
+    goal.mode == "obtain_log_gain" so the two-brain chop planner's goal anchor is
+    also Obtain-domain, matching what the paired DistanceProjector was trained
+    against (attempt #10 found ebwm.pt's own scoring reverses direction on Obtain;
+    a Treechop-only goal anchor would not fix that).
+    """
+    data = _load_npz(g["data_path"])
+    frames, inv, dones = data["frames"], data["inventory"], data["dones"].astype(bool)
+    items = [str(x) for x in data["inventory_items"]]
+    log_idx = items.index(g.get("log_item", "log"))
+    log = inv[:, log_idx].astype(np.int64)
+    inc = np.zeros(len(frames), dtype=bool)
+    inc[1:] = (log[1:] > log[:-1]) & (~dones[:-1])
+    good = frames[inc]
+    if len(good) < g.get("min_frames", 10):
+        print(f"  ⚠️  only {len(good)} log-gain frames — using all frames for the goal")
+        good = frames
+    print(f"  Goal [obtain_log_gain]: centroid of {len(good)} 'log obtained' frames "
+          f"({g['data_path']})")
+    lat_sum, n = None, 0
+    for i in range(0, len(good), 256):
+        obs = torch.from_numpy(good[i:i + 256]).float() / 255.0
+        obs = obs.permute(0, 3, 1, 2).unsqueeze(2).to(device)
+        lat = model.encode(obs).squeeze(2)                     # [B,D,H',W']
+        s = lat.sum(dim=0)
+        lat_sum = s if lat_sum is None else lat_sum + s
+        n += lat.size(0)
+    goals = (lat_sum / n).unsqueeze(0)                          # [1,D,H',W']
+    print(f"  goal latents: {tuple(goals.shape)}")
+    return goals
+
+
+@torch.no_grad()
 def build_goal_latents(model, cfg, device) -> torch.Tensor:
     """
     Returns latent targets (success scenes, reward>0 frames) as [K, D, H', W'].
 
-    Two modes (planner scores by distance to nearest of the K, so K=1 = centroid):
+    Three modes (planner scores by distance to nearest of the K, so K=1 = centroid):
       - "centroid" (default): K=1, mean of all reward>0 frames. "Blurry" target
         never reached → forces permanent movement (empirically best: 50%).
       - "nearest": K sampled prototypes → nearest-neighbor. WARNING: tends to
         freeze the agent (a0/noop) because "stay near a success" minimizes distance.
+      - "obtain_log_gain" (cold-start attempt #11): see build_obtain_log_gain_goal —
+        an Obtain-domain goal anchor instead of a Treechop reward-frame one.
     """
     g = cfg["goal"]
     mode = g.get("mode", "centroid")
+    if mode == "obtain_log_gain":
+        return build_obtain_log_gain_goal(model, g, device)
     data = _load_npz(g["data_path"])
     frames = data["frames"]                                    # [N,H,W,3] uint8
     rewards = data["rewards"].astype(np.float32)

@@ -1,0 +1,85 @@
+# Full-inventory diagnostic (2026-07-22 dispatch): identical to
+# configs/play_craft_commit4_hazard.yaml, only `logging.full_inventory: true`
+# added, to characterize the mechanism behind a reward=144 anomaly (log=0,
+# planks=0, chop-mode only) seen in an earlier N=20 batch on that config.
+# scripts/play_craft.py prints the full per-episode max inventory (all
+# nonzero items, not just log/planks) when this flag is set; default-off
+# behaviour elsewhere is unchanged.
+
+minerl_env: MineRLObtainIronPickaxeDense-v0
+actions_config: configs/minerl_actions_obtain.yaml
+
+model:
+  checkpoint: checkpoints/craft_wm_v4.pt
+
+planner:
+  n_actions: 22
+  horizon: 12
+  n_candidates: 512
+  sticky_prob: 0.5
+  w_log: 1.0
+  w_planks: 2.0
+  log_threshold: 0.05
+  commit_length: 4
+
+scan:
+  enabled: true
+  macro: frontier
+  flat_threshold: 0.003
+  patience: 3
+  max_replans: 40
+  log_std: true
+  frontier:
+    cell_size: 4.0
+    move_step: 1.0
+    sprint_mult: 1.6
+    lookahead_cells: 2.0
+    n_headings: 12
+    alignment_deg: 15.0
+    turn_left_action: 11
+    turn_right_action: 12
+    forward_action: 13
+    jump_action: 8
+    jump_every: 4
+    max_ticks: 30
+
+hazard_avoidance:
+  enabled: true
+  ratio_thresh: 1.02
+  rel_rg_thresh: 0.15
+  patience: 1
+  max_ticks: 60
+  jump_every: 2
+  jump_action: 5
+  retreat_action: 2
+  align_deg: 85.0
+  dry_anchor_debounce: 2
+  turn_right_action: 12
+  turn_left_action: 11
+  forward_action: 1
+  log: true
+
+chop_model:
+  checkpoint: checkpoints/ebwm.pt
+  n_actions: 17
+  goal:
+    data_path: data/minerl_goal/episodes.npz
+    threshold: 0.5
+    min_frames: 10
+    mode: centroid
+
+goal:
+  data_path: data/minerl_craft/episodes.npz
+  chop_reward_threshold: 0.5
+
+agent:
+  episodes: 12
+  max_steps: 3000
+  action_repeat: 4
+  seed: 0
+
+logging:
+  save_gif: true
+  gif_episodes: 1
+  gif_path: assets/agent_play_craft_commit4_hazard_fullinv.gif
+  full_inventory: true

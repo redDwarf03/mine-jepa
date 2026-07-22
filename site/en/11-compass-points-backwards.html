@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The campaign takes a pause: the compass did not turn off, it points backwards — Mine-JEPA</title>
+<meta name="description" content="Chapter 11 of the Mine-JEPA learning path: The campaign takes a pause: the compass did not turn off, it points backwards.">
+<link rel="stylesheet" href="../style.css">
+<script>document.documentElement.classList.add("js");</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="wrap site-header-inner">
+    <a class="site-brand" href="index.html"><span class="brand-mark" aria-hidden="true">&#9935;</span> Mine-JEPA</a>
+    <div class="header-controls">
+      <span class="last-updated" title="Date de mise à jour">Updated: 2026-07-22</span>
+      <nav class="lang-switch" aria-label="Site language">
+        <a href="../fr/11-la-boussole-a-l-envers.html" lang="fr" hreflang="fr">FR</a>
+        <a href="11-compass-points-backwards.html" aria-current="true" lang="en" hreflang="en">EN</a>
+      </nav>
+      <div class="track-pref" data-track-pref>
+        <span class="track-pref-label" id="track-pref-label">Show:</span>
+        <button type="button" data-track-pref-value="beginner" aria-pressed="true" aria-describedby="track-pref-label">Beginner</button>
+        <button type="button" data-track-pref-value="expert" aria-pressed="false" aria-describedby="track-pref-label">Expert</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <nav class="breadcrumb" aria-label="Breadcrumbs">
+    <div class="wrap">
+      <a href="index.html">Learning Path</a>
+      <span aria-hidden="true">/</span>
+      <span>Chapter 11</span>
+    </div>
+  </nav>
+
+  <article class="chapter">
+    <div class="wrap">
+
+      <header class="chapter-header">
+        <p class="chapter-kicker">Chapter 11</p>
+        <h1>The campaign takes a pause: the compass did not turn off, it points backwards</h1>
+        <p class="chapter-prereqs">Prerequisites: Chapters 1 to 10 — including the diagnostic by elimination of Chapter 10, which points to the mechanism tested here.</p>
+      </header>
+
+
+      <div class="tracks" data-tracks>
+        <div class="track-tabs" role="tablist" aria-label="Reading level">
+          <button class="track-tab" role="tab" id="tab-beginner" aria-controls="panel-beginner" aria-selected="true" data-track-tab="beginner">Beginner</button>
+          <button class="track-tab" role="tab" id="tab-expert" aria-controls="panel-expert" aria-selected="false" tabindex="-1" data-track-tab="expert">Expert</button>
+        </div>
+
+        <div class="track-panel is-active chapter-prose" data-track-panel="beginner" role="tabpanel" id="panel-beginner" aria-labelledby="tab-beginner">
+          <p class="track-kicker">Beginner track</p>
+
+<h2>Where we left off</h2>
+<p>Chapter 10 ended with a new suspect, not yet confirmed: what if the problem was not the way the agent proposes gestures (tested and retested throughout Chapter 8), but the way the imagined world itself <strong>judges</strong> those gestures once placed in a situation it knows poorly? This chapter tells the story of the test that settled this question — and closes, for now, a whole investigation campaign conducted over several chapters. The result is more precise, and a bit more concerning, than what was expected.</p>
+<h2>The test: look at the compass itself, without making the agent play</h2>
+<p>This whole investigation, since Chapter 6, rests on a single idea: the planner compares each story it imagines to a landmark — the <strong>centroid</strong> (Chapter 4 explains this idea: the average of many images that represent the goal, for example &quot;a chopped tree&quot;). The closer the imagined story is to this landmark, the better it is judged. This comparison is the project&#x27;s compass.</p>
+<p>Until now, no one had ever directly checked, without making the agent play, if this compass gave good directions once taken out of its training ground. This chapter does exactly that: take static images, some from the expert games the model learned on (Chapter 5), others from real random starting points of the crafting game (Chapter 6) — and ask the compass to score each one, without any character moving. Nothing is trained in this test, nothing is modified in the model: it is a measurement, not a repair.</p>
+<h2>First result, misleading if we stop there</h2>
+<p>Looking only at global averages, nothing stands out: the scores on the random starting points are not &quot;flatter&quot; than on the expert games — if we just compare raw averages, the random starting point would even seem, at first glance, a little <em>more</em> discriminating. That could have closed the investigation on a disappointing verdict: &quot;the compass is fine, it&#x27;s not it.&quot;</p>
+<h2>The true result: it&#x27;s not off, it&#x27;s inverted</h2>
+<p>But by comparing, image by image, scenes where a tree is clearly visible very close up against scenes where there are none, a clear pattern emerges — and it is very different from what everyone had assumed since Chapter 8.</p>
+<p>On the expert games (the compass&#x27;s training ground): an image where a tree canopy fills the whole screen gets a significantly higher score (about 6 times higher) than an image of an open, treeless meadow. This is exactly what was expected — the compass works where it learned.</p>
+<p>On real starting points of the crafting game: a forest clearing with trees nearby, or a dense jungle right in front of the agent, gets a <strong>lower</strong> score than an open meadow without a single tree, or even an empty beach. Same thing on other images taken from real game restarts: a tree trunk filling the whole frame gets the lowest score of its entire comparison group, while an empty meadow gets one of the highest.</p>
+<p>So it is not that the compass turns off and indicates nothing anymore (which was the hypothesis since Chapter 6) — <strong>it indicates something very clearly, but in the wrong direction.</strong> Bringing the agent closer to a tree, in this specific situation, makes its score <em>drop</em> instead of rising.</p>
+<h2>Why this is worse than a flat signal</h2>
+<p>A flat signal (&quot;I don&#x27;t know,&quot; like the broken curiosity of Chapter 7) is honest: it fools no one, it just says &quot;no idea&quot;. A signal pointing in the wrong direction is worse: it gives the planner false confidence, and actively pushes it away from what it is looking for, without ever letting on that something is wrong. It is the same kind of trap that Chapter 10 had already spotted for a small distance rule trained separately (confused by scene brightness) — except that this time, it is the core mechanism of the entire project, the one used since the very beginning of the investigation, that is at fault.</p>
+<h2>What this closes, and what it doesn&#x27;t</h2>
+<p>This result finally answers the question left open at the end of Chapter 10: does the problem come from the generation of candidate gestures, or from the judgment passed on them by the imagined world? The answer, now confirmed by direct measurement and not just deduced by elimination: <strong>it&#x27;s the judgment.</strong> The wall is not &quot;the agent doesn&#x27;t know what to do&quot;, it is &quot;the compass points the wrong way as soon as it leaves its training ground.&quot;</p>
+<p>After seven attempts to refine or replace the way gestures are proposed (Chapter 8), then this direct test on the judgment itself, the investigation campaign on this specific problem <strong>takes a pause here</strong> — not an abandonment, a pause. Two solid findings emerge:</p>
+<ol>
+<li><strong>Gesture generation is not the true bottleneck.</strong> Three very different methods for proposing better candidate gestures all failed to move the needle, including on confirmed playable starting points where a tree was clearly visible (Chapters 9-10).</li>
+<li><strong>The imagined world&#x27;s compass actively points backwards</strong> once taken out of the terrain it was trained on.</li>
+</ol>
+<h2>The menu for what&#x27;s next (nothing is launched yet)</h2>
+<p>Four paths now exist to resume this work, ranked from the cheapest and most targeted to the most expensive and uncertain — none has been launched yet, it is a menu, not an action plan:</p>
+<ol>
+<li><strong>Fix the compass exactly where it gets it wrong</strong> (the cheapest). This test pinpointed exactly what is broken (the direction, not the intensity of the signal) and on which images (those from the crafting game, not the expert games). We can therefore collect real &quot;close&quot; and &quot;far&quot; examples directly on this specific game, and train a small correction on them — without necessarily touching the model&#x27;s main weights.</li>
+<li><strong>A memory of already visited places.</strong> Instead of comparing every image to the same fixed landmark, the agent could remember the areas it has already explored during the episode and target unknown areas in priority — but only if this choice is made by counting visited places, not by reusing the same broken compass to judge &quot;how close am I to an unknown area&quot; (otherwise the same problem reappears under another name).</li>
+<li><strong>A second, slower brain for searching.</strong> A separate model that would plan on a longer timeline (&quot;find a forest&quot;) before handing control to the fast model already used to chop the tree once close. The most ambitious idea of the four, but also the most expensive: it would require training a new model, and we would have to ensure it learns properly on realistic starting points, not just on the same expert games that produced the current problem.</li>
+<li><strong>Copying real human search games</strong> — relegated to last place, for a simple reason: this test just showed that the problem is not the lack of good gesture proposals, but their poor judgment. Copying more human behaviors does not fix a backward judgment, unless combined with one of the previous three paths.</li>
+</ol>
+<h2>And now</h2>
+<p>As with every previous chapter in this project, this result is reported exactly as it is: neither dressed up as a victory, nor presented as a definitive failure. It is a pause in the work after a long and honest investigation, with a clear diagnosis and a clear menu for resuming it.</p>
+        </div>
+
+        <div class="track-panel chapter-prose" data-track-panel="expert" role="tabpanel" id="panel-expert" aria-labelledby="tab-expert">
+          <p class="track-kicker">Expert track</p>
+
+<h2>Context</h2>
+<p>Chapter 10 (attempt #9) ended on a hypothesis posited by elimination, not directly confirmed: after three mechanically different candidate generation mechanisms (hand-written macros + bushwhack maneuver, true CEM, BC actor) all failed to move the needle — including on confirmed viable spawns with a visible tree (<code>spawn<em>diag</code>) — the only component never tested in isolation remained the native goal-centroid scoring of <code>ebwm.pt</code> itself, the mechanism upon which every attempt since attempt #1 has been built without ever verifying it directly. This chapter covers attempt #10 from <code>CLAUDE.md</code>/<code>docs/10</em>coldstart_engineering.md</code>: a purely offline diagnostic that tests this scoring directly, then the (provisional) closure of the campaign that follows.</p>
+<h2>Method (attempt #10, PC, 2026-07-21, no MineRL/Java, no training)</h2>
+<p><code>scripts/diagnose<em>score</em>generalization.py</code> + <code>configs/diagnose<em>score</em>generalization.yaml</code> reuse <code>DiscreteLatentPlanner.<em>sample</em>actions()</code>/<code><em>score()</code> exactly as is — the exact code already used live by the scan and <code>spawn</em>diag</code> — applied offline on 251 static images: 160 Treechop frames (<code>data/minerl<em>goal/episodes.npz</code>, the training data of <code>ebwm.pt</code> itself, 40 episodes × 4 internal offsets to vary distance to tree), 11 true <code>MineRLObtainIronPickaxeDense</code> cold-start spawn frames (<code>assets/spawn</em>thumbs/</code> from attempt #9), and 80 frames from attempt #3&#x27;s coverage episodes (<code>data/minerl<em>coverage/episodes.npz</code>, sliced in 400-step blocks to bypass the known all-<code>False</code> <code>dones</code> bug from shard merging, attempt #7 fix reused as-is). Same hyperparameters as the live two-brain chop planner (horizon=12, n</em>candidates=512, sticky<em>prob=0.5), seed 0. <code>ebwm.pt</code> loaded frozen, <code>requires</em>grad_(False)</code> verified on all parameters — no checkpoint modified, no training.</p>
+<h2>Raw Aggregate Result — a near-wash, and alone would have DISPROVED the hypothesis</h2>
+<table>
+<thead><tr><th>Group</th><th>n</th><th>mean</th><th>median</th><th>std</th><th>min</th><th>max</th><th>p10</th><th>p90</th></tr></thead>
+<tbody>
+<tr><td>treechop</td><td>160</td><td>0.00742</td><td>0.00459</td><td>0.00716</td><td>0.00022</td><td>0.03484</td><td>0.00126</td><td>0.01996</td></tr>
+<tr><td>obtain_spawn</td><td>11</td><td>0.01085</td><td>0.00977</td><td>0.00565</td><td>0.00165</td><td>0.01900</td><td>0.00572</td><td>0.01794</td></tr>
+<tr><td>obtain_coverage</td><td>80</td><td>0.00833</td><td>0.00610</td><td>0.00700</td><td>0.00055</td><td>0.04225</td><td>0.00185</td><td>0.01625</td></tr>
+</tbody>
+</table>
+<p>Median and p90 for Obtain are comparable, if not slightly <em>higher</em>, than those for Treechop — no simple &quot;the score flattens on Obtain&quot; story survives the raw numbers alone. Read in isolation, this table would have been an argument against the hypothesis of a problem on Obtain.</p>
+<h2>Paired, Frame-by-Frame Result — a sharp inversion, not a flattening</h2>
+<table>
+<thead><tr><th>Source</th><th>Tree clearly visible/close</th><th><code>goal<em>score</em>std</code></th><th>Treeless / open / distant</th><th><code>goal<em>score</em>std</code></th></tr></thead>
+<tbody>
+<tr><td>Treechop (offset 0.5, native dist.)</td><td>canopy fills frame (ep007)</td><td><strong>0.0274</strong></td><td>meadow+hut, distant trees (ep015)</td><td>0.0027</td></tr>
+<tr><td></td><td>canopy tunnel (ep012)</td><td><strong>0.0171</strong></td><td>open meadow, distant treeline (ep016)</td><td>0.0037</td></tr>
+<tr><td></td><td></td><td></td><td>meadow, no trees (ep033)</td><td>0.0017</td></tr>
+<tr><td></td><td></td><td></td><td>open meadow, distant treeline (ep037)</td><td>0.0064</td></tr>
+<tr><td>True Obtain Spawn (attempt #9)</td><td>forest clearing, close trees</td><td>0.0060</td><td>open meadow</td><td><strong>0.0190</strong></td></tr>
+<tr><td></td><td>dense jungle, close trees</td><td>0.0057</td><td>open meadow</td><td><strong>0.0179</strong></td></tr>
+<tr><td></td><td></td><td></td><td>beach, no trees</td><td>0.0130</td></tr>
+<tr><td></td><td></td><td></td><td>dark cave, no trees</td><td>0.0069</td></tr>
+<tr><td>Obtain Coverage (true restarts)</td><td>trunk fills frame</td><td>0.0030</td><td>open meadow</td><td><strong>0.0176</strong></td></tr>
+<tr><td></td><td>dense jungle canopy</td><td>0.0098</td><td>open plains</td><td><strong>0.0146</strong></td></tr>
+</tbody>
+</table>
+<p>Methodological note: Treechop frames at offset=0.0 (&quot;spawn&quot;) actually mostly show sky or underwater views with random camera orientation — an incidental finding in itself — so the Treechop comparison uses offset=0.5 frames, taken right in the middle of an actual chopping demonstration.</p>
+<p>On Treechop, close-canopy frames score about <strong>6× higher</strong> than distant/treeless frames (0.017-0.027 vs 0.002-0.007) — reproducing, from a totally independent offline sample, the original live calibration of this very project (&quot;canopy fills frame&quot; band 0.02-0.056 vs &quot;lost&quot; band 0.0002-0.002, Chapter 8). On both Obtain samples, gathered independently, the direction <strong>inverts</strong>: frames closest to a tree/canopy score at or below the bottom of the group&#x27;s range (0.003-0.010), while open, treeless frames hit the top of the range (0.013-0.019) — matching or exceeding Treechop&#x27;s &quot;visible tree&quot; band, without showing a single tree.</p>
+<h2>Verdict: hypothesis confirmed, in a more precise form than expected</h2>
+<div class="callout">
+<p><strong>Lesson: this is not a magnitude collapse (RND&#x27;s failure mode, Chapter 7) — it is a directional confusion in the native, raw, untrained goal-centroid scoring of <code>ebwm.pt</code> itself.</strong> On the free spawn visual distribution of <code>MineRLObtainIronPickaxeDense</code>, the goal-centroid distance measurably discriminates something — the aggregate spread is not flatter than on Treechop — just not proximity to a tree, and in every pair of images verified here, it points in the WRONG direction: a closer tree scores as less promising than an open, treeless scene. This is the same &quot;a confident-but-wrong signal is worse than an honestly flat signal&quot; pattern already diagnosed in Chapter 10 for a <em>separately</em> trained distance metric (there, a brightness confusion) — shown here for the first time on the very mechanism that every attempt since attempt #1 has built upon and never tested in isolation. This closes the note from attempt #9 (&quot;flagged as a hypothesis pushed by elimination, not yet as established fact&quot;) with a direct answer: yes, and the mechanism is a directional confusion, not a collapse.</p>
+</div>
+<p>No checkpoints modified (<code>ebwm.pt</code> loaded read-only throughout the diagnostic, as in every previous attempt). Full per-frame CSV and boxplot comparing the three groups: <code>assets/diagnostics/score<em>generalization.csv</code>, <code>assets/diagnostics/score</em>generalization.png</code>. A diagnostic, not a repair — no planner or scoring changes resulted from this test, by design of the protocol.</p>
+<h2>The Campaign Takes a Pause: Synthesis of the Two Convergent Findings</h2>
+<p>The campaign (attempts #4 to #10) converged on two independent and confirmed findings:</p>
+<p><strong>(a) the quality of action generation is not the bottleneck</strong> — three mechanically different fixes (hand-written macros, true CEM, a trained BC actor) all failed to move the needle, including on demonstrably viable spawns with visible trees (attempt #9);</p>
+<p><strong>(b) the native goal-centroid scoring of <code>ebwm.pt</code></strong>, the mechanism upon which every attempt was built, <strong>actively inverts</strong> on the spawn distribution of <code>MineRLObtainIronPickaxeDense</code> — a closer tree scores lower than an open/treeless view, the opposite of its behavior on Treechop (attempt #10).</p>
+<p>The wall is not &quot;the agent doesn&#x27;t know what to decide&quot; — it is &quot;the compass points backwards outside of its training distribution.&quot;</p>
+<h2>Four Candidate Tracks, Ranked by Cost/Risk — none launched yet</h2>
+<ol>
+<li><strong>Targeted score correction on the Obtain domain (new, cheapest, most directly targeted).</strong> Attempt #10 identifies exactly what is broken (direction, not magnitude) and on which distribution (Obtain, not Treechop) — a small trained fix (adapter or distance head) with true close/far supervision collected FROM Obtain itself (not Treechop+coverage, which the failed attempt #7 repair used) is now a precisely scoped experiment rather than a shot in the dark. The cheapest of the four; does not require touching <code>ebwm.pt</code>&#x27;s main weights if implemented as a small adapter head, under the project&#x27;s standard anti-collapse discipline.</li>
+<li><strong>Topological memory / episodic frontier.</strong> Build a map of visited states during the episode and target frontier sub-goals instead of a single fixed centroid — but only if frontier selection is driven by state visitation/coverage (Go-Explore style), NOT by latent distance to a fixed goal. If it reuses the same broken centroid distance metric to judge &quot;how close am I to a frontier point&quot;, it inherits finding (b) and fails the same way. Does not require retraining <code>ebwm.pt</code>. Second cheapest, contingent on making this design choice correctly.</li>
+<li><strong>H-JEPA — hierarchical world model.</strong> A second, slower world model that would plan &quot;find a forest&quot; on a long horizon, before handing control to the existing fast model to &quot;chop the tree&quot; once close. Conceptually the most direct answer to an authentically long-horizon, sparse-goal problem, but must be trained deliberately on an Obtain-type spawn distribution, otherwise it risks inheriting the same Treechop-only calibration flaw one floor up. The highest cost/risk of the four (a new model to train, and &quot;what counts as a sub-goal&quot; is itself a non-trivial design problem).</li>
+<li><strong>BC fine-tuning on human search frames.</strong> Deprioritized — attempt #9 already showed that better/more diverse candidate proposals do not help when the evaluator scores them backwards; this option improves proposals, not evaluation, so it does not attack finding (b) at all, unless combined with one of the preceding tracks.</li>
+</ol>
+<p>None of these four tracks is launched — it is a menu for future resumption of work, not a committed plan. The campaign stops here with a clean diagnosis, not an abandonment: after seven attempts on action generation (attempts #4-#9) and a direct test on the evaluation itself (attempt #10), both halves of the planning mechanism have each been isolated and measured separately — a discipline of honesty unchanged since the first chapter of this site.</p>
+<h2>References (Already verified, from <code>docs/references/index.md</code>, no new citations in this chapter)</h2>
+<p>This chapter relies on no new bibliographic references: attempt #10 is a direct measurement diagnostic, not the application of a published method — it reuses the planning code already motivated by the references cited in Chapters 8 and 10 (Terver et al. arXiv:2512.24497, Destrade et al. arXiv:2601.00844, Burda et al. arXiv:1810.12894).</p>
+        </div>
+      </div>
+
+
+    </div>
+  </article>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>Mine-JEPA — a JEPA agent learning to play Minecraft from pixels, documented along the way.</p>
+    <p class="footer-links">
+      Author / Auteur: <a href="https://x.com/reddwarf03" target="_blank" rel="noopener">@reddwarf03 (X/Twitter)</a> ·
+      <a href="https://github.com/redDwarf03" target="_blank" rel="noopener">redDwarf03 (GitHub)</a> |
+      <a href="https://github.com/redDwarf03/mine-jepa" target="_blank" rel="noopener">GitHub Repository</a>
+    </p>
+  </div>
+</footer>
+
+<script src="../script.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,76 @@
+# Cold-start attempt #11 — DistanceProjector trained with supervision sourced
+# ENTIRELY from MineRLObtainIronPickaxe(Dense) data (demos + coverage), not
+# Treechop. See scripts/train_value_projector_obtain.py's module docstring for the
+# full rationale (attempt #10's directional-confound finding on ebwm.pt's own
+# scoring, attempt #7's lighting-confound finding on a Treechop-anchored projector).
+
+seed: 0
+
+model:
+  ebwm_checkpoint: checkpoints/ebwm.pt   # frozen — never trained here
+
+data:
+  demos_path: data/minerl_craft/episodes.npz        # 40 real Obtain expert demos (84,902 frames)
+  coverage_path: data/minerl_coverage/episodes.npz  # attempt #3's random-policy Obtain episodes
+  coverage_chunk_size: 400   # collect_minerl_coverage.yaml's max_steps_per_episode (dones-all-False
+                             # shard-merge bug workaround, same as train_value_projector.py)
+  k_max: 75
+  val_fraction: 0.1
+  # Coverage chunks 0,1,5,7 are the ones hand-labeled for the direction-check gate
+  # below (assets/diagnostics/obtain_coverage_thumbs/chunk000/001/005/007.png,
+  # visually confirmed: chunk000=trunk fills frame, chunk007=dense jungle canopy
+  # [tree-close]; chunk001/005=open grassland/plains [no tree]). Excluded from
+  # EVERY train/val pair so the direction check is never trained-on data.
+  holdout_coverage_chunks: [0, 1, 5, 7]
+
+# Obtain-domain chop-goal anchor: centroid of ebwm.pt-encoded "log count increased"
+# frames from the demos themselves (mirrors scripts/play_craft.py::build_chop_goal's
+# default branch, but encoded by ebwm.pt — the model this projector and the live
+# two-brain chop planner both actually run on — instead of craft_wm_v4).
+goal:
+  log_item: log
+  min_frames: 10
+
+augmentation:
+  color_jitter:
+    enabled: false
+    brightness: 0.5
+    contrast: 0.5
+    saturation: 0.3
+    gamma_range: [0.5, 2.0]
+
+projector:
+  hidden_dim: 256
+  proj_dim: 32
+
+training:
+  epochs: 15
+  steps_per_epoch: 200
+  batch_size: 128
+  lr: 1.0e-3
+  weight_decay: 0.0
+  near_weight: 1.0
+  far_weight: 1.0
+  val_batches: 20
+  brightness_corr_samples: 500
+
+# Direction-check gate (NEW, this attempt): hand-labeled by visually inspecting
+# each referenced PNG (docs/10, attempt #11 write-up has the per-file read).
+direction_check:
+  spawn_thumb_dir: assets/spawn_thumbs
+  tree_close_files:
+    - ep001_1784647176868.png   # forest clearing, trees in frame
+    - ep001_1784647708743.png   # dense jungle canopy fills the frame
+  no_tree_files:
+    - ep001_1784633396270.png   # open grassland, trees only far distant
+    - ep001_1784633525602.png   # open grassland, no tree
+    - ep001_1784647041967.png   # beach/water, no tree
+    - ep001_1784647444573.png   # open grass path/hills, no tree
+  coverage_tree_close_idx: [0, 2800]      # chunk000 offset 0.0 (trunk fills frame), chunk007 offset 0.0 (jungle canopy)
+  coverage_no_tree_idx: [400, 2000]        # chunk001 offset 0.0 (grassland), chunk005 offset 0.0 (plains)
+
+checkpoint:
+  dir: checkpoints/
+  name: value_projector_obtain.pt
+  min_separation_ratio: 1.3   # gate 1 (same threshold as attempt #7)
+  min_direction_ratio: 1.1    # gate 2 (NEW): no_tree_mean / tree_mean must clear this

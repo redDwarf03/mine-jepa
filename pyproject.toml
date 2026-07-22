@@ -23,6 +23,7 @@ dependencies = [
     "crafter>=1.8",
     "imageio>=2.35",
     "imageio-ffmpeg>=0.5",
+    "open-clip-torch>=3.3.0",
 ]
 
 [project.optional-dependencies]

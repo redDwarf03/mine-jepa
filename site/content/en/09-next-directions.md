@@ -1,5 +1,5 @@
 ---
-title: "After avenues A and C: the learned policy becomes the priority"
+title: "After tracks A and C: the learned policy was promoted, then tested (following Chapter 10)"
 slug: "09-next-directions"
 lang: "en"
 order: 9
@@ -9,81 +9,67 @@ source_docs: ["CLAUDE.md#Phase 5+"]
 
 ::: beginner
 
-## Note: this chapter has changed since its first version
+## Warning: this chapter has changed twice since its first version
 
-When this chapter was first written, avenues A and C described below were still just ideas, not results. That is no longer the case: they have since been tested together (Chapter 8 tells their full story, complete with real numbers). This chapter has therefore been updated to clearly distinguish **what has been done** (avenues A and C, yielding a negative yet instructive result) from **what remains a plan, not yet tested** (avenue B, promoted to top priority, plus two complementary ideas added after that latest result). If you return to this chapter later and the "not yet tested" section below still lists ideas without numbers, it means they haven't been tried yet.
+When this chapter was first written, tracks A and C described below were still just ideas, not results. This has long ceased to be the case: they were tested together (Chapter 8 tells the full story, with the real numbers). At that time, this chapter had been updated a first time to promote track B (learning good gestures instead of hand-writing them) to top priority, alongside two untested complementary ideas.
 
-## Quick summary: avenues A and C, tested together (see Chapter 8 for full details)
+**Second update, this one**: track B has also been built and tested for real — and the two complementary ideas have also been fully executed. **Chapter 10 tells this story in detail**; this chapter now summarizes the real state of each track, rather than continuing to present them as pending plans.
 
-The two least expensive ideas in this plan — seeding pre-built good gestures into the planner's candidate list (avenue A) and replacing the "spin in place" reflex with a sprint-ahead cruising maneuver (avenue C) — were tested together, alongside the fix already in place since Chapter 8. Result across 8 episodes: still zero logs chopped. But both mechanisms worked as intended: the pre-built gesture was chosen by the planner in several episodes, and the cruising maneuver triggered at least once as well. The true takeaway is not the zero itself, but an unexpected behavior: across several episodes, the agent began repeating the exact same gesture almost all the time (up to 100% of episode steps) — a lock-in that recalls an issue previously seen with a more refined planning method tested in Chapter 8, though not yet confirmed as the exact same underlying mechanism.
+## Quick Recap: Tracks A and C, tested together (see Chapter 8 for details)
 
-This result sharpens the diagnosis: when the planner has no reliable clue to compare its options (because no tree is in view), feeding it pure noise makes it fidget without purpose; feeding it a concentrated choice of pre-built gestures makes it, instead, freeze blindly on one of them — because nothing ever comes along to make it change its mind. In both cases, the core problem remains: the planner has never *learned*, from real human gameplay, what a player actually does when nothing interesting is in sight.
+The two least expensive ideas from this plan — putting ready-made good gestures into the planner's trial list (track A) and replacing the "spin in place" reflex with a cruising maneuver that sprints forward (track C) — were tested together, on top of the fix already in place since Chapter 8. Result over 8 episodes: still zero logs chopped. But the two mechanisms did work: the ready-made good gesture was indeed chosen by the planner in several episodes, and the cruising maneuver also triggered at least once. The real lesson is therefore not the zero itself, but an unexpected behavior: in several episodes, the agent started repeating the exact same gesture almost all the time (up to 100% of the time) — a lockdown that recalls a problem already seen with a more refined planning method tested in Chapter 8, without it being confirmed yet as exactly the same mechanism.
 
-## What remains to be tested: avenue B, promoted to priority, and two complementary ideas
+This result refines the diagnosis: when the planner has no reliable clue to compare its options (because no tree is in sight), giving it pure noise makes it fidget aimlessly; giving it a concentrated choice of ready-made good gestures makes it, conversely, freeze blindly on one of them — because nothing ever comes along to make it change its mind. In both cases, the problem remains the same: the planner never *learned*, from real games, what a player actually does when they see nothing interesting.
 
-### Avenue B: learning good gestures rather than hand-writing them
+## Where each track stands now (full details are in Chapter 10)
 
-With avenues A and C tested and informative but insufficient, the track previously sitting in third place becomes the top priority: training a small function that learns, from the expert human gameplay recordings used elsewhere in the project, which actions a player typically chooses in a given situation. This function does not replace the planner — it serves only to *propose* better candidate futures among which the imagined world model (Chapter 3) continues to choose and correct at every step. This follows the exact same principle as renowned gaming algorithms (the ideas behind systems that defeated human champions in chess and Go): a learned intuition proposes moves, an explicit search verifies them.
+### Track B: learning good gestures instead of hand-writing them — **tested: FAILURE, but a failure that eliminates two explanations**
 
-A trap identified in advance, before even launching this experiment: the expert gameplay recordings used for training almost always show a player already near a tree — containing almost zero examples of "searching methodically when nothing is in view". To prevent this function from merely learning "always attack the visible tree" without ever learning to search — the same underlying weakness as avenues A and C on the search side —, the plan calls for blending the random coverage episodes collected in Chapter 7 (which do show true "lost, searching" situations).
+The idea, promoted to top priority after tracks A and C: train a small function that learns, from the expert games already used elsewhere in the project (plus the random coverage episodes from Chapter 7, to also show it real "lost, currently searching" situations), which actions a player typically chooses in a given situation. This function does not replace the planner — it only proposes better candidates among which the imagined world (Chapter 3) continues to choose and correct at each turn, just like highly recognized gaming methods (the same ideas that beat human champions at chess and the game of Go): a learned intuition proposes moves, an explicit search verifies them.
 
-**This avenue comes with the exact same important reminder as in the previous version of this chapter**: Chapter 5 had already tested a "copy a human player" approach that failed (zero reward), but that version used the copy as the *final decision*, with zero opportunity to self-correct during drift. Here, the learned function merely suggests — the planner retains final veto power at every timestep.
+This track has now been built and tested for real. Result over 8 episodes: **still zero logs chopped.** But two important things could be verified and eliminated thanks to this test: the agent did **not** repeat a single gesture in a loop (unlike in Chapter 8), and the 8 starting points were **not** treeless areas — a new measurement tool (see below) confirmed it. It is the cleanest negative result of the whole investigation: a truly varied and well-trained action proposal, tested on confirmed playable starting points, and still zero. **Chapter 10 tells this story in detail**, with a new suspect (not yet confirmed) for the rest of the investigation.
 
-### Two complementary ideas, also not yet tested
+**This same reminder remains valid**: Chapter 5 had already tested a "copy a human player" approach which had failed (zero reward), but that version used copying as the *final* decision, without any way to correct itself in case of drift. Here, the learned function only suggests — the planner keeps the final say at each turn; so it was not a simple "step backward" to the Chapter 5 failure, and Chapter 10 explains why the result nevertheless remained negative.
 
-- **Fixing the trained distance metric with lighting variations.** Chapter 8 showed that the trained distance metric (one of the previous attempts) reacted heavily to scene brightness (day/night/cave) rather than true distance to a tree — because it had never seen true night or cave scenes during its training. The plan: add artificial brightness and contrast variations to training images (requiring zero new data collection), then re-run the exact same offline test from Chapter 8 to verify if the rule better separates "far away" from "just dark". This fix would be particularly useful if avenue B needs a reliable distance signal to rank its own proposals.
-- **A spawn point viability diagnostic.** Several episodes in this investigation (Chapters 7 and 8) ended in locations with zero trees in reach — a rocky ravine, an underground cavern. No algorithm can succeed from such a spawn point, regardless of its quality. The plan: simply record, at the start of each episode, the type of location where the agent spawns, in order to distinguish in future result batches "the algorithm failed" from "the spawn point made success impossible from step one". This isn't an agent improvement, it is a measurement improvement — but repeated failures on treeless spawn points, already observed twice, show that this measurement has been missing from the start.
+### Two complementary ideas — **both fully executed**
 
-## Planned execution order
+- **Fix the trained distance rule with lighting variety — tested: FAILURE.** Chapter 8 had shown that the trained distance rule reacted to scene brightness (day/night/cave) rather than the true distance to the tree. The planned fix (adding artificial brightness and contrast variation during training) was indeed tried — but the problem it aimed to correct **worsened** instead of improving on a cleaner measurement. Chapter 10 gives the details and the likely explanation.
+- **A diagnostic on the starting point — built, and already useful.** The tool that records, at the beginning of each episode, whether a playable starting point is actually present was successfully built. It was directly used in the track B test (above) to confirm that the 8 failures of this batch were not due to unwinnable starting points — the first time this project can state this with a measurement, rather than an impression.
 
-1. Train and test avenue B (priority 1).
-2. Fix the distance metric using lighting variations — a candidate to provide avenue B with a reliable signal to choose between its own proposals.
-3. Add the spawn viability diagnostic, so future numbers finally distinguish algorithmic failure from impossible spawn.
-4. Evaluate avenue B and the fixed distance metric together, once both exist.
+## And now
 
-As with every previous attempt in this project, the result — whether positive, negative, or inconclusive — will be reported under the exact same standards of honesty as previous chapters: true numbers, never a number tuned to look better than it is.
+Chapter 10 tells the full story of the tested track B, what it eliminates, and the new hypothesis — not yet confirmed — that emerges from it to continue the investigation. As with every previous attempt in this project, the result has been reported with the same standards of honesty: the real numbers, never a number massaged to look better than it is.
 
 :::
 
 ::: expert
 
-## Context: From a 5-Attack Diagnosis to a New Priority
+## Context: From a diagnostic to five attacks, to a new priority
 
-Chapter 8 concludes with five convergent independent attacks: four targeting signal/score quality (online RND, re-wired scan, real CEM, trained distance metric) and a fifth (attempt #8, summarized below) directly targeting candidate *generation* via Proposals A (pool priming) and C (bushwhack maneuver), combined with `commit_length=4`. This chapter explicitly distinguishes what has been **executed** (A and C, NO-GO but yielding a clear qualitative finding) from what remains **an unexecuted plan** (Proposal B, promoted to priority 1, plus two refinements added post-attempt #8).
+Chapter 8 now ends on five convergent independent attacks: four targeting signal/score quality (online RND, re-wired scan, true CEM, trained distance metric) and a fifth (attempt #8, recapped below) directly attacking candidate *generation* via Proposals A (pool priming) and C (bushwhack maneuver), combined with `commit_length=4`. This chapter initially distinguished what had been **executed** (A and C, NO-GO but a clear qualitative finding) from what remained **an unexecuted plan** (Proposal B, promoted to priority 1, plus two refinements added after attempt #8). **Update**: all three — Proposal B, photometric repair, spawn diagnostic — have since been executed (attempt #9, `CLAUDE.md#Phase 5+`). This chapter summarizes the real state of each; **Chapter 10 gives full details**, including the new diagnostic that emerges.
 
-## Summary: Proposals A + C (attempt #8) — See Chapter 8 for Full Details
+## Recap: Proposals A + C (attempt #8) — see Chapter 8 for full details
 
-`planner.action_pool_priming` (~30 forward+attack macros, ~30 camera rotation macros, ~30 backward macros seeded into candidate pool of 512) + `scan.macro: bushwhack` (bounded forward sprint-jump replacing turn-in-place, triggered by flat `goal_score_std` on chop planner), combined with `commit_length=4`. **N=8, seed 0: 0/8 logs, 0/8 planks, reward 0** — non-significant against pooled base rate of `commit_length=4` alone (3/31 ≈ 9.7%, ≈0.8 expected successes on N=8).
+`planner.action_pool_priming` (~30 forward+attack macros, ~30 camera rotation, ~30 walk backward injected into the 512 pool) + `scan.macro: bushwhack` (bounded forward sprint-jump replacing turn-in-place, triggered by flat `goal_score_std` on the chop planner), combined with `commit_length=4`. **N=8, seed 0: 0/8 logs, 0/8 planks, reward 0** — not significant against the pooled `commit_length=4` alone base rate (3/31 ≈ 9.7%, ≈0.8 expected successes on N=8).
 
-Both mechanisms **verifiably triggered**: `a7` (primed forward+attack macro) 21-49% share in 3/8 episodes; `a13` (bushwhack macro) 28% with 8 scan triggers in 1/8 episode. **Finding mattering more than 0/8**: 3/8 episodes show `a14` (pre-existing forward+attack gesture) at 83-100% share — near-total behavioral lock-in, **recalling** (without quantitative confirmation yet established against distributions specific to `commit_length=4` alone — noted, not affirmed) real CEM action concentration regression of attempt #6 (66.3% mean vs 35.8%), obtained via different mechanism (fixed menu/coverage macro vs iterative refinement) but converging on same signature: a flat score lacking real gradient gets *locked into* by any mechanism concentrating candidate pool, rather than remaining diverse.
+Both mechanisms **verifiably triggered**: `a7` (primed forward+attack macro) 21-49% share in 3/8 episodes; `a13` (bushwhack macro) 28% with 8 scan triggers in 1/8 episode. **Finding that exceeds the 0/8**: 3/8 episodes show `a14` (pre-existing forward+attack gesture) at 83-100% share — near total behavioral lockdown, which **resembles** (without quantitative confirmation yet established against `commit_length=4` alone's own distributions — flagged, not affirmed) the concentration regression of the true CEM from attempt #6 (66.3% mean vs 35.8%), obtained by a different mechanism (fixed menu/coverage macro vs iterative refinement) but converging on the same signature: a flat score stripped of real gradient gets *locked down* by any mechanism that concentrates the candidate pool, instead of remaining varied.
 
-## Proposal B (Priority 1, Promoted) — Latent Policy Prior
+## Proposal B — latent policy prior — **tested (attempt #9): NO-GO, but the cleanest negative of the campaign**
 
-Train an actor head via behavioral cloning on frozen `ebwm.pt`, using Treechop demos, to *propose* MPC candidates instead of uniform/sticky noise or a fixed menu (A) — MPC continues evaluating and re-planning at each step, so not a repeat of Chapter 5's pure BC failure (Phase 4, approaches 3-4), where BC was the uncorrected final policy.
+The plan was to train an actor head via behavioral cloning on frozen `ebwm.pt`, using Treechop demos merged with the coverage episodes from attempt #3 (to prevent the actor from only learning "always attack the visible tree", the same structural weakness as A and C on the search side), to *propose* MPC candidates instead of uniform/sticky noise or a fixed menu (A). This plan was executed exactly: `mine_jepa/ebwm/actor.py::BCActor`, mandatory anti-collapse gate (a Treechop-only ablation was correctly rejected: `top_action_frac` 0.964 vs 0.863 for the retained version, trained with coverage), bit-for-bit wiring verified.
 
-**Refinement Added Post-Attempt #8**: Treechop demos guarantee tree proximity — containing almost zero authentic search trajectories. An actor trained exclusively on them risks learning "always attack visible tree" without ever learning to search, reproducing same structural weakness as A and C on search side. Planned mitigation: blend random coverage episodes from attempt #3 (`docs/10`) with Treechop demos during actor training, so imitated distribution contains authentic search behavior.
+**N=8, seed 0, `configs/play_craft_commit4_actor.yaml`: 0/8 logs, reward 0** (Fisher p≈0.21 against the pooled 3/31 base rate). But this batch **eliminates two concrete explanations**: no behavioral lockdown (action concentration 16-54%, far from the 83-100% of attempt #8), and no unlivable spawns (`spawn_diag` confirms `max_chop_std` 0.017-0.047 over the 8 episodes, above the calibrated 0.005 threshold). **Full details, including the new diagnostic that emerges from it (evaluating the imagined world might be the real bottleneck, not candidate generation), are in Chapter 10.**
 
-## Refinement 1 — Fixing Trained Distance Metric (attempt #7) via Photometric Augmentation
+## Refinement 1 — fix the trained distance metric (attempt #7) with photometric augmentation — **tested: NO-GO**
 
-Attempt #7's offline gate cleanly separated close/far (7.9x ratio) but live in-game signal tracked scene lighting (day/night/cave, Pearson correlation -0.565 with `goal_score_std`) rather than true goal distance, because neither training source (Treechop demos, coverage episodes) contained true night or subterranean scenes. Concrete plan: add aggressive `ColorJitter` (brightness/contrast/gamma) to training loop of `train_value_projector.py`, then re-run exact same censored/hinge offline gate — zero new data collection required. A learned policy (B) still needs a non-flat score to rank its proposals; this fix is direct candidate for that role.
+Attempt #7's offline gate separated close/far well (ratio 7.9×) but the live in-game signal tracked scene brightness (day/night/cave, Pearson correlation -0.565 with `goal_score_std`) rather than real distance to the goal. The planned fix (aggressive `ColorJitter` in `train_value_projector.py`, then the same censored/hinge offline gate) was implemented and executed: the offline gate still holds (separation 8.7× vs 7.9×), but the actual confusion with brightness **worsens** on a cleaner isolated measurement (`r=0.117 → r=0.498`). **NO-GO** — the confusion is likely anchored in the frozen latent space of `ebwm.pt` itself, not introduced by the projector; the fixed checkpoint was therefore not deployed in the evaluation of Proposal B above, which proceeds using only the goal-centroid scoring. Full details in Chapter 10.
 
-## Refinement 2 — Spawn Viability Diagnostic
+## Refinement 2 — spawn viability diagnostic — **built and already used**
 
-Attempt #8 Episode 7 ended prematurely (1856/3000 steps) with zero recorded death and zero trees ever found — a treeless spawn point is structurally impossible to solve regardless of algorithm quality. Attempts #5 and #8 both show unviable spawns diluting every success rate measured so far. Plan: log spawn type (subterranean/oceanic vs near-forest) at start of each episode in `play_craft.py`/`play_minerl_multi.py`, so denominator of future batches separates "algorithm failure" from "impossible spawn by design". Measurement fix, not capability fix.
+Episode 7 of attempt #8 ended prematurely (1856/3000 steps) without ever finding a tree — a spawn with no trees in range structurally cannot be solved. The planned diagnostic (`spawn_diag` in `scripts/play_craft.py`, thumbnail + `max_chop_std` against a calibrated 0.005 threshold) was built and **already exploited in the evaluation of Proposal B above**, where it confirmed the viability of all 8 spawns in the batch — the first time this project has a measurement, rather than an impression, to distinguish algorithm failure from impossible spawn.
 
-## Planned Execution Order
+## And now
 
-1. Proposal B (Priority 1).
-2. Photometric fix for distance metric (attempt #7) — non-flat score candidate for B.
-3. Spawn viability diagnostic — measurement fix, independent of top two.
-4. Evaluate B and fixed metric together once both available.
-
-None of these three tracks enjoys privileged status before execution and actual measurement — same honesty discipline as every prior attempt (#1-8).
-
-## References (Verified, from docs/references/index.md)
-
-- Terver, Yang, Ponce, Bardes, LeCun, *What Drives Success in Physical Planning with Joint-Embedding Predictive World Models?*, arXiv:2512.24497 (2025) — recommendation of real CEM tested and invalidated in this precise regime (attempt #6).
-- Destrade, Bounou, Le Lidec, Ponce, LeCun, *Value-guided action planning with JEPA world models*, arXiv:2601.00844 (2026) — trained distance metric (attempt #7).
-- Burda, Edwards, Storkey, Klimov, RND, arXiv:1810.12894 (2018) — online mechanism tested in attempt #4B.
+The three tracks in this chapter have all been executed and measured — same honesty discipline as every previous attempt (#1-8). Chapter 10 gives the complete narrative and the new, yet unconfirmed hypothesis that emerges from it for the rest of the investigation.
 
 :::

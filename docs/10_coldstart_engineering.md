@@ -1051,12 +1051,47 @@ own N=8 (per the task's own scope limit):
     Treechop-only actor — the more diverse actor is a WORSE next-action classifier by
     accuracy alone, expected, since coverage's random-policy targets are less
     predictable than expert demos, and not disqualifying for a proposal-only role).
+  - **Bit-for-bit default and reachability verification** (a follow-up dispatch,
+    `verify_actor_prior.py`, scratchpad, read-only on `checkpoints/ebwm.pt` and
+    `checkpoints/actor_bc.pt`, no MineRL env): `actor=None`/`actor_n_samples=0` was
+    checked, not just asserted by analogy to the other config-gated changes in this
+    chapter — fixed-seed `_sample_actions()` calls with the actor arguments entirely
+    absent vs. present-but-inert (`actor=actor, actor_n_samples=0`) are tensor-equal,
+    and `DiscreteLatentPlanner.plan()` returns the identical action and
+    `goal_score_std` in both configurations. Separately, a reachability check (actor
+    enabled, `n_actor_samples=128` of 512, 40 Treechop-demo frames, one `plan()`-style
+    scoring call per frame) found the winning (argmax) candidate landed inside the
+    actor-proposed slice on 6/40 calls (15.0%) vs. a 25.0% uniform-chance baseline
+    (128/512) — below chance on this particular sample, but nonzero: the actor's
+    candidates are demonstrably live and reachable in the executed stream, not silently
+    dead code, just not (on this small check) outperforming the sticky/i.i.d. slice.
+  - **Anti-collapse gate independently re-run for this report** (not just read off
+    the original training output, which had no persisted log): `train_actor_bc.py`
+    was re-run seed 0 for both configs and reproduced the exact previously-quoted
+    numbers — `actor_bc.pt` (Treechop+coverage): val_acc 0.483, mean entropy 1.296,
+    top_action_frac 0.863 → gate PASS; `actor_bc_treechop_only.pt` (Treechop-only):
+    val_acc 0.587, mean entropy 1.102, top_action_frac 0.964 → gate FAIL, checkpoint
+    correctly refused (confirmed absent from `checkpoints/`). Logs now persisted at
+    `logs/train_actor_bc.log` and `logs/train_actor_bc_treechop_only.log`.
   - **Live sanity check** (`configs/play_craft_commit4_actor.yaml`, N=3, seed 0,
-    isolated from Proposal A/C to attribute any effect to the actor alone): results in
-    the next dispatch's report, not this one — scope here was implementation, training,
-    the bit-for-bit and anti-collapse verification above, and a crash/reachability check
-    only, per the task's explicit instruction not to run a full evaluation batch in this
-    pass.
+    isolated from Proposal A/C to attribute any effect to the actor alone,
+    `logs/coldstart_commit4_actor_sanity.log`): **3/3 episodes completed without a
+    crash** (the concrete blocker this pass was scoped to rule out) — **0/3 planks,
+    0/3 logs**, not evaluated further per this task's explicit N=2-3 scope limit.
+    Action profiles: ep1 `a14=45% a13=14% a7=5%` (3000 steps), ep2 `a7=25% a6=25%
+    a13=9%` (1339 steps, episode ended early, no death logged), ep3 `a6=64% a12=5%
+    a11=4%` (3000 steps) — none shows attempt #8's extreme 97-100% single-action
+    lock-in; ep3's 64% is inside the `commit_length=4`-alone baseline's normal range
+    (max 72% pooled). `spawn_diag` (also enabled in this config) recorded
+    `max_chop_std` 0.030, 0.029, 0.019 across the three episodes — all above the
+    0.005 viability threshold, i.e. by this diagnostic's own signal something
+    findable was plausibly in view in all three episodes; thumbnails saved to
+    `assets/spawn_thumbs/ep001_*.png` (3 files) for human eyeballing. **This is a
+    stability/reachability check only, not a verdict on the actor's effect** — N=3
+    is far too small to compare against the 9.7% `commit_length=4`-alone base rate
+    (expected ≈0.29 successes at this N) or to say whether the actor helps, hurts,
+    or is neutral. A confirmation batch (N=15-20, per this project's own rule) is
+    the next dispatch, not this one.
 
 *Previous: `docs/09_curiosity_coldstart.md`; commit_length (attempt #4, first non-zero
 result 3/31); online RND, scan re-enabled, real CEM, and a trained distance metric
@@ -1067,5 +1102,611 @@ magnitude, exceeding it in two episodes) via a distinct mechanism
 (guaranteed-recurrence vs. noise-amplification), and a fourth independent confirmation
 (episode 7) that the wall survives even when something salient is genuinely in view and
 the search/scan machinery is correctly inert. Spawn-viability diagnostic and Proposal B
-(BC actor prior) built and passing their own construction-time checks, live evaluation
-pending a future dispatch.
+(BC actor prior) built, anti-collapse and bit-for-bit-default/reachability verified, and
+N=3 live-stability-checked (3/3 no crash, 0/3 planks, no new action-concentration
+regression) — a full N=15-20 confirmation batch on the actor alone is the next dispatch.
+
+## Cold-start attempt #9 (PC, 2026-07-21) — Proposal B confirmation batch (BC actor as MPC
+candidate proposer): NO-GO, but the sharpest negative result of the campaign
+
+Attempt #8's follow-up left Proposal B (`BCActor`, behaviourally cloned on Treechop +
+attempt #3 coverage frames, `checkpoints/actor_bc.pt`) at an N=3 stability check only:
+3/3 episodes ran without a crash, 0/3 planks, and — the one open question at the time —
+no evidence either way on whether a genuinely diverse, non-collapsed learned proposal
+source changes the outcome. This attempt is that confirmation batch.
+
+**Setup**: `configs/play_craft_commit4_actor.yaml` (the same config exercised at N=3 in
+attempt #8's follow-up, unchanged), N=8, seed 0, two-brain chop planner, `commit_length: 4`,
+sticky 0.5, scan on (calibrated `flat_threshold: 0.003`), `spawn_diag` enabled,
+goal-centroid scoring only — no trained distance signal in this batch. A repair attempt for
+attempt #7's lighting-confound finding (photometric `ColorJitter` augmentation added to
+`train_value_projector.py`, meant to constrain the projector to be invariant to
+brightness) was tried before this batch and made the day/night confound **worse, not
+better** (held-out near/far separation on the augmented projector dropped and the
+brightness correlation did not shrink) — not adopted, so no working distance signal
+exists yet, and this batch stays on the same raw goal-centroid path as attempts
+#1-#6 and #8.
+
+**Result, N=8 (`MineRLObtainIronPickaxeDense-v0`, seed 0, no crashes): 0/8 logs, 0/8
+planks, reward 0 in all eight episodes.** Fisher's exact test, one-sided, against the
+pooled `commit_length=4`-alone baseline (3/31, 9.7%): **p ≈ 0.21** — not significant at
+this N (expected count ≈0.78, same as every other N=8 batch in this campaign).
+
+On outcome count alone this is indistinguishable from attempts #6, #8, or a dozen other
+0/N batches. What makes this one different is that every alternative explanation this
+project has used to discount a null result elsewhere was checked directly, on this exact
+batch, and **each one came back negative** (i.e. ruled out, not just assumed away):
+
+| Candidate explanation for 0/8 | Checked how | Result |
+|---|---|---|
+| Proposals lock the planner onto one degenerate action (attempt #8's regression) | Top-action concentration across all 8 episodes | **16-54% peak**, inside the `commit_length=4`-alone baseline's normal 19-69%/35.8%-mean range — attempt #8's 83-100% lock-in did **not** recur |
+| Spawns were structurally unwinnable (no tree reachable at all) | `spawn_diag`'s `max_chop_std` per episode vs. the 0.005 viability floor | **0.017-0.047 in all 8 episodes** — every spawn cleared the floor by 3-9× |
+| Proposal source lacks diversity / is a collapsed classifier | Re-checked against attempt #8's already-passed anti-collapse gate (`actor_bc.pt`: top_action_frac 0.863, mean entropy 1.296 nats) plus a manual visual spot-check of spawns this batch | Gate already passing (unchanged, same checkpoint); spot-check below |
+
+**Manual visual spot-check (4 of 8 first-frame thumbnails, `assets/spawn_thumbs/`):**
+genuine scene diversity, not four variations on one biome — a beach/water spawn, a
+forest-clearing spawn with trees visibly in frame, a dark cave/ravine-like spawn, and an
+open grassland spawn with trees visible at a distance. **At least 2 of the 4 checked have
+a tree plausibly reachable within a short walk at frame 0** — this is not the "spawned in
+a treeless rocky ravine" excuse that closed attempts #2, #5, and #8's worst episode. Two
+of eight is a small, human-eyeballed sample (not a claim about all 8, and not a substitute
+for `spawn_diag`'s own quantitative floor above), but it directly contradicts "there was
+nothing to chop."
+
+**VERDICT: NO-GO on a larger batch — and the sharpest negative result of the whole
+campaign.** Every batch since attempt #4 has had at least one confound available to
+explain away a null: attempt #6's CEM and attempt #8's priming had a verified
+action-concentration regression to point to; attempt #7's trained metric had a
+diagnosed OOD lighting confound; the RND batches had an inert diagnostic. **This batch
+has none of those.** The proposal source is expert-trained, demonstrably non-collapsed
+(entropy 1.296 nats, context-sensitive per attempt #8's coverage-vs-Treechop entropy
+check), the live action profile stayed inside the normal baseline range with no
+lock-in, the spawns quantitatively cleared the viability floor in all 8 episodes, and a
+manual check confirms genuine scene diversity including trees visibly in frame in at
+least 2 of 4 spot-checked spawns — and the batch still produced **zero** chops.
+
+> **LESSON: this result rules out two explanations at once, cleanly, for the first time
+> in the campaign.** "The candidate pool isn't diverse enough" (attempts #1, #6, #8's
+> standing concern) and "the spawns are unwinnable" (attempts #2, #5, #8's recurring
+> excuse) both required a genuinely diverse, non-degenerate, expert-trained proposal
+> source evaluated on confirmed-viable, confirmed-diverse spawns with trees actually
+> visible — which is exactly what this batch is, checked rather than assumed on every
+> count — and the outcome was still 0/8. What's left standing, by elimination rather
+> than by direct test, is the one component nothing in attempts #1-#9 has yet varied:
+> **`ebwm.pt`'s own scoring of candidates**, trained exclusively on `MineRLTreechop-v0`
+> (spawns guaranteed inside a forest) and never exercised end-to-end on
+> `MineRLObtainIronPickaxeDense-v0`'s free-spawn visual distribution (open plains,
+> beaches, caves, dusk) until it is asked to rank candidate futures against exactly that
+> distribution live. This is flagged as a hypothesis pushed forward by elimination, not
+> a confirmed finding — no experiment in this campaign has yet isolated the world
+> model's cross-distribution scoring behaviour directly (attempt #7 diagnosed an OOD gap
+> in a *trained add-on* distance metric, not in `ebwm.pt`'s own latent space or
+> prototype-similarity scoring).**
+
+No checkpoint touched (`ebwm.pt`, `craft_wm_v4.pt`, `actor_bc.pt` all read-only).
+`configs/play_craft_commit4.yaml` (actor unset → original sampling, bit-for-bit per
+attempt #8's own verification) is unchanged; `configs/play_craft_commit4_actor.yaml`
+remains a separate comparison config, now with a real N=8 confirmation batch instead of
+the N=3 stability check.
+
+*Previous: `docs/09_curiosity_coldstart.md`; commit_length (attempt #4, first non-zero
+result 3/31); online RND, scan re-enabled, real CEM, and a trained distance metric
+(attempts #4B-#7); action-pool priming + bushwhack macro (attempt #8, NO-GO with a
+verified concentration regression). Current: the BC actor confirmation batch (attempt
+#9) — NO-GO on outcome (0/8), but with every standing alternative explanation (proposal
+lock-in, unwinnable spawns, proposal collapse) checked and ruled out on this exact batch,
+the first time a cold-start null has been reached with none of those confounds
+available. The standing diagnosis shifts, by elimination, toward `ebwm.pt`'s own
+candidate-scoring behaviour under `ObtainIronPickaxeDense`'s free-spawn visual
+distribution — untested directly, the natural next hypothesis rather than another
+action-generation-side patch.
+
+## Cold-start attempt #10 (PC, 2026-07-21) — offline diagnostic: does `ebwm.pt`'s own
+scoring generalize from Treechop to Obtain? Hypothesis CONFIRMED, sharper than expected
+
+Attempt #9 ended by elimination, not by direct test: every action-generation-side lever
+(RND, CEM, a trained distance metric, action-pool priming, a BC actor) had been tried and
+none moved the outcome, leaving `ebwm.pt`'s own untrained raw-latent goal-centroid
+distance — the mechanism every attempt from #1 onward built around and never once tested
+in isolation — as the last unexamined component. This attempt tests it directly, **purely
+offline**: `checkpoints/ebwm.pt` loaded frozen (`requires_grad_(False)` verified), no
+MineRL/Java process, no training, no checkpoint written.
+
+**Method** (`scripts/diagnose_score_generalization.py`,
+`configs/diagnose_score_generalization.yaml`): reuses `DiscreteLatentPlanner`'s own
+`_sample_actions()` + `_score()` — the exact code the live scan/spawn_diag machinery
+already runs every replan — over 251 saved starting frames instead of live play: 160
+Treechop frames (`data/minerl_goal/episodes.npz`, the data `ebwm.pt` itself trained on,
+40 episodes × 4 within-episode offsets for varying tree distance), 11 real
+`MineRLObtainIronPickaxeDense` cold-start spawn frames (attempt #9's
+`assets/spawn_thumbs/`), and 80 Obtain-sourced coverage-episode frames (attempt #3's
+`data/minerl_coverage/episodes.npz`, chunked at 400 steps to work around the known
+shard-merge `dones`-all-False bug, attempt #7's fix reused verbatim). Same planner
+hyperparameters as the live two-brain chop planner (horizon=12, n_candidates=512,
+sticky_prob=0.5), seed 0.
+
+**Bulk aggregate result — a wash, and by itself would have DISCONFIRMED the hypothesis:**
+
+| Group | n | mean | median | std | min | max | p10 | p90 |
+|---|---|---|---|---|---|---|---|---|
+| treechop | 160 | 0.00742 | 0.00459 | 0.00716 | 0.00022 | 0.03484 | 0.00126 | 0.01996 |
+| obtain_spawn | 11 | 0.01085 | 0.00977 | 0.00565 | 0.00165 | 0.01900 | 0.00572 | 0.01794 |
+| obtain_coverage | 80 | 0.00833 | 0.00610 | 0.00700 | 0.00055 | 0.04225 | 0.00185 | 0.01625 |
+
+Obtain's median and p90 are comparable to, if anything slightly *higher* than, Treechop's
+— no simple "the score goes flat on Obtain" story survives the raw numbers alone.
+
+**But a paired, human-eyeballed tree-visible-vs-not check across all 3 independently
+sampled sources reveals a clean, consistent REVERSAL, not a flattening.** (Treechop's
+offset=0.0 "spawn" frames turned out to mostly show sky/underwater views at random camera
+orientation — an incidental finding in itself, worth noting for future frame-sampling
+choices — so the Treechop comparison uses offset=0.5 frames instead, which land mid an
+actual chopping demonstration.)
+
+| Source | Tree clearly visible/close | `goal_score_std` | No tree / distant / open | `goal_score_std` |
+|---|---|---|---|---|
+| Treechop (offset 0.5, native distribution) | ep007 canopy fills frame | **0.0274** | ep015 grass+hut, distant trees | 0.0027 |
+| | ep012 canopy tunnel | **0.0171** | ep016 open grass, distant tree line | 0.0037 |
+| | | | ep033 grass, no tree | 0.0017 |
+| | | | ep037 open grass, distant tree line | 0.0064 |
+| Obtain real spawn (attempt #9) | forest clearing, close trees | 0.0060 | open grassland | **0.0190** |
+| | dense jungle, close trees | 0.0057 | open grassland | **0.0179** |
+| | | | beach, no tree | 0.0130 |
+| | | | dark cave, no tree | 0.0069 |
+| Obtain coverage (true env resets) | trunk fills frame | 0.0030 | open grassland | **0.0176** |
+| | dense jungle canopy | 0.0098 | open plains | **0.0146** |
+
+On Treechop, close-canopy frames score **~6x higher** than distant/no-tree frames (0.017-
+0.027 vs 0.002-0.007) — reproducing this same chapter's original live calibration
+(`flat_threshold` section, "tree/canopy fills view" band 0.02-0.056 vs "lost" band
+0.0002-0.002) from a completely independent, offline sample. On both independently
+gathered Obtain samples, the direction **reverses**: the closest, most canopy-filling
+frames score at or below the Obtain group's low end (0.003-0.010), while open,
+tree-absent grassland/plains frames reach the group's high end (0.013-0.019) — matching
+or exceeding Treechop's own "tree visible" band despite showing no tree at all.
+
+**VERDICT: hypothesis CONFIRMED, in a sharper and more specific form than the "goes flat"
+framing every prior attempt (#1-#9) assumed.**
+
+> **LESSON: the failure is not a magnitude collapse (RND's failure mode, chapter 09) — it
+> is a directional confound in `ebwm.pt`'s own native, untrained raw-latent scoring.** On
+> `MineRLObtainIronPickaxeDense`'s free-spawn visual distribution, the goal-centroid
+> distance is still measurably discriminating something (the aggregate spread is not
+> flatter than Treechop's) — it just is not tree-proximity, and in every frame pair
+> checked here it points the WRONG way: closer trees score as less promising than open,
+> treeless scenes. This is the same "a confidently-wrong signal is worse than an honestly
+> flat one" pattern attempt #7 diagnosed for a *trained add-on* distance projector
+> (there, a lighting/day-night confound) — now shown to hold for the mechanism every
+> attempt from #1 onward built the MPC scoring around and never tested in isolation until
+> now. It closes attempt #9's "flagged as a hypothesis pushed forward by elimination, not
+> a confirmed finding" note with a direct answer: yes, and the mechanism is a directional
+> confound, not a collapse.
+
+No checkpoint touched (`ebwm.pt` read-only throughout, both in this diagnostic and
+carried over from every prior attempt). Full per-frame CSV and a boxplot comparing the
+three groups: `assets/diagnostics/score_generalization.csv`,
+`assets/diagnostics/score_generalization.png`. This is a diagnostic, not a fix, per the
+dispatch's own scope — no planner or scoring change was made as a result.
+
+**Next, if pursued**: the standing wall is now confirmed from two independent angles —
+attempts #4-#9 (action generation, exhaustively varied, never moved the outcome) and
+attempt #10 (the score itself, direct test, confirmed wrong-axis on Obtain) — which
+argues for an encoder/scoring-side fix trained WITH genuine Obtain-spawn supervision
+(near/far pairs collected on `MineRLObtainIronPickaxeDense` itself, not Treechop-only,
+under the project's own anti-collapse discipline) rather than another
+action-generation-side patch layered on a scoring mechanism now shown to point the wrong
+way on this specific distribution.
+
+*Previous: `docs/09_curiosity_coldstart.md`; commit_length through the BC actor
+confirmation batch (attempts #4-#9), each ruling out a different action-generation-side
+explanation without moving the outcome. Current: attempt #10, the first DIRECT offline
+test of `ebwm.pt`'s own scoring under the Obtain distribution — hypothesis confirmed, and
+sharper than assumed (a directional confound, not a flattening). Next: a scoring/encoder
+fix trained with real Obtain-distribution supervision, not another search/generation-side
+patch.
+
+## Cold-start campaign status after attempt #10 — paused, four candidate directions on the table
+
+Attempt #10 left the campaign with two independent, confirmed findings: (a) action-generation
+quality is not the bottleneck (attempts #4-#9: three mechanistically different fixes — hand-
+authored macros, real CEM, a trained BC actor — all failed to move the outcome, including on
+demonstrably viable spawns with trees visible); (b) `ebwm.pt`'s own native goal-centroid scoring,
+the mechanism every attempt was built around, **actively reverses direction** on
+`MineRLObtainIronPickaxeDense`'s spawn distribution — closer trees score LOWER than open/treeless
+views, the opposite of its behaviour on Treechop. Four candidate directions were ranked by
+cost/risk, none pulled at the time:
+
+1. **Targeted Obtain-domain score correction** — cheapest, most directly targeted: a small trained
+   adapter/distance head with genuine near/far supervision collected FROM Obtain itself.
+2. **Topological/episodic frontier memory** — a visited-state map driving the planner toward
+   frontier sub-goals, contingent on NOT reusing the same broken centroid-distance metric to judge
+   "how close am I to a frontier point."
+3. **H-JEPA — hierarchical world model** — highest cost/risk, deprioritised pending cheaper options.
+4. **BC fine-tuning on human search footage** — deprioritised (attempt #9 already showed better
+   proposals don't help when the evaluator scores them backwards).
+
+Attempts #11 and #12 below are the first two of these four, taken in priority order.
+
+## Cold-start attempt #11 (PC, 2026-07-21) — candidate direction 1, Obtain-domain score
+correction: NO-GO, third and sharpest confirmation of a frozen-encoder brightness shortcut
+
+Attempt #10 pinpointed exactly what was broken in `ebwm.pt`'s native scoring (direction, not
+magnitude) and on which distribution (Obtain, not Treechop) — candidate direction 1 turns that
+into a precisely-scoped experiment: retrain the attempt #7 distance-projector idea, but with
+near/far supervision sourced **entirely from Obtain**, not Treechop+coverage.
+
+**Implementation.** `scripts/train_value_projector_obtain.py`: near/far pairs drawn from the 40
+real `MineRLObtainIronPickaxe-v0` expert demos plus the attempt #3 coverage episodes — zero
+Treechop data anywhere in training. A genuinely new mandatory gate was added on top of the usual
+offline separation check: a hand-labeled, held-out real-frame direction check (attempt #7 never
+had the means to run this — its offline gate only ever validated same-distribution near/far pairs,
+never a human-eyeballed tree-close-vs-not judgment).
+
+**Offline gates looked like the best result yet:**
+
+| Metric | Attempt #7 (Treechop+coverage) | Attempt #11 (Obtain-only) |
+|---|---|---|
+| Separation ratio | 7.9 | **11.26** |
+| Obtain-direction ratio | — (not measured this way) | **1.21** |
+| Pairwise correct-direction (hand-labeled) | — (gate didn't exist) | **21/24 (87.5%)** |
+
+This was the first distance metric in the campaign to apparently get tree-proximity right on
+Obtain frames at all — on the numbers alone, a clean pass.
+
+**The brightness confound, checked, is worse than every prior variant:**
+
+| Variant | Brightness correlation |
+|---|---|
+| Attempt #7, original (Treechop+coverage) | 0.117 |
+| Attempt #7, live play | -0.57 |
+| ColorJitter-"repaired" (attempt #8 follow-up) | 0.498 |
+| **Attempt #11, Obtain-domain sourcing** | **0.643** |
+
+**The developer went one step further than the dispatch brief asked, and that step is what
+actually closes this attempt.** Rather than stopping at "the offline gate passed, the confound
+number is high but the direction check passed," the apparent 87.5% correct-direction result was
+itself checked for whether it was brightness in disguise: `corr(is_tree_close, brightness) =
+-0.917` on the hand-labeled gate-2 set — the "tree-close" frames (forest/jungle) were
+systematically much darker than the "no-tree" frames (grassland/beach) **by construction** of how
+the hand-labeled set was assembled. The apparent win was very likely the same shortcut
+re-detected — brightness happens to correlate almost perfectly with the label in this particular
+validation set — not genuine geometric (tree-proximity) learning. Correctly called NO-GO on this
+basis; the live sanity play run was deliberately skipped per the attempt's own instructions (no
+live eval spent on a self-diagnosed-confounded checkpoint). `checkpoints/value_projector_obtain.pt`
+kept, parked, not deployed — the same status as `value_projector_colorjitter.pt`.
+
+> **LESSON, now confirmed three independent ways (attempt #7 original, ColorJitter, and this
+> attempt's Obtain-domain sourcing): any small trained head bolted onto `ebwm.pt`'s frozen latent
+> space keeps finding brightness as the cheapest available shortcut, regardless of which domain
+> supplies the training/validation pairs — because the confound most plausibly lives in the
+> frozen encoder's representation itself, which none of these three attempts touched. Changing
+> the downstream training data changes the story the projector tells about itself, not the
+> shortcut it actually uses.**
+
+Candidate direction 1 is now closed unless revisited as an encoder-side fix (an adapter fine-tune
+or an explicit brightness-invariance constraint on `ebwm.pt` itself, under the project's strict
+anti-collapse guardrails) — out of scope for a downstream-only patch. No checkpoint touched except
+the new, separate `checkpoints/value_projector_obtain.pt` (`ebwm.pt`, `craft_wm_v4.pt` read-only
+throughout).
+
+*Previous: `docs/09_curiosity_coldstart.md`; commit_length through the offline scoring diagnostic
+(attempts #4-#10). Current: attempt #11, candidate direction 1 — NO-GO, the third and sharpest
+confirmation that the brightness shortcut lives upstream, in the frozen encoder, not in any
+downstream training recipe. Next: candidate direction 2 (attempt #12, below), or an encoder-side
+fix to direction 1 if revisited.
+
+## Cold-start attempt #12 (PC, 2026-07-21) — candidate direction 2, topological frontier memory:
+built and sanity-verified, awaiting a real confirmation batch
+
+Candidate direction 2 was scoped to sidestep both of the campaign's known coverage-signal failure
+modes by construction: RND (attempt #4B) converges on elapsed ticks, not scene content; any
+frontier metric built on `ebwm.pt`'s latent distance would inherit attempt #10's confirmed
+backwards-direction confound. The fix: a coverage signal with **no learned function and no
+frozen-encoder dependency** at all.
+
+**Implementation.** `mine_jepa/ebwm/frontier.py`'s `FrontierTracker`: a pure dead-reckoned
+`(x, y, yaw)` position, integrated purely from the executed discrete actions' own known semantics
+(no learned function, no dependency on `ebwm.pt` or `craft_wm_v4.pt`'s latent space), binned into
+a visit-count grid. When triggered, it targets the least-visited nearby heading. Wired as a new
+`scan.macro: "frontier"` option (`configs/play_craft_commit4_frontier.yaml`) — `planner.py` itself
+is untouched (this is a pure macro, no scoring change), and every other `scan.macro` value stays
+byte-identical to before.
+
+**Sanity check, N=3: clean, no crashes.** The mechanism visibly activates and behaves distinctly
+from the existing turn/bushwhack macros — confirmed via log: it turns toward the least-visited
+heading, then cruises, and `unique_cells_visited` grows across an episode (419 / 939 / 970 across
+the three runs). No lock-in (max single-action share 45%, well inside the normal baseline range).
+**0/3 successes** — uninformative at this N and not the point of a sanity check.
+
+**A pre-existing gap flagged along the way, not introduced by this dispatch:** `scripts/play_craft.py`
+never wires `agent.seed` into the MineRL env for ANY config — `agent.seed: 0` in these YAMLs is
+currently a no-op. Standing reproducibility debt across the whole campaign, not specific to
+attempt #12, worth fixing before the next batch that needs to claim reproducibility.
+
+**VERDICT: sanity-passed, no verdict on effectiveness yet.** The sanity check's qualitative signal
+— clean activation, real coverage growth (unique cells visited climbing across the episode), no
+action-concentration lock-in — clears the project's own "don't scale up without a positive signal
+first" bar (the same bar attempts #6 and #8's regressions failed to clear before their own
+larger batches, which is why those stopped at N=8). A real confirmation batch (N≥15-20, per the
+project's own threshold) is warranted and has already been dispatched separately — not part of
+this task.
+
+No checkpoint touched (`ebwm.pt`, `craft_wm_v4.pt` read-only; `frontier.py` has no learned
+parameters to touch). `configs/play_craft_commit4.yaml` (`scan.macro` unset) is unchanged;
+`configs/play_craft_commit4_frontier.yaml` is a new, separate comparison config.
+
+**Confirmation batch, N=20 (PC, 2026-07-21) — the real result.** Seed nominally 0 (subject to
+the unwired-seed caveat noted above): **1/20 logs chopped + planks crafted (5.0%), mean reward
+0.45 (+12% vs. MineRL's ~0.4 random baseline)**. This is the second non-zero result in the
+entire cold-start campaign — after `commit_length=4` alone's pooled 3/31 (9.7%) — and the first
+to come from a mechanism entirely outside action-generation/scoring (pure coverage-driven
+search, no learned function, no encoder dependency). The one success: reward=9, +4 planks,
+`unique_cells_visited=908` (among the highest in the batch), action profile a14=42% — healthy,
+not a lock-in spike. Across all 20 episodes, action concentration stayed normal throughout (max
+single-action share 63%, most episodes 20-45%): **no lock-in anywhere in this batch**, a direct
+contrast with attempts #6 and #8's lock-in pathology (CEM's elite-refit and action-pool priming
+both regressed toward concentrated, spinning action profiles; this mechanism did not).
+
+**Framing, honestly.** 1/20 (5%) is the same order of magnitude as the 9.7% baseline, not a
+statistically proven improvement at this N (a Fisher exact test would not distinguish the two)
+— but it is clearly ahead of attempts #8 and #9's 0/8 each, and it is notable for producing a
+real success with zero behavioural pathology, making it the second independent mechanism (after
+`commit_length`) to do so. Not a confirmed breakthrough; a genuine positive data point worth
+keeping and building on rather than shelving.
+
+One process note on this batch: the tester dispatch that ran it hit an infrastructure
+session-limit error before it could write its own formal report. The numbers above were
+independently verified directly from the raw log by a separate process, not taken from that
+report.
+
+*Previous: `docs/09_curiosity_coldstart.md`; commit_length through the offline scoring diagnostic
+(attempts #4-#10); attempt #11, candidate direction 1 (NO-GO, brightness confound). Current:
+attempt #12, candidate direction 2 — built, sanity-verified at N=3, and now confirmed at N=20:
+1/20 (5.0%) success, mean reward 0.45, no lock-in anywhere in the batch — the second non-zero,
+non-pathological result in the campaign. Same order of magnitude as the `commit_length=4`
+baseline (9.7%), not a proven improvement at this N, but a genuine positive data point. Next:
+build on this mechanism (larger N, or combine with `commit_length`/other non-pathological
+levers) rather than shelving it.
+
+### Free diagnostic on attempt #12's batch — drowning confirmed as the dominant early-termination cause
+
+Read-only follow-up, no new run: each early-terminated episode's per-episode Malmo client log
+(`logs/mc_*.log`, one per `play_minerl_multi.py` subprocess) was correlated against the master
+attempt #12 batch log by file timestamp, then grepped for death messages.
+
+**12 of the ~20 episodes' Malmo logs contain an explicit `MineRLAgent0 drowned` server
+message** — independently re-verified directly against the raw logs, not just taken from the
+batch's own summary output. Sampled files show the drown message immediately preceding the
+episode's final lines, i.e. a genuine episode-ending death, not a transient damage tick the
+agent shrugged off. The remaining episodes that ran the full 3000-step cap show **no** drown
+message at all — a clean, bimodal split, not a fuzzy trend.
+
+**Consequence for reading the 5.0% headline number.** On the subset of episodes that survived
+long enough to search fairly (i.e. weren't cut short by drowning), the success rate looks
+meaningfully different from the raw 1/20 — closer to 1-in-7-8, not 1-in-20. Both framings are
+honest: the raw 1/20 is the real deployed number, but attributing the whole gap to a
+search/approach deficiency would be wrong — a large share of it is a spawn-hazard problem the
+frontier mechanism's own design explicitly left unhandled (no collision/hazard awareness in
+heading selection, an acknowledged limitation of attempt #12 itself, not a new finding about it).
+
+**Concrete, motivated next fix**: hazard-awareness in the frontier heading selection, or a
+simple "currently taking drown damage → swim toward dry land" reflex, before spending more
+effort on search/coverage refinements — this diagnostic makes the target precise instead of
+speculative. This directly motivates attempt #13, below.
+
+## Cold-start attempt #13 (PC, 2026-07-21) — hazard-awareness for the frontier scan macro:
+drowning genuinely fixed after three rounds, chopping itself unaffected
+
+The free diagnostic above pinned 12/20 of attempt #12's early terminations on drowning, not on
+a search/approach failure. Attempt #13 builds a hazard-detection-and-escape reflex on top of
+the frontier scan macro (`scan.macro: "frontier"`) to address that specific failure mode,
+config-gated (`hazard_avoidance:` block, `configs/play_craft_commit4_hazard.yaml`) and additive
+— it does not touch `commit_length`, sticky sampling, or the frontier tracker's own coverage
+logic.
+
+**Detector: a calibrated pixel heuristic, not a proxy for a real observable.** No
+health/breath/air value exists anywhere in `MineRLObtainIronPickaxeDense-v0`'s observation
+space (checked against `minerl.herobraine.env_specs.obtain_specs.Obtain` directly, not assumed)
+— there is nothing for `detect_underwater()` (`mine_jepa/ebwm/hazard.py`) to read off cleanly,
+so it works from the raw POV frame instead. An initial version used absolute RGB thresholds and
+caught a real daytime drowning but missed a real night one; it was replaced with
+lighting-invariant ratios (`ratio = B / max(R, G)`, `rel_rg = |R - G| / max(R, G)`), re-validated
+on ~5900 pooled frames plus both real drowning events: **zero false positives, ~100% catch rate
+in daylight, ~81% at night** (the missed 19% are near-black frames where all three channels
+collapse together — an inherent limit of a pixel heuristic in the dark, not a tuning gap).
+
+**Round 1 — blind escape (alternating jump + fixed retreat direction), N=5.** Three episodes ran
+full-length with the hazard mechanism never triggering (chopping was not the point of this
+check). One death (step 750) occurred with the hazard never firing at all — confirming it was
+an *unrelated* death class (fall/mob/lava), not a false negative on a real drowning. **One
+episode (died step 922) is the informative one: the detector fired continuously for 260+
+ticks — correctly identifying the hazard — but the blind escape motor pattern (alternate jump
++ fixed-direction retreat) never got the agent back to dry land, and the episode still ended in
+death.** Detector correct, escape action insufficient.
+
+**Round 2 — steered escape (turn toward the last-known-dry `FrontierTracker` position), N=6 —
+WORSE, with two specific bugs identified, not just "still doesn't work."**
+`logs/coldstart_attempt13_hazard_steered_n6.log`: **4/6 died**, and critically, **all 4 died
+while the escape reflex was actively engaged** (`died_during_escape=True` on every one,
+independently cross-checked against 4 real `MineRLAgent0 drowned` messages in the raw Malmo
+logs) — a worse ratio than round 1's single drowning death out of two early deaths. The
+mechanism was genuinely wired correctly (a real dry position is recorded, a real bearing is
+computed, turn-then-forward switching happens as designed, jump is interleaved throughout), and
+one episode showed real measurable progress — distance to the remembered dry point shrank from
+over 50 units to ~5.6 before death, something the blind round-1 retreat could structurally never
+do — it simply wasn't fast enough. Two distinct root causes were found for the rest, from
+reading the actual per-replan trace, not inferred:
+1. **Turn/alignment granularity mismatch.** Each replan's turn action covers roughly 80° (a
+   `commit_length`-sized block executed at ~10°/tick) while the alignment window
+   (`align_deg`) was only 20° — the turn structurally overshoots the alignment window on
+   almost every replan, so the heading delta flips sign and the agent ping-pongs between two
+   headings ~80-100° apart. Seen directly in the trace: -52.2°/+27.8° over 18 replans in one
+   episode, +20.0°/-60.0° over 11 replans in another — a bang-bang hunting bug, never settling
+   into "forward" long enough to close distance, not a conceptual failure of "steer toward dry
+   land."
+2. **Anchor corruption.** The remembered dry position occasionally jumped to a point
+   immediately next to the agent's own still-submerged position, rather than staying a stable,
+   distant point — most plausibly a single-tick false "not underwater" reading (a surface wave
+   or lighting artifact at the water's edge) corrupting the memory, not staleness of an
+   otherwise-good anchor.
+
+**Round 3 — widened `align_deg` + debounced dry-anchor (require two consecutive dry readings
+before updating memory), N=6 — GO, drowning genuinely fixed at this N.**
+`logs/coldstart_attempt13_hazard_fixed_n6.log`: **6/6 episodes survived the full 3000 steps,
+zero deaths** — versus 3/5 and 2/6 survival in the two prior rounds. The hazard fired heavily
+and repeatedly across the batch (7/4/0/5/11/9 triggers per episode, 36 triggers total) and
+resolved every single one, not just the easy cases. The trace directly confirms the oscillation
+is gone: turn deltas now shrink monotonically in one direction
+(e.g. -180°→-100°→...→0°/"forward") instead of ping-ponging between two far-apart headings as
+in round 2. This does **not** fix chopping or crafting itself (0 planks across the batch, a
+separate axis from drowning) but it resolves the specific spawn-hazard/drowning failure mode
+the free diagnostic identified in attempt #12 (12/20 drowned in that batch). N=6 with 36 real
+trigger events and zero failures is a stronger signal than this campaign's usual small-N
+noise — a real confirmation batch (N≥15-20) would be justified if this line of work continued,
+unlike every earlier hazard round — but it was not run; the user chose to move on rather than
+spend more time confirming at scale.
+
+> **LESSON: the same shape as attempt #5, now for a hazard reflex instead of a search
+> macro — a correctly-calibrated detector is not itself a fix if the action it dispatches
+> doesn't resolve the situation it detects.** Round 1's blind escape had no sense of *which
+> way* was land, only "am I currently wet," and that alone was not enough even with 260+ ticks
+> of continuous, correctly-fired detection. Round 2's fix (steer toward a remembered dry point)
+> was the right idea but initially made things WORSE due to two independent implementation bugs
+> (a granularity mismatch causing oscillation, and a corruptible anchor) that looked, from
+> outside, exactly like "the idea doesn't work" — indistinguishable from a conceptual failure
+> until the actual per-replan trace was read. Only round 3, after both bugs were fixed, showed
+> the underlying idea was sound: 6/6 survival with 36 real trigger-and-resolve events.
+
+**Process note.** The dispatching agent for this attempt was interrupted mid-write-up and
+delivered no formal conclusion; the numbers above were independently re-verified directly from
+`logs/coldstart_attempt13_hazard_sanity.log`, `logs/coldstart_attempt13_hazard_steered_n6.log`,
+`logs/coldstart_attempt13_hazard_fixed_n6.log`, and the GIF
+(`assets/agent_play_craft_commit4_hazard.gif`), not taken from that agent's own summary.
+`hazard_avoidance: false` (default) is structurally guarded — every new code path in
+`mine_jepa/ebwm/hazard.py` and `scripts/play_craft.py` is wrapped in `if hazard_enabled:` — but
+was not re-confirmed with a dedicated disabled-vs-baseline bit-for-bit run in this attempt, a
+gap worth closing before this mechanism is relied on further.
+
+No checkpoint touched (`ebwm.pt`, `craft_wm_v4.pt` read-only throughout; the hazard detector and
+escape reflex have no learned parameters). `configs/play_craft_commit4_frontier.yaml`
+(`hazard_avoidance` unset) is unchanged; `configs/play_craft_commit4_hazard.yaml` is a new,
+separate comparison config.
+
+*Previous: `docs/09_curiosity_coldstart.md`; commit_length through candidate direction 2's
+confirmed 1/20 success (attempts #4-#12), plus the free diagnostic pinning 12/20 of that
+batch's early terminations on drowning. Current: attempt #13, hazard-awareness for the frontier
+scan macro — three rounds (blind escape inconclusive/negative at N=5; steered escape WORSE at
+N=6 with two identified implementation bugs; widened-alignment + debounced-anchor fix GO at
+N=6, 6/6 survival, 36/36 hazard triggers resolved) — drowning is now a solved sub-problem at
+this N, chopping/crafting itself unaffected and unconfirmed at a larger scale. Next: attempt
+#14, below, tests a different branch of the campaign (H-JEPA reconsidered) rather than scaling
+up the hazard-avoidance confirmation batch, per the user's own choice to move on.
+
+## Cold-start attempt #14 (PC, 2026-07-22) — H-JEPA reconsidered: a cheaper Occam's-razor test
+first (CLIP zero-shot, then a direct `ebwm.pt` fine-tune) — MIXED, leaning NO-GO
+
+**Motivation: an external review before any code was written.** An Explorer proposal for
+literal H-JEPA (a second, slower hierarchical world model, candidate direction 3 from the
+post-attempt-#10 menu) was reviewed externally before implementation began. The review's key
+point: across 13 attempts, `ebwm.pt` itself has **never been retrained or fine-tuned** — every
+earlier fix (attempts #7, the attempt #8 follow-up, #11) trained a small head ON TOP of its
+frozen latents, never applied augmentation to the encoder's own pretraining. So "the confound
+lives in the frozen encoder" (the working assumption since attempt #11) was an untested
+inference, not a confirmed fact — and per Occam's razor, retraining `ebwm.pt` itself is cheaper
+than building a second hierarchical model, and had not yet been ruled out. The reviewed decision
+was to test this cheaper alternative first, in two phases, before committing to H-JEPA.
+
+**Phase 1 — cheap, offline, no training: does an off-the-shelf zero-shot model already get this
+right?** `scripts/diagnose_clip_score_generalization.py` runs CLIP (Radford et al.,
+arXiv:2103.00020, ViT-B/32) — zero Minecraft-specific training of any kind — over the exact
+251-frame set attempt #10 used, asking whether a 400M-image pretrained model already separates
+tree-close from no-tree correctly where `ebwm.pt` reverses.
+
+- **Direction gate PASSED**: separation ratio 1.807, above the 1.3 threshold required.
+- **Brightness-independence gate FAILED badly**: r = -0.947 on the hand-labeled set, r = -0.74
+  across the full 251-frame population — **including on Treechop's own home distribution**,
+  where `ebwm.pt`'s native score already works correctly. A model with no Minecraft-specific
+  training at all, trained on 400M general images, shows the same brightness shortcut, and a
+  worse one than every prior variant in this campaign (0.117 → 0.498 → 0.643 → 0.947 across
+  attempts #7 → ColorJitter → #11 → this one).
+- **A nuance that keeps the causal story open, flagged rather than resolved**: a dark cave frame
+  (no tree) scored similarly to bright open scenes (also no tree) rather than like a dark
+  forest would — pure brightness alone cannot fully explain that pairing, so something beyond
+  raw luminance is still involved. Any causal story about *why* `ebwm.pt` specifically reverses
+  on Obtain is flagged as an unverified hypothesis here, not asserted as confirmed fact.
+
+**Decision: proceed to Phase 2 anyway.** Phase 1's result is a mixed gate outcome (direction
+passed, brightness failed), not a clean pass or fail — but per the reviewed decision rule this
+does not itself block Phase 2, because Phase 2's own acceptance gate was never the
+brightness-decorrelation target (that was only ever Phase 1's cheap CLIP-specific check). Phase
+2's corrected gate is: does attempt #10's actual diagnostic reversal go away on real Obtain
+frames, checked directly against the fine-tuned checkpoint — not a brightness-correlation
+number.
+
+**Phase 2 — fine-tune `ebwm.pt` itself, resumed from its own weights.** Same architecture
+(embed_dim=64, 664K params), low LR (3e-5), 5 epochs — deliberately honoring the Phase 4
+T=8/20-epoch-sweet-spot lesson (never select by loss/ratio alone), on Treechop demos + the 40
+Obtain expert demos (`data/minerl_craft`) + attempt #3's coverage episodes
+(`data/minerl_coverage`) merged, with Obtain data oversampled ~4x, and per-window (not
+per-frame) photometric augmentation applied to the encoder's own training for the first time in
+the campaign. One technical catch handled correctly: the coverage data was collected with a
+22-action random policy, but `ebwm.pt` has only 17 action slots — windows touching action
+indices ≥17 were **filtered out, not remapped**, to avoid silently mislabeling actions.
+`batch_var` stayed healthy (1.15-1.17) every epoch — no collapse — and the prediction ratio
+barely moved (0.9265 → 0.946-0.951 across epochs), exactly as intended for a low-LR nudge rather
+than a full retrain.
+
+**The real gate — re-running attempt #10's diagnostic against all 5 epoch snapshots — MIXED,
+not a clean pass.** Excluding one dark/underwater cave frame, the reversal is genuinely fixed
+in every one of the 5 epochs checked: tree-close frames beat open/no-tree frames by 2.1-4.6x,
+versus the unmodified baseline's inverted 0.58x (tree-close scoring lower). **But including that
+one dark frame flips the ratio back below 1 in every epoch**, because that specific frame's
+score got *worse* after fine-tuning (0.0130 → 0.025-0.031) — a new brightness-linked anomaly, in
+a different place, but the same family as attempts #7's and #11's confound. No checkpoint was
+promoted to the unsuffixed `checkpoints/ebwm.pt` name; the 5 epoch snapshots
+(`checkpoints/ebwm_v2_treechop_obtain_aug_epoch{1..5}.pt`) are kept as comparison-only artifacts.
+No Treechop sanity batch and no cold-start live batch was run, correctly withheld per this
+attempt's own contingency rule (only proceed to live testing on a clear pass) — the gate did not
+clearly pass. `ebwm.pt` itself was confirmed untouched throughout (a pre-fine-tune backup,
+`checkpoints/ebwm_backup_20260722.pt`, confirmed md5-identical beforehand). One self-flagged
+gap: Treechop's own close-canopy-vs-distant paired direction was not independently re-verified
+post-fine-tune (only bulk score-distribution statistics were checked, and those stayed
+healthy) — neither confirmed fine nor confirmed broken on Treechop specifically.
+
+> **LESSON: this is now the 4th independent confirmation of a brightness-linked confound, via
+> four completely different mechanisms** — a small head trained on frozen latents (attempt #7),
+> the same kind of head with Obtain-domain-sourced training data (attempt #11), an off-the-shelf
+> 400M-image model this project never trained or touched (this attempt's Phase 1, CLIP), and
+> now direct retraining of the encoder itself with real photometric augmentation on its own
+> pretraining (this attempt's Phase 2) — the most direct attack on the problem attempted so
+> far, and it still produced a *new* anomaly on a low-light frame instead of a clean fix. This
+> substantially weakens "the encoder just needs more diverse/augmented training data" as a
+> sufficient standalone fix — the pattern looks broader and more stubborn than a training-data
+> gap that more data or augmentation alone can close.
+
+**VERDICT: MIXED, leaning NO-GO — but a genuinely informative one, not a shrug.** Phase 1
+(CLIP) shows the shortcut is not specific to `ebwm.pt`'s own small training set; Phase 2 shows
+direct, careful encoder fine-tuning (the cheapest remaining lever per Occam's razor, and the
+one thing 13 prior attempts had never actually tried) still lands on a mixed result rather than
+a clean win. Per the Explorer's own proposal, which explicitly named "the cheaper fine-tune
+attempt fails or produces a mixed result" as its own condition for revisiting H-JEPA, that
+condition is now met with a real, executed result — not a hypothetical one. Candidate direction
+3 (H-JEPA) is therefore the better-justified next step of the four from the post-attempt-#10
+menu, though the decision to actually pursue it had not been made at the time of writing.
+
+No checkpoint touched destructively (`ebwm.pt` untouched, backup md5-verified;
+`ebwm_v2_treechop_obtain_aug_epoch{1..5}.pt` are new, separate comparison files; `craft_wm_v4.pt`
+not involved in this attempt at all).
+
+*Previous: `docs/09_curiosity_coldstart.md`; commit_length through the hazard-avoidance fix
+(attempts #4-#13), including candidate direction 1's closure (attempt #11, brightness confound)
+and candidate direction 2's confirmed non-zero success (attempt #12). Current: attempt #14,
+the cheaper Occam's-razor alternative to H-JEPA — Phase 1 (CLIP zero-shot) shows the brightness
+shortcut is not specific to this project's own training data; Phase 2 (direct `ebwm.pt`
+fine-tune with real photometric augmentation) genuinely fixes the attempt #10 reversal on 4 of
+5 test frames but relocates the same brightness-linked confound to a 5th, dark frame — MIXED,
+leaning NO-GO, the 4th independent confirmation of the confound. Of the four post-attempt-#10
+candidate directions: #1 is closed (attempt #11), #2 has the campaign's only two non-zero
+chopping successes plus attempt #13's hazard-avoidance fix, #3 (H-JEPA) is now the
+better-justified next direction per the Explorer's own stated condition for revisiting it
+(not yet actioned), and #4 (BC fine-tuning) remains deprioritized.

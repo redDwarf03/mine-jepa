@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deux pistes du menu passées à l'épreuve : la réparation de la boussole échoue une troisième fois, la mémoire des lieux visités produit le deuxième vrai succès de la campagne — Mine-JEPA</title>
+<meta name="description" content="Chapitre 12 du parcours Mine-JEPA : la correction de score ciblée sur le domaine Obtain échoue une troisième fois (le raccourci de luminosité vit dans l'encodeur figé, pas dans les données d'entraînement de la tête) ; la mémoire topologique de frontière, elle, produit le deuxième résultat non nul de toute la campagne cold-start — 1 succès sur 20 épisodes, sans la moindre pathologie comportementale.">
+<link rel="stylesheet" href="../style.css">
+<script>document.documentElement.classList.add("js");</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Aller au contenu</a>
+
+<header class="site-header">
+  <div class="wrap site-header-inner">
+    <a class="site-brand" href="index.html"><span class="brand-mark" aria-hidden="true">&#9935;</span> Mine-JEPA</a>
+    <div class="header-controls">
+      <span class="last-updated" title="Date de mise à jour">Mis à jour le : 2026-07-21</span>
+                                                            <nav class="lang-switch" aria-label="Langue du site">
+        <a href="12-la-memoire-des-lieux-visites.html" aria-current="true" lang="fr" hreflang="fr">FR</a>
+        <a href="../en/12-memory-of-visited-places.html" lang="en" hreflang="en">EN</a>
+      </nav>
+      <div class="track-pref" data-track-pref>
+        <span class="track-pref-label" id="track-pref-label">Afficher :</span>
+        <button type="button" data-track-pref-value="beginner" aria-pressed="true" aria-describedby="track-pref-label">Débutant</button>
+        <button type="button" data-track-pref-value="expert" aria-pressed="false" aria-describedby="track-pref-label">Expert</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <nav class="breadcrumb" aria-label="Fil d'Ariane">
+    <div class="wrap">
+      <a href="index.html">Parcours d'apprentissage</a>
+      <span aria-hidden="true">/</span>
+      <span>Chapitre 12</span>
+    </div>
+  </nav>
+
+  <article class="chapter">
+    <div class="wrap">
+
+      <header class="chapter-header">
+        <p class="chapter-kicker">Chapitre 12</p>
+        <h1>Deux pistes du menu passées à l'épreuve : la réparation de la boussole échoue une troisième fois, la mémoire des lieux visités produit le deuxième vrai succès de la campagne</h1>
+        <p class="chapter-prereqs">
+          Prérequis :
+          <a href="01-c-est-quoi-jepa.html">Qu'est-ce que JEPA, et pourquoi apprendre à un programme à jouer à Minecraft avec ça ?</a>,
+          <a href="02-le-piege-du-collapse.html">Le raccourci que le modèle essaie toujours de trouver (et comment on l'en empêche)</a>,
+          <a href="03-le-modele-du-monde.html">Apprendre au modèle à imaginer la suite</a>,
+          <a href="04-planifier-en-imagination.html">Essayer 512 avenirs dans sa tête avant d'appuyer sur un bouton</a>,
+          <a href="05-le-vrai-minecraft.html">Le grand saut vers le vrai Minecraft : quatre échecs, puis un agent qui coupe des arbres</a>,
+          <a href="06-apprendre-a-fabriquer.html">Apprendre à fabriquer : la règle est comprise, le premier arbre reste hors de portée</a>,
+          <a href="07-la-curiosite-en-panne.html">La curiosité en panne, puis deux rustines qui marchent à moitié</a>,
+          <a href="08-le-mur-est-comportemental.html">Le mur est comportemental : une vraie première réussite, puis quatre preuves qu'affiner le signal ne suffit pas — et une cinquième qui confirme le diagnostic</a>,
+          <a href="09-les-prochaines-pistes.html">Après les pistes A et C : la politique apprise a été promue, puis testée (suite au Chapitre 10)</a>,
+          <a href="10-le-negatif-le-plus-net.html">La piste apprise a été testée : elle non plus ne suffit pas — mais elle élimine deux explications</a>
+          et
+          <a href="11-la-boussole-a-l-envers.html">La campagne fait une pause : la boussole ne s'est pas éteinte, elle pointe à l'envers</a>
+        </p>
+      </header>
+
+      <figure class="chapter-media">
+        <img
+          src="../assets/agent_play_craft_commit4_frontier.gif"
+          width="64"
+          height="64"
+          alt="Vue à la première personne dans le jeu de fabrication : l'agent parcourt une grande zone ouverte en changeant régulièrement de cap vers les endroits encore inexplorés de sa carte interne, jusqu'à trouver un tronc d'arbre et le couper — l'unique succès sur les 20 épisodes de ce lot.">
+        <figcaption>
+          L'épisode réussi du lot de confirmation de l'attempt #12 (mémoire topologique de
+          frontière) : 1 bûche coupée et 4 planches fabriquées sur 20 essais, avec l'un des taux
+          de couverture de carte les plus hauts du lot (908 cellules uniques visitées) et un
+          profil d'action sain — pas de verrouillage sur un seul geste.
+        </figcaption>
+      </figure>
+
+      <div class="tracks" data-tracks>
+        <div class="track-tabs" role="tablist" aria-label="Niveau de lecture">
+          <button class="track-tab" role="tab" id="tab-beginner" aria-controls="panel-beginner" aria-selected="true" data-track-tab="beginner">Débutant</button>
+          <button class="track-tab" role="tab" id="tab-expert" aria-controls="panel-expert" aria-selected="false" tabindex="-1" data-track-tab="expert">Expert</button>
+        </div>
+
+        <div class="track-panel is-active chapter-prose" data-track-panel="beginner" role="tabpanel" id="panel-beginner" aria-labelledby="tab-beginner">
+          <p class="track-kicker">Piste débutant</p>
+
+          <h2>Là où on en était</h2>
+          <p>
+            Le Chapitre 11 s'est terminé sur une pause de travail et un menu de quatre pistes pour
+            reprendre l'enquête sur le point de départ à froid (l'agent qui doit trouver son
+            premier arbre sans jamais l'avoir vu). Aucune de ces pistes n'était encore lancée —
+            c'était un menu, pas un plan engagé. Ce chapitre raconte ce qui s'est passé quand les
+            deux premières, les moins chères, ont enfin été testées pour de vrai — toutes deux
+            datées du 21 juillet 2026 dans le journal du projet. Les résultats sont très différents
+            l'un de l'autre : l'un referme une porte pour la troisième fois de suite, l'autre en
+            ouvre une nouvelle, avec un vrai succès à la clé — modeste, mais réel et honnête.
+          </p>
+
+          <h2>Piste 1 : réparer la boussole précisément là où elle se trompe — encore raté, et de façon plus précise</h2>
+          <p>
+            Rappel du Chapitre 11 : la boussole du projet (le score qui compare chaque histoire
+            imaginée au souvenir d'« un arbre coupé », voir Chapitre 4) s'était révélée pointer
+            <strong>à l'envers</strong> une fois sortie de son terrain d'entraînement — un arbre
+            proche recevait un score plus bas qu'une prairie vide. La piste la moins chère du menu
+            proposait de corriger ça avec une petite règle supplémentaire, entraînée cette fois
+            avec des vrais exemples « proche » et « loin » pris directement sur le jeu de
+            fabrication (pas sur les parties d'experts de Treechop, comme dans les tentatives
+            précédentes du Chapitre 8).
+          </p>
+          <p>
+            Sur le papier, le résultat avait l'air d'être le meilleur de toute l'enquête : la
+            nouvelle règle séparait mieux les images « proches » des images « lointaines » que
+            toutes les tentatives précédentes, et elle réussissait même un tout nouveau test —
+            juger, à la main, sur de vraies photos du jeu, si un arbre proche recevait bien un
+            meilleur score qu'une scène sans arbre. Elle a eu raison 21 fois sur 24 (87,5%).
+          </p>
+          <p>
+            Mais un test plus profond a démonté ce résultat. Ce projet suit depuis longtemps une
+            règle simple : toute nouvelle piste doit être vérifiée pour un piège déjà repéré deux
+            fois (Chapitre 8, puis à nouveau au Chapitre 9 quand une réparation prévue avait empiré
+            le même problème) — une règle de distance qui, au lieu de vraiment juger la distance à
+            l'arbre, se contente en réalité de repérer si l'image est claire ou sombre (la
+            luminosité de la scène). Cette fois, la vérification a été poussée un pas plus loin que
+            prévu : quelqu'un a eu l'idée de vérifier si le <strong>jeu de test lui-même</strong>,
+            celui qui servait à noter la règle « bien » ou « mal », n'était pas biaisé. Résultat :
+            oui, il l'était, presque totalement — les images choisies comme « arbre proche »
+            étaient, presque systématiquement, beaucoup plus sombres (forêt dense) que les images
+            choisies comme « pas d'arbre » (prairie ouverte, plage). Le lien entre luminosité et
+            étiquette était quasiment parfait.
+          </p>
+
+          <div class="callout callout-danger">
+            <span class="badge badge-danger">Testée — NO-GO (3ᵉ confirmation)</span>
+            <p>
+              Autrement dit : le beau résultat de 87,5% n'était très probablement pas une vraie
+              preuve que la règle comprend enfin où se trouve l'arbre — c'était le même vieux
+              raccourci (la luminosité) détecté une troisième fois, caché derrière un test qui,
+              sans le vouloir, mesurait la même chose que le raccourci lui-même. C'est la
+              <strong>troisième fois</strong> que ce piège précis apparaît, avec trois façons
+              différentes d'essayer de le corriger (varier artificiellement la lumière à
+              l'entraînement au Chapitre 9, changer les exemples d'entraînement ici) — et chaque
+              fois, le raccourci « luminosité » reste plus fort que jamais. La leçon qui s'impose
+              maintenant : ce raccourci vit très probablement <strong>dans le modèle de vision
+              lui-même</strong>, celui qui a appris à voir en premier lieu (Chapitre 1-2) et que ces
+              petites réparations ne touchent jamais — pas dans la façon dont on entraîne la petite
+              règle posée par-dessus. Cette piste précise du menu est donc fermée, sauf à
+              s'attaquer directement au modèle de vision de départ, ce qui est un chantier bien
+              plus lourd, mis de côté pour l'instant.
+            </p>
+          </div>
+
+          <h2>Piste 2 : une mémoire des endroits déjà visités — construite, testée, et un vrai deuxième succès</h2>
+          <p>
+            La deuxième piste du menu proposait une idée différente : au lieu de comparer chaque
+            image à un point de repère fixe (la boussole, dont on vient de confirmer une troisième
+            fois qu'elle se trompe hors de son terrain d'entraînement), pourquoi ne pas donner à
+            l'agent une mémoire toute simple des endroits qu'il a déjà explorés pendant l'épisode
+            en cours, et le pousser à aller voir ailleurs ?
+          </p>
+          <p>
+            Le point important, respecté à la lettre depuis le Chapitre 11 : cette mémoire ne doit
+            <strong>rien</strong> devoir à la boussole cassée. Elle est construite d'une façon
+            complètement différente, sans aucun apprentissage : à chaque pas, l'agent connaît déjà
+            l'effet de son propre geste (avancer, tourner à gauche, tourner à droite — comme un
+            joueur qui compterait ses propres pas et ses propres virages les yeux fermés). En
+            additionnant ces effets connus au fil de l'épisode, on reconstruit une position
+            approximative sur une grille invisible, et on compte combien de fois chaque case de
+            cette grille a déjà été visitée. Quand l'agent semble tourner en rond sans but, au lieu
+            de le faire tourner sur lui-même (le vieux réflexe du Chapitre 7, qui ne peut rien
+            trouver là où il n'y a rien) ou de foncer tout droit à l'aveugle (le Chapitre 8), on le
+            pousse maintenant vers la direction la moins visitée de la grille.
+          </p>
+          <p>
+            Premier test, tout petit (3 épisodes) : le mécanisme se déclenche bien, se comporte
+            visiblement différemment des anciens réflexes, et la carte de couverture grandit
+            vraiment au fil du temps. Aucun signe du problème vu plusieurs fois avant (l'agent qui
+            se met à répéter un seul geste presque tout le temps). Ce test ne visait qu'à vérifier
+            que rien n'était cassé — pas encore à juger si ça marche.
+          </p>
+          <p>
+            Le vrai test, plus grand (20 épisodes) : <strong>1 bûche coupée et des planches
+            fabriquées sur 20 essais (5%)</strong>, récompense moyenne 0,45 — environ 12% de mieux
+            que la référence de MineRL pour un agent qui jouerait au hasard. C'est le
+            <strong>deuxième résultat non nul de toute cette longue enquête</strong>, après la
+            petite correction du Chapitre 8 (« exécuter plus longtemps son propre bon plan », 9,7%
+            de réussite sur son propre lot de tests) — et c'est le premier à venir d'un mécanisme
+            complètement différent : pas une meilleure façon de choisir les gestes, pas un meilleur
+            jugement, mais une simple mémoire de « où suis-je déjà allé ». Dans l'épisode réussi,
+            l'agent avait justement exploré une grande partie de la carte avant de trouver son
+            arbre — et son comportement, au moment de couper, ressemblait à celui d'un vrai
+            bûcheron (les mêmes gestes qui avaient déjà fonctionné dans le Chapitre 6), pas à un
+            geste répété par accident.
+          </p>
+
+          <h2>Honnêteté sur ce que ce 1 sur 20 prouve, et ce qu'il ne prouve pas</h2>
+          <p>
+            Il faut être clair, comme pour chaque chiffre de ce projet : 5% de réussite est du même
+            ordre de grandeur que les 9,7% du Chapitre 8 — pas une preuve statistique que cette
+            nouvelle piste est meilleure à cette taille d'essai. Un test statistique classique ne
+            permettrait pas de distinguer ces deux chiffres l'un de l'autre avec confiance.
+          </p>
+          <p>
+            Mais ce résultat a deux qualités qui le rendent réellement intéressant, pas juste un
+            chiffre de plus : il est clairement au-dessus des deux tentatives précédentes qui
+            avaient donné zéro sur huit essais chacune (Chapitres 9 et 10), et surtout, sur les 20
+            épisodes de ce lot, <strong>aucun</strong> ne montre le problème de verrouillage sur un
+            seul geste qui avait gâché plusieurs tentatives précédentes (Chapitre 8). C'est donc la
+            deuxième méthode indépendante — après la correction du Chapitre 8 — à produire un vrai
+            succès sans jamais faire apparaître ce comportement cassé. Ce n'est pas une percée
+            confirmée. C'est un vrai point positif, honnête, qui mérite d'être gardé et prolongé
+            plutôt que rangé au tiroir.
+          </p>
+          <p>
+            Un dernier détail honnête : le lot de 20 épisodes a été géré par un processus qui a
+            rencontré un problème technique d'infrastructure avant de pouvoir écrire son propre
+            compte-rendu — les chiffres ci-dessus ont donc été vérifiés directement, épisode par
+            épisode, dans les journaux bruts de l'exécution, plutôt que recopiés d'un rapport final
+            qui n'a pas pu être produit.
+          </p>
+
+          <h2>Où en est le menu du Chapitre 11, maintenant</h2>
+          <p>
+            Sur les quatre pistes proposées au Chapitre 11 : la première (réparer la boussole) est
+            maintenant fermée pour de bon, sauf réparation bien plus lourde du modèle de vision
+            lui-même. La deuxième (la mémoire des lieux visités) est construite, testée, et donne un
+            vrai signal positif à prolonger. Les deux dernières — un second cerveau plus lent pour
+            chercher une forêt, ou copier des vraies parties humaines de recherche — restent, comme
+            au Chapitre 11, non lancées.
+          </p>
+        </div>
+
+        <div class="track-panel chapter-prose" data-track-panel="expert" role="tabpanel" id="panel-expert" aria-labelledby="tab-expert">
+          <p class="track-kicker">Piste expert</p>
+
+          <h2>Contexte</h2>
+          <p>
+            Le Chapitre 11 clôturait la campagne d'enquête sur le cold-start avec deux constats
+            convergents (génération d'action non-goulot, notation goal-centroid native de
+            <code>ebwm.pt</code> inversée hors distribution Treechop) et un menu de quatre pistes
+            candidates classées par coût/risque, aucune lancée. Ce chapitre couvre les attempts #11
+            et #12 de <code>CLAUDE.md</code>/<code>docs/10_coldstart_engineering.md</code> (PC,
+            2026-07-21) — les deux premières pistes du menu, exécutées dans l'ordre de priorité
+            annoncé.
+          </p>
+
+          <h2>Attempt #11 — correction de score ciblée sur le domaine Obtain (candidate direction 1) <span class="badge badge-danger">NO-GO</span></h2>
+          <p>
+            Troisième et plus nette confirmation d'un raccourci de luminosité dans l'encodeur figé.
+          </p>
+          <p>
+            <strong>Implémentation.</strong> <code>scripts/train_value_projector_obtain.py</code> :
+            reprend l'idée du projecteur de distance de l'attempt #7 (Destrade et al.,
+            arXiv:2601.00844), mais avec des paires proche/loin sourcées <strong>entièrement depuis
+            Obtain</strong> — les 40 démos <code>MineRLObtainIronPickaxe-v0</code> réelles plus les
+            épisodes de couverture de l'attempt #3, zéro donnée Treechop. Ajout d'un gate
+            obligatoire inédit : une vérification de direction sur frames réelles étiquetées à la
+            main, tenue en réserve (l'attempt #7 n'avait jamais eu les moyens de faire tourner ce
+            test).
+          </p>
+
+          <h3>Gates offline — le meilleur résultat apparent de toute la campagne</h3>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr><th>Métrique</th><th>Attempt #7 (Treechop+couverture)</th><th>Attempt #11 (Obtain seul)</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Ratio de séparation</td><td>7,9</td><td><strong>11,26</strong></td></tr>
+                <tr><td>Ratio de direction Obtain</td><td>— (non mesuré ainsi)</td><td><strong>1,21</strong></td></tr>
+                <tr><td>Direction correcte par paire (étiquetage manuel)</td><td>— (gate inexistant)</td><td><strong>21/24 (87,5%)</strong></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>Le raccourci de luminosité, vérifié, est pire que toutes les variantes précédentes</h3>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr><th>Variante</th><th>Corrélation avec la luminosité</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Attempt #7, originale</td><td>0,117</td></tr>
+                <tr><td>Attempt #7, en jeu réel</td><td>-0,57</td></tr>
+                <tr><td>ColorJitter « réparée » (suivi attempt #8)</td><td>0,498</td></tr>
+                <tr><td><strong>Attempt #11, sourcée depuis Obtain</strong></td><td><strong>0,643</strong></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p>
+            Le développeur a poussé la vérification un pas plus loin que la consigne : le résultat
+            apparent de 87,5% de bonne direction a été lui-même testé contre le raccourci de
+            luminosité — <code>corr(is_tree_close, luminosité) = -0,917</code> sur le jeu
+            d'étiquetage manuel lui-même. Les frames « arbre proche » (forêt, jungle) étaient
+            systématiquement bien plus sombres que les frames « pas d'arbre » (prairie, plage)
+            <strong>par construction</strong> de la façon dont ce jeu de test avait été assemblé. Le
+            résultat apparent était donc très probablement le même raccourci re-détecté, pas un
+            apprentissage géométrique authentique de la proximité à l'arbre. NO-GO correctement
+            prononcé ; le run de jeu réel a été volontairement sauté (pas d'évaluation en direct
+            dépensée sur un checkpoint auto-diagnostiqué comme confondu).
+            <code>checkpoints/value_projector_obtain.pt</code> conservé, mis de côté, non déployé —
+            même statut que <code>value_projector_colorjitter.pt</code>.
+          </p>
+
+          <blockquote>
+            <p>
+              <strong>Leçon, désormais confirmée trois fois indépendamment (attempt #7 original,
+              ColorJitter, et cette source Obtain) : toute petite tête entraînée par-dessus l'espace
+              latent figé de <code>ebwm.pt</code> retrouve la luminosité comme raccourci le moins
+              coûteux disponible, quel que soit le domaine qui fournit les paires
+              d'entraînement/validation — parce que le raccourci vit très probablement dans la
+              représentation de l'encodeur figé lui-même, que ces trois tentatives n'ont jamais
+              touché. Changer les données d'entraînement en aval change le récit que le projecteur
+              se raconte sur lui-même, pas le raccourci qu'il utilise réellement.</strong>
+            </p>
+          </blockquote>
+
+          <p>
+            Piste 1 du menu du Chapitre 11 fermée, sauf reprise sous forme d'un correctif côté
+            encodeur (fine-tune d'adaptateur ou contrainte explicite d'invariance à la luminosité
+            sur <code>ebwm.pt</code> lui-même, sous la discipline anti-collapse stricte du projet) —
+            hors périmètre d'un simple correctif en aval. Aucun checkpoint modifié hormis le nouveau
+            <code>value_projector_obtain.pt</code> (<code>ebwm.pt</code>, <code>craft_wm_v4.pt</code>
+            en lecture seule).
+          </p>
+
+          <h2>Attempt #12 — mémoire topologique de frontière (candidate direction 2) <span class="badge badge-order">Testée</span></h2>
+          <p>
+            Construite, vérifiée, puis confirmée à N=20.
+          </p>
+          <p>
+            <strong>Cadrage.</strong> Conçue pour éviter par construction les deux modes d'échec
+            déjà connus d'un signal de couverture : RND (attempt #4B) converge sur le temps écoulé,
+            pas sur le contenu de la scène ; toute métrique de frontière construite sur la distance
+            latente de <code>ebwm.pt</code> hériterait de la confusion directionnelle confirmée à
+            l'attempt #10. Le choix : un signal de couverture <strong>sans aucune fonction apprise
+            et sans aucune dépendance à l'encodeur figé</strong>.
+          </p>
+          <p>
+            <strong>Implémentation.</strong> <code>mine_jepa/ebwm/frontier.py::FrontierTracker</code>
+            : position <code>(x, y, yaw)</code> reconstruite par calcul mort (dead reckoning) à
+            partir de la sémantique déjà connue des actions discrètes exécutées — aucune fonction
+            apprise, aucune dépendance à <code>ebwm.pt</code> ou <code>craft_wm_v4.pt</code>. Binnée
+            dans une grille de compteurs de visite ; au déclenchement, vise le cap voisin le moins
+            visité. Câblé comme nouvelle option <code>scan.macro: "frontier"</code>
+            (<code>configs/play_craft_commit4_frontier.yaml</code>) — <code>planner.py</code>
+            lui-même n'est pas touché (pure macro, aucun changement de notation), et toute autre
+            valeur de <code>scan.macro</code> reste identique bit-pour-bit.
+          </p>
+          <p>
+            <strong>Sanity check N=3 :</strong> propre, aucun crash. Mécanisme visiblement distinct
+            des macros turn/bushwhack existantes (log confirmé : virage vers le cap le moins
+            visité, puis croisière) ; <code>unique_cells_visited</code> croît sur l'épisode
+            (419/939/970). Aucun verrouillage (part maximale d'une seule action 45%). 0/3 succès —
+            non informatif à ce N, ce n'était pas l'objet du sanity check.
+          </p>
+          <p>
+            ⚠️ <strong>Dette signalée en cours de route, pas introduite par cette tentative</strong>
+            : <code>scripts/play_craft.py</code> ne câble jamais <code>agent.seed</code> dans
+            l'environnement MineRL pour aucune config — <code>agent.seed: 0</code> dans ces YAML
+            est actuellement un no-op. Dette de reproductibilité déjà présente sur toute la
+            campagne, pas spécifique à l'attempt #12.
+          </p>
+
+          <h3>Lot de confirmation, N=20 — le résultat qui compte</h3>
+          <p>
+            Seed nominalement 0 (sous réserve de la mise en garde ci-dessus).
+          </p>
+          <ul>
+            <li>
+              <strong>1/20 bûches coupées + planches fabriquées (5,0%), reward moyen 0,45 (+12%
+              contre la référence aléatoire de MineRL, ~0,4).</strong>
+            </li>
+            <li>
+              Deuxième résultat non nul de toute la campagne, après <code>commit_length=4</code>
+              seul (pooled 3/31, 9,7%) — et premier à venir d'un mécanisme entièrement hors
+              génération d'action / notation (couverture pure, sans fonction apprise, sans
+              dépendance à l'encodeur).
+            </li>
+            <li>
+              L'unique succès : reward=9, +4 planches, <code>steps=3000</code>,
+              <code>unique_cells_visited=908</code> (parmi les plus hauts du lot), profil d'action
+              a14=42%/a13=12%/a6=10% — sain, pas un pic de verrouillage.
+            </li>
+            <li>
+              Sur les 20 épisodes, concentration d'action normale tout au long (part maximale
+              d'une seule action 63%, la plupart entre 20-45%) — <strong>aucun verrouillage nulle
+              part dans ce lot</strong>, à l'opposé direct des attempts #6 et #8 (raffinement CEM
+              et priming du pool avaient tous deux régressé vers des profils d'action concentrés et
+              figés).
+            </li>
+          </ul>
+
+          <p>
+            <strong>Cadrage honnête.</strong> 1/20 (5%) est du même ordre de grandeur que le taux de
+            base à 9,7% — pas une amélioration statistiquement prouvée à ce N (un test de Fisher
+            exact ne distinguerait pas les deux). Mais c'est clairement au-dessus des 0/8 de chacune
+            des attempts #8 et #9, et c'est notable pour produire un vrai succès sans la moindre
+            pathologie comportementale — le deuxième mécanisme indépendant (après
+            <code>commit_length</code>) à le faire. Pas une percée confirmée ; un vrai point de
+            donnée positif, à garder et à prolonger plutôt qu'à ranger.
+          </p>
+          <p>
+            <strong>Note de processus.</strong> Le lancement du lot de 20 épisodes a rencontré une
+            erreur d'infrastructure (limite de session) avant de pouvoir produire son propre
+            compte-rendu formel. Les chiffres ci-dessus ont été extraits et vérifiés indépendamment,
+            épisode par épisode, directement depuis le journal brut d'exécution
+            (<code>logs/coldstart_attempt12_frontier_n20.log</code>), pas recopiés d'un rapport qui
+            n'a pas pu être livré.
+          </p>
+
+          <h2>Où en est le menu du Chapitre 11, maintenant</h2>
+          <ol>
+            <li>
+              <strong>Correction de score ciblée Obtain</strong> — fermée (attempt #11, NO-GO),
+              sauf reprise côté encodeur.
+            </li>
+            <li>
+              <strong>Mémoire topologique de frontière</strong> — construite, vérifiée, confirmée à
+              N=20 : signal positif réel, pas une preuve statistique, sans pathologie
+              comportementale ; piste à prolonger (N plus large, ou combinaison avec
+              <code>commit_length</code>/autres leviers non pathologiques).
+            </li>
+            <li>
+              <strong>H-JEPA hiérarchique</strong> — non lancée, coût/risque le plus élevé du menu.
+            </li>
+            <li>
+              <strong>Fine-tuning BC sur recherche humaine</strong> — non lancée, déjà
+              déprioritisée au Chapitre 11.
+            </li>
+          </ol>
+          <p>
+            <code>ebwm.pt</code> et <code>craft_wm_v4.pt</code> restent intacts sur les deux
+            attempts de ce chapitre : l'attempt #11 n'a entraîné qu'un projecteur séparé et non
+            déployé ; l'attempt #12 n'introduit aucun paramètre appris.
+          </p>
+
+          <h2>Références (déjà vérifiées, tirées de <code>docs/references/index.md</code>, aucune nouvelle citation dans ce chapitre)</h2>
+          <ul>
+            <li>
+              Destrade, Bounou, Le Lidec, Ponce, LeCun, <em>Value-guided action planning with JEPA
+              world models</em>, arXiv:2601.00844 (2026) — la méthode de projecteur de distance
+              reprise (avec une nouvelle source de supervision) dans l'attempt #11.
+            </li>
+            <li>
+              Burda, Edwards, Storkey, Klimov, RND, arXiv:1810.12894 (2018) — le mécanisme de
+              couverture écarté par construction lors de la conception de l'attempt #12
+              (<code>docs/09_curiosity_coldstart.md</code>).
+            </li>
+          </ul>
+          <p>
+            Ce chapitre ne s'appuie sur aucune référence bibliographique nouvelle : le mécanisme de
+            mémoire de frontière de l'attempt #12 (compteur de visites par calcul mort, sans
+            fonction apprise) est décrit dans <code>CLAUDE.md</code>/<code>docs/10_coldstart_engineering.md</code>
+            de façon informelle, dans l'esprit des méthodes d'exploration pilotées par la couverture
+            d'états (par ex. Go-Explore) — cette famille de méthodes n'a pas d'entrée vérifiée dans
+            <code>docs/references/index.md</code> à ce jour et n'est donc pas citée ici avec un
+            identifiant arXiv.
+          </p>
+        </div>
+      </div>
+
+      <div class="achievement" role="note" aria-label="Résultat de ce chapitre">
+        <span class="achievement-icon" aria-hidden="true">&#127942;</span>
+        <div>
+          <p class="achievement-title">Achievement : deuxième succès réel de la campagne — une mémoire des lieux visités, sans fonction apprise ni pathologie comportementale</p>
+          <p>
+            La mémoire topologique de frontière (attempt #12) — un compteur de cases visitées
+            reconstruit par calcul mort, zéro poids appris, zéro dépendance à la boussole cassée —
+            produit 1 succès sur 20 épisodes de confirmation (5%, reward moyen 0,45, +12% contre la
+            référence aléatoire de MineRL) : le <strong>deuxième résultat non nul de toute la
+            campagne cold-start</strong>, après <code>commit_length=4</code> au Chapitre 8, et le
+            premier à venir d'un mécanisme entièrement différent. Sur les 20 épisodes, aucun ne
+            montre le verrouillage comportemental qui avait gâché plusieurs tentatives précédentes.
+            Dans le même chapitre, la piste de réparation de la boussole (attempt #11) referme une
+            porte pour la troisième fois — le raccourci de luminosité vit dans l'encodeur figé, pas
+            dans les données servant à entraîner la petite règle posée par-dessus.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </article>
+
+  <nav class="chapter-nav" aria-label="Navigation entre chapitres">
+    <div class="wrap chapter-nav-inner">
+      <a class="chapter-nav-link" href="index.html">&larr; Retour au parcours</a>
+    </div>
+  </nav>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>Mine-JEPA — un agent JEPA qui apprend à jouer à Minecraft à partir des pixels, documenté au fil de l'eau.</p>
+    <p class="footer-links">
+      Auteur : <a href="https://x.com/reddwarf03" target="_blank" rel="noopener">@reddwarf03 (X/Twitter)</a> ·
+      <a href="https://github.com/redDwarf03" target="_blank" rel="noopener">redDwarf03 (GitHub)</a> |
+      <a href="https://github.com/redDwarf03/mine-jepa" target="_blank" rel="noopener">Repository GitHub</a>
+    </p>
+  </div>
+</footer>
+
+<script src="../script.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,76 @@
+# Cold-start next-cycle proposal 2 (docs/10 "next research directions" menu,
+# CLAUDE.md): topological/episodic frontier memory. Same base as
+# configs/play_craft_commit4_scan.yaml (two-brain, sticky 0.5, commit_length=4,
+# scan reading ebwm.pt's goal_score_std via chop_planner — the calibration
+# confirmed correctly wired in attempt #5) but scan.macro switched to "frontier":
+# when goal_score_std goes flat, instead of turning in place or bushwhacking
+# straight ahead, steer a bounded forward-sprint+jump cruise toward the LEAST
+# dead-reckoned-visited direction (mine_jepa/ebwm/frontier.py) — a coverage
+# signal built from the discrete action indices themselves (forward/strafe/yaw
+# deltas), NOT from ebwm.pt's latent space or goal-centroid distance (attempt
+# #10 confirmed that reverses direction off Treechop's training distribution)
+# and NOT from RND (attempt #4 found its online predictor converges on tick
+# count, not scene content, in this exact deployment).
+
+minerl_env: MineRLObtainIronPickaxeDense-v0
+actions_config: configs/minerl_actions_obtain.yaml
+
+model:
+  checkpoint: checkpoints/craft_wm_v4.pt
+
+planner:
+  n_actions: 22
+  horizon: 12
+  n_candidates: 512
+  sticky_prob: 0.5
+  w_log: 1.0
+  w_planks: 2.0
+  log_threshold: 0.05
+  commit_length: 4
+
+scan:
+  enabled: true
+  macro: frontier
+  flat_threshold: 0.003    # Treechop-calibrated (docs/10), valid here because the
+                            # two-brain chop_planner IS ebwm.pt, not craft_wm_v4
+  patience: 3
+  max_replans: 40
+  log_std: true            # mandatory per the attempt #4 RND lesson: never ship
+                            # an instrumented mechanism without its own diagnostic print
+  frontier:
+    cell_size: 4.0          # arbitrary dead-reckoning units per grid cell
+    move_step: 1.0          # per-tick forward/strafe unit at normal (non-sprint) speed
+    sprint_mult: 1.6        # sprint actions (a13/a14) move faster than plain forward (a1/a7)
+    lookahead_cells: 2.0    # project candidate headings this many cells ahead
+    n_headings: 12          # candidate directions sampled around the full circle (30° apart)
+    alignment_deg: 15.0     # turn toward the frontier heading until within this many degrees
+    turn_left_action: 11
+    turn_right_action: 12
+    forward_action: 13
+    jump_action: 8
+    jump_every: 4
+    max_ticks: 30
+
+chop_model:
+  checkpoint: checkpoints/ebwm.pt
+  n_actions: 17
+  goal:
+    data_path: data/minerl_goal/episodes.npz
+    threshold: 0.5
+    min_frames: 10
+    mode: centroid
+
+goal:
+  data_path: data/minerl_craft/episodes.npz
+  chop_reward_threshold: 0.5
+
+agent:
+  episodes: 3
+  max_steps: 3000
+  action_repeat: 4
+  seed: 0
+
+logging:
+  save_gif: true
+  gif_episodes: 3
+  gif_path: assets/agent_play_craft_commit4_frontier.gif

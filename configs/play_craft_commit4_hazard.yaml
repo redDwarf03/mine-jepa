@@ -1,0 +1,119 @@
+# Cold-start attempt #13 (docs/10, CLAUDE.md): hazard-awareness on top of the
+# attempt #12 frontier config. The attempt #12 N=20 diagnostic found 12/20
+# episodes ended in a confirmed drowning death (`MineRLAgent0 drowned`,
+# independently verified against the raw Malmo client logs) — mostly during the
+# frontier/bushwhack scan macros' blind forward cruises, which have no
+# collision/hazard awareness by design. hazard_avoidance adds a calibrated
+# pixel-heuristic drowning detector (mine_jepa/ebwm/hazard.py) that overrides
+# whatever the planner/scan macro just picked with a jump+retreat escape
+# whenever the POV shows the underwater signature. Everything else identical to
+# configs/play_craft_commit4_frontier.yaml.
+
+minerl_env: MineRLObtainIronPickaxeDense-v0
+actions_config: configs/minerl_actions_obtain.yaml
+
+model:
+  checkpoint: checkpoints/craft_wm_v4.pt
+
+planner:
+  n_actions: 22
+  horizon: 12
+  n_candidates: 512
+  sticky_prob: 0.5
+  w_log: 1.0
+  w_planks: 2.0
+  log_threshold: 0.05
+  commit_length: 4
+
+scan:
+  enabled: true
+  macro: frontier
+  flat_threshold: 0.003    # Treechop-calibrated (docs/10), valid here because the
+                            # two-brain chop_planner IS ebwm.pt, not craft_wm_v4
+  patience: 3
+  max_replans: 40
+  log_std: true            # mandatory per the attempt #4 RND lesson: never ship
+                            # an instrumented mechanism without its own diagnostic print
+  frontier:
+    cell_size: 4.0          # arbitrary dead-reckoning units per grid cell
+    move_step: 1.0          # per-tick forward/strafe unit at normal (non-sprint) speed
+    sprint_mult: 1.6        # sprint actions (a13/a14) move faster than plain forward (a1/a7)
+    lookahead_cells: 2.0    # project candidate headings this many cells ahead
+    n_headings: 12          # candidate directions sampled around the full circle (30° apart)
+    alignment_deg: 15.0     # turn toward the frontier heading until within this many degrees
+    turn_left_action: 11
+    turn_right_action: 12
+    forward_action: 13
+    jump_action: 8
+    jump_every: 4
+    max_ticks: 30
+
+# Cold-start attempt #13: calibrated against TWO real drowning deaths, one
+# bright daytime, one dark night (docs/10, mine_jepa/ebwm/hazard.py docstring
+# has the full calibration data from both rounds — an initial absolute-
+# threshold version was recalibrated to relative/ratio thresholds after it
+# missed the night drowning). Zero false positives across ~5900 pooled
+# survived frames from three episodes (bright daytime, dusk, forest, sky-only).
+#
+# Attempt #13 follow-up (first round): the initial N=5 sanity run showed the
+# detector staying correctly triggered for 260+ ticks in one episode, but the
+# agent still died — the blind jump/retreat_action escape has no sense of
+# which direction is dry. Escape is now steered toward the last dead-reckoned
+# position (shared FrontierTracker instance, mine_jepa/ebwm/frontier.py) at
+# which detect_underwater() was last False this episode, turning until
+# aligned (align_deg) then walking forward, jump interleaved throughout
+# either way. jump_action/retreat_action are kept as the fallback for the
+# "spawned directly in water, no dry position recorded yet" case.
+#
+# Attempt #13 follow-up (second round, N=6): reading the per-tick
+# [hazard-escape] trace found the old align_deg=20 was far narrower than one
+# escape turn commitment's actual sweep (~80deg at this config's
+# commit_length=4/action_repeat=4/jump_every=2), so almost every check
+# overshot the alignment window and flipped sign next check, oscillating
+# forever instead of converging (observed directly: delta alternating
+# -52.2/+27.8deg for 18 consecutive replans in one episode). align_deg raised
+# to 85 (>= the ~80deg sweep) so a turn can only ever shrink |delta|, never
+# flip its sign. The same trace also showed hazard_last_dry_pos occasionally
+# jumping to a point right next to the agent's own still-submerged position —
+# a single spurious "underwater=False" reading corrupting the memory — fixed
+# with dry_anchor_debounce (require 2 consecutive not-underwater replan
+# checks before trusting/overwriting the anchor).
+hazard_avoidance:
+  enabled: true
+  ratio_thresh: 1.02
+  rel_rg_thresh: 0.15
+  patience: 1               # react immediately — drowning is time-critical
+  max_ticks: 60             # bounded escape budget per trigger before rechecking
+  jump_every: 2             # jump (surface, refill air) every other tick
+  jump_action: 5            # pure jump, no forward — don't swim further from land
+  retreat_action: 2         # blind fallback only, if no dry position recorded yet
+  align_deg: 85.0           # turn toward the remembered dry point until within this many degrees
+  dry_anchor_debounce: 2    # consecutive not-underwater checks required before trusting the anchor
+  turn_right_action: 12
+  turn_left_action: 11
+  forward_action: 1         # plain walk (not sprint) toward the remembered dry point
+  log: true                 # mandatory per the attempt #4 RND lesson
+
+chop_model:
+  checkpoint: checkpoints/ebwm.pt
+  n_actions: 17
+  goal:
+    data_path: data/minerl_goal/episodes.npz
+    threshold: 0.5
+    min_frames: 10
+    mode: centroid
+
+goal:
+  data_path: data/minerl_craft/episodes.npz
+  chop_reward_threshold: 0.5
+
+agent:
+  episodes: 5
+  max_steps: 3000
+  action_repeat: 4
+  seed: 0
+
+logging:
+  save_gif: true
+  gif_episodes: 5
+  gif_path: assets/agent_play_craft_commit4_hazard.gif

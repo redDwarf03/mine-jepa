@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The drowning alarm works perfectly; the rescue action, however, does not know where dry land is — Mine-JEPA</title>
+<meta name="description" content="Chapter 13 of the Mine-JEPA learning path: The drowning alarm works perfectly; the rescue action, however, does not know where dry land is.">
+<link rel="stylesheet" href="../style.css">
+<script>document.documentElement.classList.add("js");</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="wrap site-header-inner">
+    <a class="site-brand" href="index.html"><span class="brand-mark" aria-hidden="true">&#9935;</span> Mine-JEPA</a>
+    <div class="header-controls">
+      <span class="last-updated" title="Date de mise à jour">Updated: 2026-07-22</span>
+      <nav class="lang-switch" aria-label="Site language">
+        <a href="../fr/13-le-sauvetage-aveugle.html" lang="fr" hreflang="fr">FR</a>
+        <a href="13-blind-rescue.html" aria-current="true" lang="en" hreflang="en">EN</a>
+      </nav>
+      <div class="track-pref" data-track-pref>
+        <span class="track-pref-label" id="track-pref-label">Show:</span>
+        <button type="button" data-track-pref-value="beginner" aria-pressed="true" aria-describedby="track-pref-label">Beginner</button>
+        <button type="button" data-track-pref-value="expert" aria-pressed="false" aria-describedby="track-pref-label">Expert</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <nav class="breadcrumb" aria-label="Breadcrumbs">
+    <div class="wrap">
+      <a href="index.html">Learning Path</a>
+      <span aria-hidden="true">/</span>
+      <span>Chapter 13</span>
+    </div>
+  </nav>
+
+  <article class="chapter">
+    <div class="wrap">
+
+      <header class="chapter-header">
+        <p class="chapter-kicker">Chapter 13</p>
+        <h1>The drowning alarm works perfectly; the rescue action, however, does not know where dry land is</h1>
+        <p class="chapter-prereqs">Prerequisites: Chapters 1 to 12 — including the topological frontier memory (attempt #12), for which a review of the logs here reveals that 12 of the 20 episodes in its own confirmation batch actually ended in drowning.</p>
+      </header>
+
+      <figure class="chapter-media">
+        <img
+          src="../assets/agent_play_craft_commit4_hazard.gif"
+          width="64"
+          height="64"
+          alt="First-person view in Minecraft: after a brief passage in a grassy clearing at dusk, the agent descends into an underground cave and spends the rest of the episode moving through tunnels and corridors of stone and gravel, without ever encountering water on screen.">
+        <figcaption>
+          The last of the five live test episodes of attempt #13 — the one preserved in this GIF. Here, the drowning detector never triggered: no water visible on screen, only a descent into a cave. Consistent with the fact that 3 out of 5 episodes reported nothing and another ended in an early death unrelated to drowning. The most revealing episode of the batch — continuous triggering for over 260 steps, followed by death anyway — is not the one shown here: the recording mechanism only keeps the last of the five trials.
+        </figcaption>
+      </figure>
+
+
+      <div class="tracks" data-tracks>
+        <div class="track-tabs" role="tablist" aria-label="Reading level">
+          <button class="track-tab" role="tab" id="tab-beginner" aria-controls="panel-beginner" aria-selected="true" data-track-tab="beginner">Beginner</button>
+          <button class="track-tab" role="tab" id="tab-expert" aria-controls="panel-expert" aria-selected="false" tabindex="-1" data-track-tab="expert">Expert</button>
+        </div>
+
+        <div class="track-panel is-active chapter-prose" data-track-panel="beginner" role="tabpanel" id="panel-beginner" aria-labelledby="tab-beginner">
+          <p class="track-kicker">Beginner track</p>
+
+<h2>Where we left off</h2>
+<p>Chapter 12 ended on a real positive note: the memory of already visited places produced a second real success (1 log chopped out of 20 trials), with a healthy agent behavior, without any sign of locking onto a single action. But this mechanism had a limitation flagged right from its design: when it pushes the agent to explore a less-visited direction, it knows absolutely nothing about the dangers that might lie in its path.</p>
+<p>By reviewing the raw logs of this same batch of 20 trials episode by episode — not just the final number, but what the game itself was telling us during each play — a fact was revealed: out of the twenty episodes, <strong>twelve</strong> ended with a message from the game confirming that the agent had <strong>drowned</strong>. Not a guess, a real Minecraft server message (&quot;MineRLAgent0 drowned&quot;), found directly in the technical logs of each game. This chapter tells the story of the attempt built directly in response to this discovery, and what it teaches us — a result that, once again, is not a victory, but closes the question with unusual precision.</p>
+<h2>The problem: no health sensor exists in this specific game</h2>
+<p>Before building anything, one simple thing had to be checked: does the game send the agent information like &quot;your health bar&quot; or &quot;your underwater air level&quot;? The answer, verified directly in the code of the game environment used here (<code>MineRLObtainIronPickaxeDense-v0</code>): <strong>no, none of this exists in what the game transmits to the Python program.</strong> Only two things reach the agent: the camera image and the inventory contents. No health, no breath, no air. We must therefore guess &quot;I am drowning&quot; solely from what the screen shows.</p>
+<h2>The idea: water tints the screen in a recognizable way</h2>
+<p>In Minecraft, being underwater gives the entire screen a particular bluish tint: the red and green of the image become almost equal, while the blue rises significantly above both. This is a colored fog effect that overlays the entire view, regardless of what is in front of the agent. A small tool was therefore built (<code>mine_jepa/ebwm/hazard.py</code>) that reads the average color of the screen frame-by-frame and compares the blue level to the red and green levels — without any machine learning, just a color calculation.</p>
+<h2>First calibration, half-failed: night changes everything</h2>
+<p>The first version compared <strong>raw differences</strong> in color (&quot;blue exceeds red by so many points&quot;), calibrated on a real drowning observed in broad daylight, confirmed by the game message at the exact moment it occurred. This version worked well for that drowning — but it completely <strong>missed a second real drowning</strong> that occurred at night. The reason is simple once you see it: in a dark scene, the blue rises proportionally just as much as in broad daylight, but its raw value remains tiny (everything is dark), so a threshold based on absolute differences never triggers.</p>
+<p>The fix: compare color <strong>ratios</strong> rather than absolute differences — a calculation that remains true whether the scene is very bright or very dark, because it compares colors relative to each other rather than to a fixed value.</p>
+<h2>Serious verification, twice</h2>
+<p>This new version was run back over approximately 5,900 real images, taken from three entire games that ended well (day, dusk, forest, sky — very diverse scenes) plus the two real drownings already mentioned. The result: <strong>zero false alarms</strong> on any of the normal gameplay images, the daytime drowning was detected in <strong>100%</strong> of its images, and the nighttime drowning in <strong>about 81%</strong>. The missed 19% were images of almost total blackness, where all three colors collapsed to zero at the same time — a real limitation of a tool based on pixel color in complete darkness, not a simple poorly adjusted threshold.</p>
+<h2>The wired escape action</h2>
+<p>When the detector turns on, it takes control: it alternates a jump (to surface and breathe) with a fixed step backward, for a limited time (up to 60 game steps), before handing control back to normal operation.</p>
+<h2>The live game test, 5 games</h2>
+<ul>
+<li><strong>3 out of 5 games</strong>: nothing to report, the detector never triggered.</li>
+<li><strong>1 out of 5 games</strong>: the agent died early, but the detector <strong>never</strong> triggered — this specific death was therefore not a drowning. A fall, a monster, lava: the Minecraft world can simply be dangerous at a random starting point, and this tool was never intended to cover this type of death.</li>
+<li><strong>1 out of 5 games, the most interesting</strong>: the detector turned on <strong>continuously for more than 260 game steps in a row</strong> (more than 4 real seconds) — the escape action (jump + backward step) triggered at each step exactly as planned. <strong>And the agent died at the end of this sequence anyway.</strong></li>
+</ul>
+<h2>The verdict: the alarm works, the rescue is blind</h2>
+<p>The detector itself works: it is accurate, well-calibrated, and it works just as well by day as by night. The real problem lies further down the chain: the action responding to the alarm has absolutely no idea <strong>in which direction dry land lies</strong>. Alternating a jump and a fixed step backward has no way of knowing whether that step backward leads toward the shore or deeper into the water, or just along a bank without ever getting closer to it. If the direction is unlucky, the agent can remain trapped indefinitely — and a correctly sounding alarm that never succeeds in rescuing is useless in practice.</p>
+<p>This is exactly the same kind of lesson this project had already encountered once before, for a completely different mechanism (the &quot;I&#x27;m lost&quot; reflex in Chapter 8): <strong>a well-calibrated detector is not a solution on its own if the action listening to it cannot resolve the actual situation.</strong></p>
+<h2>What&#x27;s next</h2>
+<p>This result is not deployed as is: it is an honest &quot;no&quot;, not a disguised &quot;almost yes&quot;. A follow-up path is being explored separately, with no known results at the time of writing: steering the escape action towards the last known location of the agent out of the water, by reusing the same lightweight dead-reckoning tracking tool already built for the memory of visited places (Chapter 12) — no new machine learning, just counting and geometry, same as for that memory itself.</p>
+        </div>
+
+        <div class="track-panel chapter-prose" data-track-panel="expert" role="tabpanel" id="panel-expert" aria-labelledby="tab-expert">
+          <p class="track-kicker">Expert track</p>
+
+<h2>Context</h2>
+<p>Chapter 12 left the topological frontier mechanism (attempt #12) as the positive highlight of the campaign, with a limitation explicitly unaddressed by design: heading selection contains no notion of collision or danger. This chapter covers a free diagnostic and then attempt #13, both stemming from a review of the logs of the N=20 batch from attempt #12.</p>
+<h2>Free diagnostic: drowning as the dominant cause of early termination</h2>
+<p>Correlation, episode by episode, between the master batch log and the Malmo client logs (<code>logs/mc<em>*.log</code>, one per <code>play</em>minerl_multi.py</code> subprocess), by file timestamp. <strong>12 of the ~20 episodes</strong> contain an explicit server message <code>MineRLAgent0 drowned</code>, directly preceding the last lines of the episode (actual death at the end of the episode, not a survived transient damage tick) — verified again directly in the raw logs, not just copied from a previous report. Episodes reaching the 3000-step ceiling contain no drowning messages — a clean, bimodal split, not a fuzzy trend.</p>
+<p><strong>Implication for reading the headline figure of attempt #12 (1/20, 5%)</strong>: on the subset of episodes that survive long enough to search under fair conditions (not cut short by drowning), the apparent success rate is closer to 1 in 7-8 than to 1 in 20. Both readings are honest; the raw 1/20 remains the actual deployed figure, but attributing the entire gap to a search/approach deficit would be false — a large portion comes from a spawning hazard problem, explicitly outside the scope of <code>FrontierTracker</code>&#x27;s design (no collision/danger awareness in heading selection).</p>
+<h2>Attempt #13 — pixel-based drowning detector + escape action: NO-GO, but a clear diagnostic</h2>
+<p><strong>Reason for pixel choice over state sensor.</strong> Verified against the game environment&#x27;s source code: <code>MineRLObtainIronPickaxeDense-v0</code> does not transmit any health, breath, or air observations to Python — only the camera image and the inventory. Any detection must therefore happen via the image.</p>
+<p><strong>Implementation</strong> (<code>mine_jepa/ebwm/hazard.py</code>): underwater, Minecraft tints the entire screen with an achromatically bluish fog (red ≈ green, blue is high). Two average color statistics computed on the frame:</p>
+<pre><code>ratio  = mean(B) / max(mean(R), mean(G))
+rel_rg = |mean(R) - mean(G)| / max(mean(R), mean(G))</code></pre>
+<p><strong>Calibration v1 (rejected) — absolute differences.</strong> Tuned on a real drowning observed in broad daylight, confirmed by the game&#x27;s death message exactly at step 644 of an episode. Worked on that drowning, but <strong>completely missed</strong> a second real drowning that occurred at night: in a dark scene, the blue elevation is proportionally just as strong but negligible in raw pixel values — an absolute threshold never triggers.</p>
+<p><strong>Calibration v2 (retained) — ratios</strong>, invariant to global scene brightness by construction, replacing absolute differences.</p>
+<p><strong>Validation</strong> on ~5,900 real frames pooled from three complete survived episodes (day, dusk, forest, sky) plus the two real drownings: <strong>zero false positives</strong> on all surviving frames; <strong>100%</strong> of daytime drowning frames correctly detected; <strong>≈81%</strong> of nighttime drowning frames. The missed 19% correspond to frames of almost total blackness where all three color channels collapse to zero simultaneously and ratios become too noisy to read — a real limitation of a pixel color heuristic at the bottom of the brightness scale, not a threshold adjustment issue.</p>
+<p><strong>Wiring</strong>: when triggered, the detector overrides the current output of the planner or search macro with an escape action — alternating jump (to surface) / fixed backward step — for up to 60 game steps per trigger, then hands control back to normal operation.</p>
+<p><strong>Live test, 5 real episodes:</strong></p>
+<table>
+<thead><tr><th>Episode</th><th>Detector Trigger</th><th>Outcome</th></tr></thead>
+<tbody>
+<tr><td>3 episodes</td><td>never triggered</td><td>nothing to report</td></tr>
+<tr><td>1 episode</td><td>never triggered</td><td>early death — non-drowning cause (fall, hostile mob, lava — outside the scope of the mechanism by design)</td></tr>
+<tr><td>1 episode</td><td>triggered continuously for <strong>&gt;260 game steps</strong> (&gt;4 real seconds), escape action executed at every step as planned</td><td><strong>died at the end of the sequence regardless</strong></td></tr>
+</tbody>
+</table>
+<p><strong>Verdict.</strong> The detector itself is functionally correct — accurate, well-calibrated, brightness-invariant. The failure is downstream: the escape action (jump + fixed step backward) has no directional information on where dry land is. If the step backward points towards deeper water, or runs along a bank without approaching it, the agent can remain trapped indefinitely without the correctly triggered alarm ever converting into an actual rescue.</p>
+<div class="callout">
+<p><strong>Lesson: same pattern as attempt #5 (Chapter 8), on a completely different mechanism.</strong> A correctly wired and calibrated &quot;something is wrong&quot; detector is not a fix on its own if the action consuming it cannot resolve the actual situation. There, it was the search reflex in the face of a flat score; here, it is a directionless escape action in the face of a real, correctly detected danger. The common thread: detecting is not acting effectively, and neither of these two mechanisms can correct itself when wired to a blind response action.</p>
+</div>
+<p><strong>Status delivered: NO-GO, not deployed as is.</strong> Follow-up path explored separately, outcome unknown at the time of writing: steer the escape action towards the last known out-of-water position, reusing the same lightweight dead-reckoning position tracking tool already built for <code>FrontierTracker</code> (attempt #12) — no learning, only counting and geometry, consistent with the design choice already made for that same mechanism.</p>
+<h2>Where this leaves the campaign</h2>
+<p>The drowning diagnostic and attempt #13 do not change the Chapter 11 verdict on the main wall (search/approach to find the first tree) — they isolate a distinct source of mortality partially responsible for the low headline figure of attempt #12, without fully correcting it. <code>ebwm.pt</code> and <code>craft<em>wm</em>v4.pt</code> remain intact: attempt #13 introduces no learned parameters, only a pixel color heuristic and a hand-wired escape reflex.</p>
+<h2>References</h2>
+<p>This chapter relies on no new bibliographic references: the drowning detector in attempt #13 is a pixel color heuristic built and calibrated directly on the data of this project, not the application of a published method — in accordance with the project rule of citing only verified arXiv identifiers from <code>docs/references/index.md</code>, none are invoked here for lack of direct relevance.</p>
+        </div>
+      </div>
+
+
+    </div>
+  </article>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>Mine-JEPA — a JEPA agent learning to play Minecraft from pixels, documented along the way.</p>
+    <p class="footer-links">
+      Author / Auteur: <a href="https://x.com/reddwarf03" target="_blank" rel="noopener">@reddwarf03 (X/Twitter)</a> ·
+      <a href="https://github.com/redDwarf03" target="_blank" rel="noopener">redDwarf03 (GitHub)</a> |
+      <a href="https://github.com/redDwarf03/mine-jepa" target="_blank" rel="noopener">GitHub Repository</a>
+    </p>
+  </div>
+</footer>
+
+<script src="../script.js" defer></script>
+</body>
+</html>

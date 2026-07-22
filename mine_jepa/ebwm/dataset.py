@@ -30,12 +30,25 @@ class MineRLSeqDataset(Dataset):
       rewards : [T] float32 (for building the goal / debug)
     """
 
-    def __init__(self, data_path: str, num_frames: int = 8, subsample: int = 1):
+    def __init__(self, data_path: str, num_frames: int = 8, subsample: int = 1,
+                 max_action: int | None = None, source_weights: dict[int, float] | None = None):
+        """
+        max_action: if given, drop any window whose action sequence touches an
+            index >= max_action entirely (not remap/clamp) — cold-start attempt
+            #14's fix for mixed-action-space data (17-slot ebwm.pt action
+            embedding vs. 22-action Obtain-collected craft/coverage sources).
+            None (default) = no filtering, bit-for-bit original behaviour.
+        source_weights: optional {source_id: weight} used to fill self.weights
+            (e.g. oversample Obtain-sourced windows) from an optional per-frame
+            `source` array in data_path. None (default) or no `source` array in
+            the file -> self.weights is all-ones, bit-for-bit original behaviour.
+        """
         data = _load_npz(data_path)
         self.frames = data["frames"]                       # [N, H, W, 3] uint8
         self.actions = data["actions"].astype(np.int64)    # [N]
         self.dones = data["dones"].astype(bool)            # [N]
         self.rewards = data.get("rewards", np.zeros(len(self.frames), dtype=np.float32)).astype(np.float32)
+        self.sources = data["source"].astype(np.int64) if "source" in data else None
         self.num_frames = num_frames
 
         # Valid windows: no episode boundary within [i, i+T-1]
@@ -43,14 +56,25 @@ class MineRLSeqDataset(Dataset):
         T = num_frames
         valid = []
         for i in range(n - T + 1):
-            if not self.dones[i : i + T - 1].any():
-                valid.append(i)
+            if self.dones[i : i + T - 1].any():
+                continue
+            if max_action is not None and (self.actions[i : i + T] >= max_action).any():
+                continue
+            valid.append(i)
         valid = np.array(valid, dtype=np.int64)
         # Subsampling: stride-1 windows overlap heavily.
         # Keep 1 in `subsample` to reduce redundancy and speed up.
         if subsample > 1:
             valid = valid[::subsample]
         self.starts = valid
+
+        if source_weights is not None and self.sources is not None:
+            self.weights = np.array(
+                [source_weights.get(int(self.sources[s]), 1.0) for s in self.starts],
+                dtype=np.float64,
+            )
+        else:
+            self.weights = np.ones(len(self.starts), dtype=np.float64)
 
     def __len__(self) -> int:
         return len(self.starts)

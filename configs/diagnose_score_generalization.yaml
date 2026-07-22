@@ -1,0 +1,47 @@
+# Cold-start attempt #10 (docs/10_coldstart_engineering.md) — offline diagnostic,
+# no training, no MineRL/Java launch. Tests the standing post-attempt-#9 hypothesis:
+# does ebwm.pt's own goal-centroid scoring generalize from MineRLTreechop-v0's
+# forest-guaranteed spawns to MineRLObtainIronPickaxeDense-v0's free-spawn
+# distribution? Reuses DiscreteLatentPlanner's exact _sample_actions/_score code
+# path (mine_jepa/ebwm/planner.py) over saved frames instead of live play.
+
+seed: 0
+
+model:
+  checkpoint: checkpoints/ebwm.pt
+
+# Same chop-goal centroid the live two-brain planner scores against
+# (configs/play_ebwm.yaml / configs/play_craft_commit4_actor.yaml's chop_model.goal).
+goal:
+  data_path: data/minerl_goal/episodes.npz
+  threshold: 0.5
+  min_frames: 10
+  mode: centroid
+
+# Same planner hyperparameters as the live two-brain chop planner (sticky_prob=0.5,
+# horizon=12, n_candidates=512) so the offline score-spread numbers are directly
+# comparable to what scan/spawn_diag already measured live.
+planner:
+  n_actions: 17
+  horizon: 12
+  n_candidates: 512
+  sticky_prob: 0.5
+
+treechop:
+  data_path: data/minerl_goal/episodes.npz
+  n_episodes: 40           # sampled without replacement (seeded) from ~210 episodes
+  offsets: [0.0, 0.1, 0.25, 0.5]   # fraction of episode length -> varying tree distance
+  n_thumbs: 8              # first n_episodes' offset=0.0 frame dumped for manual eyeballing
+
+obtain:
+  spawn_thumb_dir: assets/spawn_thumbs   # attempt #9's real cold-start spawn frames
+  coverage_data_path: data/minerl_coverage/episodes.npz
+  coverage_chunk_size: 400   # data/minerl_coverage's dones are all-False (shard-merge
+                              # bug, docs/10 attempt #7) -> fixed-length chunk fallback
+  coverage_n_chunks: 20
+  coverage_offsets: [0.0, 0.1, 0.25, 0.5]
+
+output:
+  dir: assets/diagnostics
+  csv_name: score_generalization.csv
+  plot_name: score_generalization.png

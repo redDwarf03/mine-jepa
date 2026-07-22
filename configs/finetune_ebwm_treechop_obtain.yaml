@@ -1,0 +1,60 @@
+# Cold-start attempt #14 (docs/10 follow-up) — fine-tune ebwm.pt ITSELF on a mixed
+# Treechop + Obtain dataset with per-window photometric augmentation, instead of
+# training a downstream head on its frozen latents (attempts #7/#11's approach,
+# both closed as a frozen-encoder brightness shortcut).
+#
+# Resumes from checkpoints/ebwm.pt's own weights, same architecture (embed_dim=64
+# UNCHANGED per the Phase 4 ablation lesson), lr reduced 10x vs the original
+# 3.0e-4 (configs/train_eb_jepa.yaml), few epochs, one snapshot saved per epoch —
+# selection is by the diagnose_score_generalization.py gate, NOT by val_pred/ratio
+# (Phase 4's own "lower ratio != better" lesson).
+
+data:
+  path: data/minerl_treechop_obtain/episodes.npz
+  num_frames: 8            # unchanged sweet-spot T from the original recipe
+  subsample: 4              # unchanged
+  val_fraction: 0.1
+  max_action: 17            # drop any window touching a craft-only action idx>=17
+                             # (craft/coverage sources collected over 22 actions;
+                             # ebwm.pt's action-embedding table stays n_actions=17)
+  source_weights:            # oversample Obtain-sourced windows ~4x (craft_weight
+    0: 1.0                   # precedent from WM v4's rare-craft-step fix)
+    1: 4.0
+    2: 4.0
+
+model:                       # SAME architecture as checkpoints/ebwm.pt — do not change
+  embed_dim: 64
+  encoder_hidden: 32
+  n_actions: 17
+  action_embed_dim: 16
+  predictor_hidden: 128
+
+regularizer:                 # unchanged anti-collapse recipe
+  std_coeff: 10.0
+  cov_coeff: 1.0
+  sim_coeff_t: 0.0
+
+training:
+  resume_from: checkpoints/ebwm.pt
+  epochs: 5                  # snapshot saved after every epoch; gate picks the epoch
+  batch_size: 64
+  lr: 3.0e-5                 # 10x lower than the original 3.0e-4
+  weight_decay: 1.0e-5
+  num_workers: 0
+  seed: 0
+
+augmentation:
+  color_jitter:
+    enabled: true
+    brightness: 0.3           # one shared draw per T-length window, broadcast
+    contrast: 0.2             # across all its frames (not per-frame independent —
+    saturation: 0.2           # would corrupt temporal dynamics)
+    gamma_range: [0.7, 1.4]
+
+logging:
+  log_every: 1
+  collapse_threshold: 1.0e-4
+
+checkpoint:
+  dir: checkpoints/
+  name_prefix: ebwm_v2_treechop_obtain_aug   # snapshots: {prefix}_epoch{N}.pt

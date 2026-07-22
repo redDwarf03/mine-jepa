@@ -1,0 +1,47 @@
+# Cold-start attempt #13 — cheap "Phase 1" test proposed by the Explorer, ahead of
+# any expensive encoder-side fix: does an off-the-shelf pretrained CLIP (zero-shot,
+# no training at all) already separate "tree nearby" from "no tree" correctly on the
+# same Obtain-domain frames where ebwm.pt's own goal-centroid score reverses
+# direction (attempt #10)? Pure inference, no checkpoint touched, no MineRL/Java.
+#
+# Frame sources are IDENTICAL to attempt #10's diagnose_score_generalization.yaml
+# (same data paths, same episode/offset selection) so the two are directly
+# comparable — treechop/obtain blocks copied verbatim.
+
+seed: 0
+
+clip:
+  model_name: ViT-B-32
+  pretrained: openai
+  forest_prompt: "a dense forest with many trees"
+  open_prompt: "an open grassy field with no trees"
+  batch_size: 32
+
+treechop:
+  data_path: data/minerl_goal/episodes.npz
+  n_episodes: 40
+  offsets: [0.0, 0.1, 0.25, 0.5]
+  n_thumbs: 8
+
+obtain:
+  spawn_thumb_dir: assets/spawn_thumbs
+  coverage_data_path: data/minerl_coverage/episodes.npz
+  coverage_chunk_size: 400
+  coverage_n_chunks: 20
+  coverage_offsets: [0.0, 0.1, 0.25, 0.5]
+
+# Reuses attempt #11's hand-labeled direction-check set verbatim (never re-labeled
+# by eye here) — same PNGs + same coverage indices, read from that config file
+# directly so the two labeled sets can never silently drift apart.
+ground_truth:
+  source_config: configs/train_value_projector_obtain.yaml
+  coverage_data_path: data/minerl_coverage/episodes.npz
+
+gates:
+  min_separation_ratio: 1.3     # gate a — same threshold attempts #7/#11 used
+  brightness_target_abs_r: 0.3  # gate b — target (attempt #11's own worst case: 0.643)
+
+output:
+  dir: assets/diagnostics
+  full_csv_name: clip_score_generalization.csv
+  labeled_csv_name: clip_direction_check.csv

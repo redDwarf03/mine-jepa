@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Two paths from the menu put to the test: repairing the compass fails a third time, memory of visited places produces the second real success of the campaign — Mine-JEPA</title>
+<meta name="description" content="Chapter 12 of the Mine-JEPA learning path: Two paths from the menu put to the test: repairing the compass fails a third time, memory of visited places produces the second real success of the campaign.">
+<link rel="stylesheet" href="../style.css">
+<script>document.documentElement.classList.add("js");</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="wrap site-header-inner">
+    <a class="site-brand" href="index.html"><span class="brand-mark" aria-hidden="true">&#9935;</span> Mine-JEPA</a>
+    <div class="header-controls">
+      <span class="last-updated" title="Date de mise à jour">Updated: 2026-07-22</span>
+      <nav class="lang-switch" aria-label="Site language">
+        <a href="../fr/12-la-memoire-des-lieux-visites.html" lang="fr" hreflang="fr">FR</a>
+        <a href="12-memory-of-visited-places.html" aria-current="true" lang="en" hreflang="en">EN</a>
+      </nav>
+      <div class="track-pref" data-track-pref>
+        <span class="track-pref-label" id="track-pref-label">Show:</span>
+        <button type="button" data-track-pref-value="beginner" aria-pressed="true" aria-describedby="track-pref-label">Beginner</button>
+        <button type="button" data-track-pref-value="expert" aria-pressed="false" aria-describedby="track-pref-label">Expert</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <nav class="breadcrumb" aria-label="Breadcrumbs">
+    <div class="wrap">
+      <a href="index.html">Learning Path</a>
+      <span aria-hidden="true">/</span>
+      <span>Chapter 12</span>
+    </div>
+  </nav>
+
+  <article class="chapter">
+    <div class="wrap">
+
+      <header class="chapter-header">
+        <p class="chapter-kicker">Chapter 12</p>
+        <h1>Two paths from the menu put to the test: repairing the compass fails a third time, memory of visited places produces the second real success of the campaign</h1>
+        <p class="chapter-prereqs">Prerequisites: Chapters 1 to 11 — including the first two paths of the menu opened in Chapter 11 (repairing the compass, a memory of visited places), here tested for real.</p>
+      </header>
+
+
+      <div class="tracks" data-tracks>
+        <div class="track-tabs" role="tablist" aria-label="Reading level">
+          <button class="track-tab" role="tab" id="tab-beginner" aria-controls="panel-beginner" aria-selected="true" data-track-tab="beginner">Beginner</button>
+          <button class="track-tab" role="tab" id="tab-expert" aria-controls="panel-expert" aria-selected="false" tabindex="-1" data-track-tab="expert">Expert</button>
+        </div>
+
+        <div class="track-panel is-active chapter-prose" data-track-panel="beginner" role="tabpanel" id="panel-beginner" aria-labelledby="tab-beginner">
+          <p class="track-kicker">Beginner track</p>
+
+<h2>Where we left off</h2>
+<p>Chapter 11 ended with a pause in the work and a menu of four paths to resume the investigation into the cold start (the agent having to find its first tree without ever having seen one). None of these paths had been launched yet — it was a menu, not a committed plan. This chapter tells what happened when the first two, the cheapest, were finally tested for real — both dated July 21, 2026, in the project log. The results are very different from each other: one closes a door for the third time in a row, the other opens a new one with a real success — modest, but real and honest.</p>
+<h2>Path 1: Repairing the compass precisely where it goes wrong — failed again, and in a more precise way</h2>
+<p>Recall from Chapter 11: the project&#x27;s compass (the score comparing each imagined story to the memory of &quot;a chopped tree&quot;, see Chapter 4) turned out to point <strong>backwards</strong> once taken out of its training ground — a close tree received a lower score than an empty meadow. The cheapest path on the menu proposed fixing this with a small additional rule, trained this time with real &quot;close&quot; and &quot;far&quot; examples taken directly from the crafting game (not from the expert Treechop games, as in the previous attempts of Chapter 8).</p>
+<p>On paper, the result looked like the best of the entire investigation: the new rule separated &quot;close&quot; images from &quot;far&quot; images better than all previous attempts, and it even passed a brand-new test — manually judging, on real game screenshots, if a close tree indeed received a better score than a treeless scene. It was correct 21 times out of 24 (87.5%).</p>
+<p>But a deeper test dismantled this result. This project has long followed a simple rule: any new path must be checked for a trap already spotted twice (Chapter 8, then again in Chapter 9 when a planned repair had worsened the same problem) — a distance rule that, instead of truly judging the distance to the tree, actually contents itself with detecting whether the image is bright or dark (the scene&#x27;s brightness). This time, the verification was pushed one step further than planned: someone had the idea to check if the <strong>test set itself</strong>, the one used to grade the rule &quot;good&quot; or &quot;bad&quot;, was biased. The result: yes, it was, almost completely — the images chosen as &quot;close tree&quot; were, almost systematically, much darker (dense forest) than the images chosen as &quot;no tree&quot; (open meadow, beach). The link between brightness and label was almost perfect.</p>
+<p>In other words: the beautiful 87.5% result was most likely not real proof that the rule finally understands where the tree is — it was the same old shortcut (brightness) detected for a third time, hidden behind a test that, unintentionally, measured the exact same thing as the shortcut itself. This is the <strong>third time</strong> this precise trap has appeared, with three different ways tried to correct it (artificially varying the light during training in Chapter 9, changing the training examples here) — and each time, the &quot;brightness&quot; shortcut remains stronger than ever. The lesson that now stands out: this shortcut most likely lives <strong>within the vision model itself</strong>, the one that learned to see in the first place (Chapters 1-2) and which these small repairs never touch — not in the way we train the small rule placed on top. This specific path on the menu is therefore closed, unless we attack the starting vision model directly, which is a much heavier project, set aside for now.</p>
+<h2>Path 2: A memory of already visited places — built, tested, and a real second success</h2>
+<p>The second path on the menu proposed a different idea: instead of comparing each image to a fixed landmark (the compass, which we just confirmed for the third time goes wrong outside its training ground), why not give the agent a simple memory of the places it has already explored during the current episode, and push it to go look elsewhere?</p>
+<p>The important point, respected to the letter since Chapter 11: this memory must owe <strong>nothing</strong> to the broken compass. It is constructed in a completely different way, without any learning: at each step, the agent already knows the effect of its own action (move forward, turn left, turn right — like a player who counts their own steps and turns with their eyes closed). By adding up these known effects over the course of the episode, we reconstruct an approximate position on an invisible grid, and we count how many times each cell of this grid has already been visited. When the agent seems to turn in circles without a goal, instead of making it spin in place (the old reflex of Chapter 7, which can find nothing where there is nothing) or dashing straight ahead blindly (Chapter 8), we now push it towards the least-visited direction on the grid.</p>
+<p>First test, very small (3 episodes): the mechanism triggers properly, behaves visibly differently from the old reflexes, and the coverage map indeed grows over time. No sign of the problem seen several times before (the agent starting to repeat a single action almost all the time). This test was only meant to verify that nothing was broken — not yet to judge if it works.</p>
+<p>The real test, larger (20 episodes): <strong>1 log chopped and planks crafted out of 20 trials (5%)</strong>, average reward 0.45 — about 12% better than the MineRL baseline for an agent playing at random. This is the <strong>second non-zero result of this entire long investigation</strong>, after the small correction in Chapter 8 (&quot;execute its own good plan longer&quot;, 9.7% success rate on its own batch of tests) — and it is the first to come from a completely different mechanism: not a better way to choose actions, not a better judgment, but a simple memory of &quot;where have I already been&quot;. In the successful episode, the agent had indeed explored a large part of the map before finding its tree — and its behavior, at the moment of chopping, resembled that of a real lumberjack (the same actions that had already worked in Chapter 6), not an action repeated by accident.</p>
+<h2>Honesty on what this 1 out of 20 proves, and what it does not prove</h2>
+<p>We must be clear, as with every figure in this project: a 5% success rate is of the same order of magnitude as the 9.7% of Chapter 8 — not statistical proof that this new path is better at this sample size. A classic statistical test would not distinguish these two figures from each other with confidence.</p>
+<p>But this result has two qualities that make it truly interesting, not just another number: it is clearly above the two previous attempts that had yielded zero out of eight trials each (Chapters 9 and 10), and above all, across the 20 episodes of this batch, <strong>none</strong> show the action-locking problem that had ruined several previous attempts (Chapter 8). It is therefore the second independent method — after the correction of Chapter 8 — to produce a real success without ever showing this broken behavior. It is not a confirmed breakthrough. It is a real positive point, honest, which deserves to be kept and extended rather than tucked away in a drawer.</p>
+<p>One last honest detail: the batch of 20 episodes was managed by a process that encountered a technical infrastructure issue before it could write its own formal report — the figures above were therefore verified directly, episode by episode, in the raw execution logs, rather than copied from a final report that could not be produced.</p>
+<h2>Where the Chapter 11 menu stands now</h2>
+<p>Of the four paths proposed in Chapter 11: the first (repairing the compass) is now closed for good, unless a much heavier repair is made to the vision model itself. The second (memory of visited places) is built, tested, and yields a real positive signal to extend. The last two — a second, slower brain to search for a forest, or copying real human search play — remain, as in Chapter 11, unlaunched.</p>
+        </div>
+
+        <div class="track-panel chapter-prose" data-track-panel="expert" role="tabpanel" id="panel-expert" aria-labelledby="tab-expert">
+          <p class="track-kicker">Expert track</p>
+
+<h2>Context</h2>
+<p>Chapter 11 closed the investigation campaign on cold start with two converging findings (action generation is not the bottleneck, native goal-centroid scoring of <code>ebwm.pt</code> is inverted outside the Treechop distribution) and a menu of four candidate tracks ranked by cost/risk, none launched. This chapter covers attempts #11 and #12 from <code>CLAUDE.md</code>/<code>docs/10<em>coldstart</em>engineering.md</code> (PC, 2026-07-21) — the first two paths of the menu, executed in the announced order of priority.</p>
+<h2>Attempt #11 — score correction targeted at the Obtain domain (candidate direction 1): NO-GO, third and clearest confirmation of a brightness shortcut in the frozen encoder</h2>
+<p><strong>Implementation.</strong> <code>scripts/train<em>value</em>projector_obtain.py</code>: reuses the distance projector idea from attempt #7 (Destrade et al., arXiv:2601.00844), but with close/far pairs sourced <strong>entirely from Obtain</strong> — the 40 real <code>MineRLObtainIronPickaxe-v0</code> demos plus the coverage episodes from attempt #3, zero Treechop data. Added an unprecedented mandatory gate: a direction verification on real manually-labeled frames kept in reserve (attempt #7 never had the means to run this test).</p>
+<p><strong>Offline gates — the best apparent result of the entire campaign:</strong></p>
+<table>
+<thead><tr><th>Metric</th><th>Attempt #7 (Treechop+coverage)</th><th>Attempt #11 (Obtain only)</th></tr></thead>
+<tbody>
+<tr><td>Separation ratio</td><td>7.9</td><td><strong>11.26</strong></td></tr>
+<tr><td>Obtain direction ratio</td><td>— (not measured this way)</td><td><strong>1.21</strong></td></tr>
+<tr><td>Correct direction per pair (manual labeling)</td><td>— (gate non-existent)</td><td><strong>21/24 (87.5%)</strong></td></tr>
+</tbody>
+</table>
+<p><strong>The brightness shortcut, verified, is worse than all previous variants:</strong></p>
+<table>
+<thead><tr><th>Variant</th><th>Correlation with brightness</th></tr></thead>
+<tbody>
+<tr><td>Attempt #7, original</td><td>0.117</td></tr>
+<tr><td>Attempt #7, in real play</td><td>-0.57</td></tr>
+<tr><td>ColorJitter &quot;repaired&quot; (follow-up attempt #8)</td><td>0.498</td></tr>
+<tr><td><strong>Attempt #11, sourced from Obtain</strong></td><td><strong>0.643</strong></td></tr>
+</tbody>
+</table>
+<p>The developer pushed the verification one step further than the instruction: the apparent 87.5% correct direction result was itself tested against the brightness shortcut — <code>corr(is<em>tree</em>close, brightness) = -0.917</code> on the manually labeled test set itself. The &quot;close tree&quot; frames (dense forest, jungle) were systematically much darker than the &quot;no tree&quot; frames (open meadow, beach) <strong>by construction</strong> of how this test set was assembled. The apparent result was therefore very likely the same shortcut re-detected, not authentic geometric learning of proximity to the tree. NO-GO correctly pronounced; the live play run was intentionally skipped (no live evaluation spent on a checkpoint self-diagnosed as confounded). <code>checkpoints/value<em>projector</em>obtain.pt</code> retained, shelved, not deployed — same status as <code>value<em>projector</em>colorjitter.pt</code>.</p>
+<div class="callout">
+<p><strong>Lesson, now confirmed three times independently (original attempt #7, ColorJitter, and this Obtain source): any small head trained on top of the frozen latent space of <code>ebwm.pt</code> finds brightness as the cheapest available shortcut, regardless of the domain supplying the training/validation pairs — because the shortcut very likely lives in the representation of the frozen encoder itself, which these three attempts never touched. Changing the downstream training data changes the story the projector tells about itself, not the shortcut it actually uses.</strong></p>
+</div>
+<p>Path 1 of the Chapter 11 menu is closed, unless resumed as a fix on the encoder side (adapter fine-tuning or explicit brightness invariance constraints on <code>ebwm.pt</code> itself, under the project&#x27;s strict anti-collapse discipline) — outside the scope of a simple downstream fix. No checkpoints modified except the new <code>value<em>projector</em>obtain.pt</code> (<code>ebwm.pt</code>, <code>craft<em>wm</em>v4.pt</code> read-only).</p>
+<h2>Attempt #12 — topological frontier memory (candidate direction 2): built, verified, then confirmed at N=20</h2>
+<p><strong>Framing.</strong> Designed to avoid by construction the two known failure modes of a coverage signal: RND (attempt #4B) converges on time elapsed, not scene content; any frontier metric built on the latent distance of <code>ebwm.pt</code> would inherit the directional confusion confirmed in attempt #10. The choice: a coverage signal <strong>without any learned function and without any dependency on the frozen encoder</strong>.</p>
+<p><strong>Implementation.</strong> <code>mine<em>jepa/ebwm/frontier.py::FrontierTracker</code>: position <code>(x, y, yaw)</code> reconstructed via dead reckoning from the already known semantics of the executed discrete actions — no learned function, no dependency on <code>ebwm.pt</code> or <code>craft</em>wm<em>v4.pt</code>. Binned into a grid of visit counters; when triggered, targets the least-visited neighboring heading. Wired as a new option <code>scan.macro: &quot;frontier&quot;</code> (<code>configs/play</em>craft<em>commit4</em>frontier.yaml</code>) — <code>planner.py</code> itself is untouched (pure macro, no scoring changes), and any other value of <code>scan.macro</code> remains bit-for-bit identical.</p>
+<p><strong>Sanity check N=3:</strong> clean, no crashes. Mechanism visibly distinct from existing turn/bushwhack macros (log confirmed: turn to least-visited heading, then cruise); <code>unique<em>cells</em>visited</code> grows over the course of the episode (419/939/970). No action-locking (maximum share of a single action 45%). 0/3 successes — uninformative at this N, which was not the purpose of the sanity check.</p>
+<p><strong>Debt flagged along the way, not introduced by this attempt</strong>: <code>scripts/play_craft.py</code> never wires <code>agent.seed</code> into the MineRL environment for any config — <code>agent.seed: 0</code> in these YAMLs is currently a no-op. Reproducibility debt already present across the entire campaign, not specific to attempt #12.</p>
+<p><strong>Confirmation batch, N=20, seed nominally 0 (subject to the caveat above) — the result that counts.</strong></p>
+<ul>
+<li><strong>1/20 logs chopped + planks crafted (5.0%), average reward 0.45 (+12% against the random MineRL baseline of ~0.4).</strong></li>
+<li>Second non-zero result of the entire campaign, after <code>commit_length=4</code> alone (pooled 3/31, 9.7%) — and the first to come from a mechanism entirely outside action generation / scoring (pure coverage, no learned function, no dependency on the encoder).</li>
+<li>The single success: reward=9, +4 planks, <code>steps=3000</code>, <code>unique<em>cells</em>visited=908</code> (among the highest in the batch), action profile a14=42%/a13=12%/a6=10% — healthy, no action-locking spike.</li>
+<li>Across the 20 episodes, normal action concentration throughout (maximum share of a single action 63%, most between 20-45%) — <strong>no action-locking anywhere in this batch</strong>, in direct contrast to attempts #6 and #8 (CEM refinement and pool priming had both regressed towards frozen, concentrated action profiles).</li>
+</ul>
+<p><strong>Honest framing.</strong> 1/20 (5%) is of the same order of magnitude as the 9.7% base rate — not a statistically proven improvement at this N (a Fisher&#x27;s exact test would not distinguish the two). But it is clearly above the 0/8 of attempts #8 and #9, and it is notable for producing a real success without any behavioral pathology — the second independent mechanism (after <code>commit_length</code>) to do so. Not a confirmed breakthrough; a real positive data point, to be kept and extended rather than shelved.</p>
+<p><strong>Process note.</strong> The launch of the 20-episode batch encountered an infrastructure error (session limit) before it could produce its own formal report. The figures above were extracted and verified independently, episode by episode, directly from the raw execution log (<code>logs/coldstart<em>attempt12</em>frontier_n20.log</code>), not copied from a report that could not be delivered.</p>
+<h2>Where the Chapter 11 menu stands now</h2>
+<ol>
+<li><strong>Targeted Obtain score correction</strong> — closed (attempt #11, NO-GO), unless resumed on the encoder side.</li>
+<li><strong>Topological frontier memory</strong> — built, verified, confirmed at N=20: real positive signal, not statistical proof, without behavioral pathology; path to extend (larger N, or combination with <code>commit_length</code>/other non-pathological levers).</li>
+<li><strong>Hierarchical H-JEPA</strong> — unlaunched, highest cost/risk on the menu.</li>
+<li><strong>BC fine-tuning on human search</strong> — unlaunched, already deprioritized in Chapter 11.</li>
+</ol>
+<p><code>ebwm.pt</code> and <code>craft<em>wm</em>v4.pt</code> remain intact across both attempts in this chapter: attempt #11 only trained a separate, undeployed projector; attempt #12 introduces no learned parameters.</p>
+<h2>References (Already verified, from <code>docs/references/index.md</code>, no new citations in this chapter)</h2>
+<ul>
+<li>Destrade, Bounou, Le Lidec, Ponce, LeCun, <em>Value-guided action planning with JEPA world models</em>, arXiv:2601.00844 (2026) — the distance projector method adopted (with a new source of supervision) in attempt #11.</li>
+<li>Burda, Edwards, Storkey, Klimov, RND, arXiv:1810.12894 (2018) — the coverage mechanism discarded by construction during the design of attempt #12 (<code>docs/09<em>curiosity</em>coldstart.md</code>).</li>
+</ul>
+<p>This chapter relies on no new bibliographic references: the frontier memory mechanism of attempt #12 (dead-reckoning visit counts, without a learned function) is described informally in <code>CLAUDE.md</code>/<code>docs/10<em>coldstart</em>engineering.md</code>, in the spirit of state-coverage-driven exploration methods (e.g., Go-Explore) — this family of methods has no verified entry in <code>docs/references/index.md</code> to date and is therefore not cited here with an arXiv identifier.</p>
+        </div>
+      </div>
+
+
+    </div>
+  </article>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>Mine-JEPA — a JEPA agent learning to play Minecraft from pixels, documented along the way.</p>
+    <p class="footer-links">
+      Author / Auteur: <a href="https://x.com/reddwarf03" target="_blank" rel="noopener">@reddwarf03 (X/Twitter)</a> ·
+      <a href="https://github.com/redDwarf03" target="_blank" rel="noopener">redDwarf03 (GitHub)</a> |
+      <a href="https://github.com/redDwarf03/mine-jepa" target="_blank" rel="noopener">GitHub Repository</a>
+    </p>
+  </div>
+</footer>
+
+<script src="../script.js" defer></script>
+</body>
+</html>

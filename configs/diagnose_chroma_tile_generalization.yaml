@@ -1,0 +1,43 @@
+# Cold-start attempt #15 — cheap Explorer-proposed test: does hazard.py's proven
+# lighting-invariant RATIO trick (mean(B)/max(mean(R),mean(G)) for water) also
+# separate "tree nearby" from "no tree" on Obtain frames when computed PER SPATIAL
+# TILE (green-channel share) instead of whole-frame? Pure pixel-statistic
+# diagnostic, no checkpoint, no MineRL/Java, no training.
+#
+# Frame sources are IDENTICAL to attempts #10/#13 (data paths, episode/offset
+# selection copied verbatim) so all three are directly comparable.
+
+seed: 0
+
+tile:
+  grid_rows: 4
+  grid_cols: 4
+  top_k: 3   # mean of the 3 highest-g_ratio tiles out of 16 (~19% of the frame area)
+
+treechop:
+  data_path: data/minerl_goal/episodes.npz
+  n_episodes: 40
+  offsets: [0.0, 0.1, 0.25, 0.5]
+  n_thumbs: 8
+
+obtain:
+  spawn_thumb_dir: assets/spawn_thumbs
+  coverage_data_path: data/minerl_coverage/episodes.npz
+  coverage_chunk_size: 400
+  coverage_n_chunks: 20
+  coverage_offsets: [0.0, 0.1, 0.25, 0.5]
+
+# Reuses attempt #11's hand-labeled direction-check set verbatim (never re-labeled
+# by eye here) — same PNGs + same coverage indices, read from that config directly.
+ground_truth:
+  source_config: configs/train_value_projector_obtain.yaml
+  coverage_data_path: data/minerl_coverage/episodes.npz
+
+gates:
+  min_separation_ratio: 1.3     # gate a — same threshold as attempts #7/#11/#13
+  brightness_target_abs_r: 0.3  # gate b — target (campaign worst case so far: CLIP 0.947)
+
+output:
+  dir: assets/diagnostics
+  full_csv_name: chroma_tile_generalization.csv
+  labeled_csv_name: chroma_tile_direction_check.csv

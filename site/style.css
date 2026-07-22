@@ -425,6 +425,27 @@ tbody tr:last-child td {
   border-color: var(--color-plan);
 }
 
+/* NO-GO marker on a tested-and-closed sub-result, distinct from .badge-plan's "not yet
+   launched" — reuses the same redstone tone as .callout-danger so a closed dead end and an
+   open menu item never read as the same color in one chapter (see Chapter 12). */
+.badge-danger {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+/* Genuinely mixed/uncertain marker: some part of a test passed, some part failed, and the
+   causal read is left open rather than settled either way — distinct from .badge-danger's
+   "tested and closed" (pure NO-GO) and from .badge-plan's "not yet launched" (nothing has
+   even run yet). Reuses the gold/warn tone already established by .achievement rather than
+   inventing a new color: gold in this system already means "we ran this and here's the
+   honest number", which is exactly what a mixed result still is (see Chapter 14). */
+.badge-mixed {
+  background: var(--color-warn-soft);
+  color: var(--color-warn-dark);
+  border-color: var(--color-warn);
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -836,6 +857,21 @@ html.js .track-pref {
   color: var(--color-text-muted);
 }
 
+/* Modifier for a chapter whose figure is a data chart (e.g. a matplotlib boxplot) rather than
+   gameplay footage — same item-frame chrome as .chapter-media, but: no pixelation (would blur
+   axis labels/legend text, the "don't sacrifice legibility for theming" clause applied to a
+   chart instead of body text), a plain white plate behind it so the chart's own white
+   background doesn't collide with dark mode, and a wider frame since a landscape chart isn't a
+   square POV frame. */
+.chapter-media--chart {
+  max-width: 42rem;
+}
+
+.chapter-media--chart img {
+  image-rendering: auto;
+  background: #ffffff;
+}
+
 .chapter-prose h2:first-child,
 .chapter-prose h3:first-child {
   margin-top: 0;
@@ -1080,4 +1116,17 @@ html.js .track-panel + .track-panel {
 .callout-plan h2,
 .callout-plan h3 {
   border-left-color: var(--color-plan);
+}
+
+/* Companion to .callout-danger/.callout-plan for a result that is neither a clean pass nor a
+   clean NO-GO — one gate passed, one gate failed, and the write-up explicitly leaves the
+   causal question open rather than asserting either outcome (see Chapter 14). */
+.callout-mixed {
+  background: var(--color-warn-soft);
+  border-color: var(--color-warn);
+}
+
+.callout-mixed h2,
+.callout-mixed h3 {
+  border-left-color: var(--color-warn);
 }

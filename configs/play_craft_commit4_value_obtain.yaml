@@ -1,0 +1,57 @@
+# Cold-start attempt #11 (docs/10): same as play_craft_commit4_value.yaml (two-brain,
+# sticky 0.5, scan off, commit_length=4) but BOTH the distance metric AND its goal
+# anchor are now Obtain-domain, not Treechop-domain — checkpoints/value_projector_obtain.pt
+# (scripts/train_value_projector_obtain.py, near/far pairs from data/minerl_craft +
+# data/minerl_coverage) and goal.mode: obtain_log_gain (scripts/play_ebwm.py's new
+# branch, centroid of ebwm.pt-encoded 'log obtained' frames from the same demos).
+# Isolates whether an Obtain-anchored metric moves the outcome where attempt #7's
+# Treechop-anchored one did not.
+
+minerl_env: MineRLObtainIronPickaxeDense-v0
+actions_config: configs/minerl_actions_obtain.yaml
+
+model:
+  checkpoint: checkpoints/craft_wm_v4.pt
+
+planner:
+  n_actions: 22
+  horizon: 12
+  n_candidates: 512
+  sticky_prob: 0.5
+  w_log: 1.0
+  w_planks: 2.0
+  log_threshold: 0.05
+  commit_length: 4
+
+scan:
+  enabled: false
+  flat_threshold: 0.004
+  patience: 3
+  turn_action: 12
+  max_replans: 40
+  log_std: true   # diagnostic only (scan.enabled: false -> no behaviour change)
+
+chop_model:
+  checkpoint: checkpoints/ebwm.pt
+  n_actions: 17
+  distance_projector: checkpoints/value_projector_obtain.pt
+  goal:
+    mode: obtain_log_gain
+    data_path: data/minerl_craft/episodes.npz
+    log_item: log
+    min_frames: 10
+
+goal:
+  data_path: data/minerl_craft/episodes.npz
+  chop_reward_threshold: 0.5
+
+agent:
+  episodes: 3
+  max_steps: 3000
+  action_repeat: 4
+  seed: 0
+
+logging:
+  save_gif: true
+  gif_episodes: 3
+  gif_path: assets/agent_play_craft_commit4_value_obtain.gif

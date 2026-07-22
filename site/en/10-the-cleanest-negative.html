@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The learned track was tested: it too is not enough — but it eliminates two explanations — Mine-JEPA</title>
+<meta name="description" content="Chapter 10 of the Mine-JEPA learning path: The learned track was tested: it too is not enough — but it eliminates two explanations.">
+<link rel="stylesheet" href="../style.css">
+<script>document.documentElement.classList.add("js");</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="wrap site-header-inner">
+    <a class="site-brand" href="index.html"><span class="brand-mark" aria-hidden="true">&#9935;</span> Mine-JEPA</a>
+    <div class="header-controls">
+      <span class="last-updated" title="Date de mise à jour">Updated: 2026-07-22</span>
+      <nav class="lang-switch" aria-label="Site language">
+        <a href="../fr/10-le-negatif-le-plus-net.html" lang="fr" hreflang="fr">FR</a>
+        <a href="10-the-cleanest-negative.html" aria-current="true" lang="en" hreflang="en">EN</a>
+      </nav>
+      <div class="track-pref" data-track-pref>
+        <span class="track-pref-label" id="track-pref-label">Show:</span>
+        <button type="button" data-track-pref-value="beginner" aria-pressed="true" aria-describedby="track-pref-label">Beginner</button>
+        <button type="button" data-track-pref-value="expert" aria-pressed="false" aria-describedby="track-pref-label">Expert</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <nav class="breadcrumb" aria-label="Breadcrumbs">
+    <div class="wrap">
+      <a href="index.html">Learning Path</a>
+      <span aria-hidden="true">/</span>
+      <span>Chapter 10</span>
+    </div>
+  </nav>
+
+  <article class="chapter">
+    <div class="wrap">
+
+      <header class="chapter-header">
+        <p class="chapter-kicker">Chapter 10</p>
+        <h1>The learned track was tested: it too is not enough — but it eliminates two explanations</h1>
+        <p class="chapter-prereqs">Prerequisites: Chapters 1 to 9 — including the learned policy (Proposal B), promoted to priority 1 in Chapter 9.</p>
+      </header>
+
+
+      <div class="tracks" data-tracks>
+        <div class="track-tabs" role="tablist" aria-label="Reading level">
+          <button class="track-tab" role="tab" id="tab-beginner" aria-controls="panel-beginner" aria-selected="true" data-track-tab="beginner">Beginner</button>
+          <button class="track-tab" role="tab" id="tab-expert" aria-controls="panel-expert" aria-selected="false" tabindex="-1" data-track-tab="expert">Expert</button>
+        </div>
+
+        <div class="track-panel is-active chapter-prose" data-track-panel="beginner" role="tabpanel" id="panel-beginner" aria-labelledby="tab-beginner">
+          <p class="track-kicker">Beginner track</p>
+
+<h2>Where we left off</h2>
+<p>Chapter 9 ended with a promotion: after two cheap ideas (ready-made gestures in the menu, a cruising maneuver) failed to improve the score, the remaining track — training a small function that <em>learns</em> good gestures instead of hand-writing them — became the number one priority. This chapter tells what happened when this track was finally built and tested for real.</p>
+<h2>What was built</h2>
+<p>The idea: instead of offering the planner (Chapter 4) stories drawn at random, or a small frozen menu of hand-written gestures (Chapter 8), we train a function that has <em>watched</em> thousands of images from expert games (the ones already used elsewhere in the project) and from the random coverage episodes from Chapter 7 (the ones that actually show &quot;lost, searching&quot; situations). This function learns to predict: based on what the agent sees right now, what action would a player likely choose next.</p>
+<p>Important point, already announced in Chapter 9: this function never decides the final action. It only slips its best suggestions into the pile of 512 imagined stories that the planner continues to judge and correct at each turn — exactly the same principle as the highly recognized game methods mentioned in the previous chapter (the ones that beat human champions at chess and Go): a learned intuition proposes moves, an explicit search verifies them.</p>
+<h2>A rejected verification: the project&#x27;s honesty at work</h2>
+<p>Before trusting this function, we had to verify that it hadn&#x27;t done what this project has dreaded since the very first chapter: collapse onto a single identical answer, regardless of the image shown (the &quot;collapse&quot; trap, Chapter 2 — applied here to an action policy rather than a visual representation).</p>
+<p>Two versions were trained to test this. The planned version (expert games + mixed coverage episodes) passed the test: its predictions remain varied, and it becomes significantly more hesitant — proposing a wider array of actions — on images that look like &quot;lost, searching&quot; than on those that look like an expert scene right in front of a tree. A second version, trained only on expert games (without coverage episodes), <strong>failed</strong> the test, however: it had learned to almost always answer &quot;attack&quot;, exactly the weakness Chapter 9 feared beforehand. The training program <strong>refused to save</strong> this faulty version — the same discipline as in the rest of the project: a tool that fails its own test is never kept just because it ran.</p>
+<h2>The live test: still zero</h2>
+<p>Over 8 episodes, with this function in place: <strong>0 logs chopped, zero reward.</strong> As with previous attempts at this sample size, this number alone proves nothing definitive — but it also shows no positive sign to cling to.</p>
+<h2>What this result actually eliminates</h2>
+<p>The zero itself is not the most interesting part. Two specific things were able to be verified, and eliminated, thanks to this test:</p>
+<ul>
+<li><strong>No locking onto a single gesture.</strong> Unlike in Chapter 8, where the agent froze on a single action up to 100% of the time in several episodes, here the action distribution remains varied across all 8 episodes (the most frequent action takes up between 16% and 54% of the time, never more). The learned function does exactly what it was built for: propose a diverse menu of gestures, not a narrow menu that the agent freezes on.</li>
+<li><strong>No unwinnable starting points.</strong> A new diagnostic tool (announced as a plan in Chapter 9, built since) confirms that, across the 8 episodes, something relevant was visibly present at one moment or another — well above the calibrated minimum threshold. This batch cannot therefore be explained by &quot;the starting point made success impossible from the start,&quot; unlike some episodes in previous chapters.</li>
+</ul>
+<h2>The new suspect</h2>
+<p>A truly varied source of proposals, trained correctly, tested on confirmed playable starting points — and still zero success. This is the cleanest negative result of this entire investigation, not just another zero: track B was the most &quot;logical&quot; answer to the Chapter 8 diagnosis (&quot;the problem is generating candidate gestures&quot;), and it did not move the needle.</p>
+<p>This pushes the diagnosis one step further, toward a new hypothesis — not yet confirmed, only posited: perhaps the problem is not the diversity of the proposed gestures, but the way the imagined world itself <strong>judges</strong> these proposals in a situation it knows poorly. The model that scores the imagined stories learned mostly on expert games, where a tree is almost always guaranteed in the field of view. Faced with a true random starting point — without this guarantee, with an arbitrary camera angle — perhaps it poorly evaluates even good proposals, a bit like a chess player trained almost exclusively on classical openings who finds themselves misjudging a rare and unusual position, even if their way of thinking remains otherwise sound.</p>
+<h2>What&#x27;s next</h2>
+<p>Before spending more training time on a new fix, the next step is simpler: carefully watch the recorded images of these 8 episodes — see concretely what the agent does on a confirmed playable starting point that still fails to turn into a chopped log. A qualitative look before a new expensive undertaking, exactly the same discipline as the rest of the project.</p>
+        </div>
+
+        <div class="track-panel chapter-prose" data-track-panel="expert" role="tabpanel" id="panel-expert" aria-labelledby="tab-expert">
+          <p class="track-kicker">Expert track</p>
+
+<h2>Context</h2>
+<p>Chapter 9 promoted Proposal B (latent policy prior trained by behavioral cloning) to priority 1, after Proposals A+C (Chapter 8, attempt #8) confirmed without solving the &quot;behavioral wall&quot; diagnosis. This chapter covers attempt #9 from <code>CLAUDE.md</code> (Phase 5+): Proposal B built, verified, and evaluated live.</p>
+<h2>What was built</h2>
+<p><code>mine<em>jepa/ebwm/actor.py::BCActor</code>: a small MLP classifier on the frozen latents of <code>ebwm.pt</code>, trained by <code>scripts/train</em>actor_bc.py</code> with a mandatory anti-collapse gate (refuses saving in case of collapse). Training on Treechop demos + attempt #3&#x27;s coverage episodes, to mix authentic search behavior with expert demonstrations (the trap identified in Chapter 9: an actor trained only on Treechop would learn &quot;always attack the visible tree&quot;).</p>
+<p>Wiring into <code><em>sample</em>actions()</code> via <code>planner.actor_prior</code> (config-gated), verified bit-for-bit identical to the old sampler when disabled — <strong>confirmed by a real fixed-seed run, not just asserted by analogy</strong> with other config-gated changes in the project. An independent reachability check shows that the actor&#x27;s candidates do indeed win the planner&#x27;s argmax on 6 out of 40 draws (versus a base rate of 25% with uniform drawing) — present in the executed stream, not silent dead code, yet without dominating.</p>
+<h2>The anti-collapse gate: discriminating, with a true failure rejected</h2>
+<ul>
+<li><strong>Actor with coverage</strong> (the one used for evaluation): <code>val_acc</code> 0.483, mean entropy 1.296 nats (out of a maximum 2.833 nats) → <strong>PASS</strong>.</li>
+<li><strong>Treechop-only ablation</strong>: <code>val<em>acc</code> 0.587, entropy 1.102, <code>top</em>action_frac</code> 0.964 → <strong>FAIL, checkpoint correctly rejected</strong>.</li>
+</ul>
+<p>This contrast confirms that the coverage data carried real weight for the gate, it was not decorative: without it, the actor would have collapsed towards a degenerate policy (dominated at 96.4% by a single action).</p>
+<h2>Live Result</h2>
+<p>N=8, seed 0, <code>configs/play<em>craft</em>commit4<em>actor.yaml</code>, goal-centroid scoring only (no non-flat distance signal available at this stage — see below). <strong>0/8 logs, zero reward.</strong> One-sided exact Fisher against pooled <code>commit</em>length=4</code> alone base rate (3/31 ≈ 9.7%): <strong>p ≈ 0.21</strong> — not significant at this N.</p>
+<h2>What this result specifically eliminates</h2>
+<ol>
+<li><strong>No lockdown.</strong> Action concentration over the 8 episodes: peak between 16% and 54%, across the entire range — nothing approaching the 83-100% near-total lockdown observed in attempt #8 on three out of eight episodes. The actor-prior mechanism does what it was designed for: propose a varied and non-degenerate menu of candidates.</li>
+<li><strong>No unlivable spawn.</strong> The spawn viability diagnostic (built following attempt #8, <code>spawn<em>diag</code> in <code>scripts/play</em>craft.py</code>) confirms that all 8 spawns were measurably viable: <code>max<em>chop</em>std</code> between 0.017 and 0.047, comfortably above the calibrated 0.005 threshold. This batch cannot therefore be explained by &quot;the starting point made all success impossible&quot;, unlike some earlier episodes.</li>
+</ol>
+<h2>Refined diagnosis: a new suspect, not yet confirmed</h2>
+<p><strong>This is the cleanest negative result of the campaign, not just another zero.</strong> An authentically diverse, non-collapsed source of proposals, trained on expert demonstrations and authentic search, tested on demonstrably viable spawns — and still zero successes. Proposal B was the &quot;correct&quot; answer to the Chapter 8 diagnosis (&quot;the wall is behavioral, fix action generation&quot;) and it did not move the needle.</p>
+<p>This pushes the standing diagnosis one step further: the bottleneck might not be the <em>diversity</em> of what is proposed, but the imagined world&#x27;s <strong>evaluation</strong> of these proposals under the cold-start visual distribution of <code>MineRLObtainIronPickaxeDense-v0</code> (random spawn, arbitrary camera pose, no forest guarantee) — a distribution on which <code>ebwm.pt</code> was never trained to score correctly, unlike the guaranteed-forest Treechop distribution. <strong>Not yet tested directly; flagged as the next hypothesis, not yet as established fact.</strong></p>
+<h2>Reminder: two complementary tracks from Chapter 9 already closed before this test</h2>
+<ul>
+<li><strong>Photometric repair of the trained distance metric (attempt #7)</strong>: implemented (<code>augmentation.color<em>jitter</code> in <code>scripts/train</em>value<em>projector.py</code>). The offline separation gate still holds (8.7× vs 7.9× in attempt #7). But the actual target — the confusion with brightness — <strong>worsens instead of improving</strong> on a cleaner isolated measurement: correlation <code>r=0.117</code> (attempt #7, no augmentation) → <code>r=0.498</code> (with augmentation). <strong>NO-GO — the confusion is likely anchored in the frozen latent space of <code>ebwm.pt</code> itself</strong> (Treechop, mostly daytime), not introduced by projector training; perturbing only the projector inputs cannot undo a shortcut the upstream encoder has already taken. <code>checkpoints/value</em>projector_colorjitter.pt</code> kept for comparison, <strong>unused</strong> in the evaluation above — hence goal-centroid scoring only for attempt #9.</li>
+<li><strong>Spawn viability diagnostic</strong>: built and already used above (see &quot;what this result eliminates&quot;), not just planned.</li>
+</ul>
+<h2>Next Step</h2>
+<p>Before any new training effort: qualitative inspection of the GIF (<code>assets/agent<em>play</em>craft<em>commit4</em>actor.gif</code>) and spawn thumbnails (<code>assets/spawn_thumbs/</code>) — visually understand what the agent does on a confirmed viable spawn that still fails to convert into chopping, before deciding which fix to test next.</p>
+        </div>
+      </div>
+
+
+    </div>
+  </article>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>Mine-JEPA — a JEPA agent learning to play Minecraft from pixels, documented along the way.</p>
+    <p class="footer-links">
+      Author / Auteur: <a href="https://x.com/reddwarf03" target="_blank" rel="noopener">@reddwarf03 (X/Twitter)</a> ·
+      <a href="https://github.com/redDwarf03" target="_blank" rel="noopener">redDwarf03 (GitHub)</a> |
+      <a href="https://github.com/redDwarf03/mine-jepa" target="_blank" rel="noopener">GitHub Repository</a>
+    </p>
+  </div>
+</footer>
+
+<script src="../script.js" defer></script>
+</body>
+</html>

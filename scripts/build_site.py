@@ -29,6 +29,10 @@ SLUG_PAIR = {
     "07-la-curiosite-en-panne": "07-broken-curiosity",
     "08-le-mur-est-comportemental": "08-the-wall-is-behavioral",
     "09-les-prochaines-pistes": "09-next-directions",
+    "10-le-negatif-le-plus-net": "10-the-cleanest-negative",
+    "11-la-boussole-a-l-envers": "11-compass-points-backwards",
+    "12-la-memoire-des-lieux-visites": "12-memory-of-visited-places",
+    "13-le-sauvetage-aveugle": "13-blind-rescue",
 }
 # Inverse mapping
 REVERSE_SLUG_PAIR = {v: k for k, v in SLUG_PAIR.items()}
@@ -61,6 +65,13 @@ CHAPTER_MEDIA = {
         "caption_fr": "L'effet de commit_length=4 : l'agent tient ses gestes sur 4 pas consécutifs au lieu de réinitialiser à chaque pas.",
         "alt_en": "First-person view in Minecraft: the agent holds 4 consecutive actions per planning cycle to approach and chop a tree.",
         "caption_en": "The effect of commit_length=4: holding gestures over 4 consecutive steps instead of resetting every single step.",
+    },
+    13: {
+        "gif": "agent_play_craft_commit4_hazard.gif",
+        "alt_fr": "Vue à la première personne dans Minecraft : après un bref passage dans une clairière herbeuse au crépuscule, l'agent descend dans une grotte souterraine et passe le reste de l'épisode à se déplacer dans des tunnels et couloirs de pierre et de gravier, sans jamais croiser d'eau à l'écran.",
+        "caption_fr": "Le dernier des cinq épisodes du test en direct de l'attempt #13 — celui conservé dans ce GIF. Ici, le détecteur de noyade ne s'est jamais déclenché : pas d'eau visible à l'écran, seulement une descente dans une grotte. Cohérent avec le fait que 3 des 5 épisodes n'ont rien signalé et qu'un autre s'est terminé par une mort précoce sans lien avec la noyade. L'épisode le plus révélateur du lot — un déclenchement continu de plus de 260 instants, suivi d'une mort quand même — n'est pas celui montré ici : le mécanisme d'enregistrement ne garde que le dernier des cinq essais.",
+        "alt_en": "First-person view in Minecraft: after a brief passage in a grassy clearing at dusk, the agent descends into an underground cave and spends the rest of the episode moving through tunnels and corridors of stone and gravel, without ever encountering water on screen.",
+        "caption_en": "The last of the five live test episodes of attempt #13 — the one preserved in this GIF. Here, the drowning detector never triggered: no water visible on screen, only a descent into a cave. Consistent with the fact that 3 out of 5 episodes reported nothing and another ended in an early death unrelated to drowning. The most revealing episode of the batch — continuous triggering for over 260 steps, followed by death anyway — is not the one shown here: the recording mechanism only keeps the last of the five trials.",
     },
 }
 
@@ -333,6 +344,14 @@ def build_chapter_html(meta, body_md, lang):
             prereq_text = "Prérequis : Chapitres 1 à 7 — y compris les deux premières tentatives, échouées, de trouver seul le premier arbre."
         elif order == 9:
             prereq_text = "Prérequis : Chapitres 1 à 8 — dont l'attempt #8 (pistes A et C, désormais testées et NO-GO, voir Chapitre 8)."
+        elif order == 10:
+            prereq_text = "Prérequis : Chapitres 1 à 9 — dont la politique apprise par clonage comportemental (Proposition B), promue priorité 1 au Chapitre 9."
+        elif order == 11:
+            prereq_text = "Prérequis : Chapitres 1 à 10 — y compris le diagnostic par élimination du Chapitre 10, qui pointe vers le mécanisme testé ici."
+        elif order == 12:
+            prereq_text = "Prérequis : Chapitres 1 à 11 — dont les deux premières pistes du menu ouvert au Chapitre 11 (réparer la boussole, une mémoire des lieux visités), ici testées pour de vrai."
+        elif order == 13:
+            prereq_text = "Prérequis : Chapitres 1 à 12 — dont la mémoire des lieux visités (attempt #12), dont la relecture des journaux révèle ici que 12 des 20 épisodes de son propre lot de confirmation se sont en fait terminés par une noyade."
         else:
             prereq_text = f"Prérequis : Chapitres 1 à {order-1}."
     else:
@@ -346,6 +365,14 @@ def build_chapter_html(meta, body_md, lang):
             prereq_text = "Prerequisites: Chapters 1 to 7 — including the first two failed attempts to find the first tree solo."
         elif order == 9:
             prereq_text = "Prerequisites: Chapters 1 to 8 — including attempt #8 (avenues A and C, now tested and NO-GO, see Chapter 8)."
+        elif order == 10:
+            prereq_text = "Prerequisites: Chapters 1 to 9 — including the learned policy (Proposal B), promoted to priority 1 in Chapter 9."
+        elif order == 11:
+            prereq_text = "Prerequisites: Chapters 1 to 10 — including the diagnostic by elimination of Chapter 10, which points to the mechanism tested here."
+        elif order == 12:
+            prereq_text = "Prerequisites: Chapters 1 to 11 — including the first two paths of the menu opened in Chapter 11 (repairing the compass, a memory of visited places), here tested for real."
+        elif order == 13:
+            prereq_text = "Prerequisites: Chapters 1 to 12 — including the topological frontier memory (attempt #12), for which a review of the logs here reveals that 12 of the 20 episodes in its own confirmation batch actually ended in drowning."
         else:
             prereq_text = f"Prerequisites: Chapters 1 to {order-1}."
 
@@ -484,8 +511,18 @@ def generate_en_landing_page(chapters_meta):
             prereq_desc = "Prerequisites: Chapters 1 to 7 — including the first two failed attempts to find the first tree solo."
         elif order == 9:
             prereq_desc = "Prerequisites: Chapters 1 to 8 — including attempt #8 (avenues A and C, now tested and NO-GO, see Chapter 8). This chapter distinguishes acquired results from an unexecuted plan (learned policy and two refinements)."
+        elif order == 10:
+            prereq_desc = "Prerequisites: Chapters 1 to 9 — including the learned policy by behavioral cloning (Proposal B), promoted to priority 1 in Chapter 9."
+        elif order == 11:
+            prereq_desc = "Prerequisites: Chapters 1 to 10 — including the diagnostic by elimination of Chapter 10, which points to the mechanism tested here."
+        elif order == 12:
+            prereq_desc = "Prerequisites: Chapters 1 to 11 — including the first two paths of the menu opened in Chapter 11 (repairing the compass, a memory of visited places), tested here for real. Compass repair fails a third time (the brightness shortcut lives in the frozen encoder); memory of visited places produces the second non-zero result of the entire cold-start campaign, without behavioral pathology."
+        elif order == 13:
+            prereq_desc = "Prerequisites: Chapters 1 to 12 — including the topological frontier memory (attempt #12), for which a review of the logs here reveals that 12 of the 20 episodes in its own confirmation batch actually ended in drowning. The pixel-based drowning detector built in response is accurate and well-calibrated; the wired escape action does not know where dry land is — same lesson as attempt #5 in Chapter 8, on a completely different mechanism."
 
-        extra_badge = ' <span class="badge badge-plan">Not yet launched</span>' if order == 9 else ""
+        extra_badge = ""
+        if order == 13:
+            extra_badge = ' <span class="badge badge-danger">NO-GO</span>'
 
         nodes_html += f"""
         <li class="tech-node">
