@@ -1966,3 +1966,451 @@ directly fixed
   unresolved data-scale gap without ever touching it, this is now the single most load-bearing
   unexamined mechanism in the entire campaign. Not yet decided whether or how to attack it
   directly.
+
+## Cold-start attempt #17 (PC, 2026-07-22) — two-pronged direct attack on `ebwm.pt`'s central,
+never-fixed goal-centroid score: an OOD-gated fallback (Prong A) and a data-coverage-gap check
+(Prong B) — both NO-GO, and together more conclusive than two more failures
+
+Attempt #16 closed with the central issue still untouched: attempt #10's confirmed reversal of
+`ebwm.pt`'s own goal-centroid score on Obtain has been worked AROUND by every attempt since
+(#11-#16), never fixed or bypassed directly. This attempt takes two independent, cheap shots
+directly at it before committing to anything more expensive.
+
+### Prong A — OOD-gated fallback: detect when the score should not be trusted, defer to search
+
+**Idea, orthogonal to "fix the score."** If `ebwm.pt`'s frozen latent can be shown to be
+measurably out-of-distribution on an Obtain frame, a later dispatch could fall back to the
+already-working `FrontierTracker` coverage search (attempt #12) instead of trusting a compass
+attempt #10 proved points backwards there. This needs no gradient training and no loss function
+for a downstream head to shortcut through — a meaningful contrast with every trained-head
+attempt (#7, #11, #14 Phase 2) that has hit the brightness confound so far.
+
+`scripts/diagnose_ood_gate.py` (config: `configs/diagnose_ood_gate.yaml`) fits a single Gaussian
+(mean, covariance) over 4,000 random Treechop frames' pooled `ebwm.pt` latents — Lee et al., "A
+Simple Unified Framework for Detecting Out-of-Distribution Samples and Adversarial Attacks,"
+arXiv:1807.03888 (NeurIPS 2018), closed-form statistics, no training loop — evaluated at the
+exact `vpool` feature `CraftPlannerV4`/`SwitchingCraftPlanner` already compute every replan
+(`mine_jepa/ebwm/planner.py`), then flags test frames by their Mahalanobis distance to that fit.
+Three gates on the same 251-frame diagnostic set every prior attempt in this campaign has used
+(160 Treechop, 11 real Obtain spawn thumbnails, 80 Obtain coverage frames):
+
+| Gate | Threshold | Result |
+|---|---|---|
+| A — separation (Obtain vs. Treechop mean Mahalanobis distance) | ≥ 1.3x | **FAILED — 1.294x** (missed by a hair; reverified directly from the raw CSV: obtain mean 9.905 vs. treechop mean 7.657, n=91/160) |
+| B — specificity (elevated specifically on attempt #10's hand-labeled wrong-direction frames, not uniformly across all of Obtain) | ≥ 1.2x | **FAILED — 1.105x** |
+| C — negative control (correlation with raw frame brightness) | \|r\| < 0.3 | **FAILED — r = 0.56** |
+
+Gate A missing by a hair means the detector barely distinguishes "this is Obtain" from "this is
+Treechop" at all. Gate B failing more clearly means that even the weak separation it does have
+isn't concentrated on the frames where the score is confirmed wrong — it would flag "this is
+Obtain," not "this score should not be trusted here," a materially less useful signal for a
+fallback dispatch. Gate C is the sharpest result of the three:
+
+> **LESSON: this is the 6th independent confirmation of the brightness/scene-composition
+> confound, and the most structurally decisive one yet.** r=0.56 sits squarely inside the range
+> every trained-head attempt has landed in (0.117-0.947, attempts #7/#11/#14/#15) — but this
+> detector has **no gradient, no loss function, and no way to "learn" a shortcut**: it is a
+> plain closed-form Gaussian fit and a distance computation. The fact that it still lands in the
+> same confound range shows the shortcut is not something downstream heads learn to exploit — it
+> is baked into the raw geometry of `ebwm.pt`'s frozen latent space itself, inherited by any
+> statistic built on top of it without retraining the encoder's own objective.
+
+**VERDICT: NO-GO on all three gates.** Not wired into `mine_jepa/ebwm/planner.py` or
+`scripts/play_craft.py` — no live batch was spent on a mechanism that failed its own offline
+gates. `ebwm.pt` loaded frozen and `requires_grad_(False)`-verified throughout; no checkpoint
+touched. Artifacts kept as diagnostics only: `assets/diagnostics/ood_gate.csv`,
+`assets/diagnostics/ood_mahalanobis_stats.npz`.
+
+### Prong B — is attempt #14 Phase 2's anomalous frame a data-coverage gap after all?
+
+Attempt #7's original hypothesis — never directly tested until now — was that `ebwm.pt`'s
+brightness confound might trace back to a gap in its training data's lighting diversity
+(dark/underwater/cave frames underrepresented). Before collecting any new data to test this, a
+read-only check: how much of the data actually involved already matches that description?
+
+Using `mine_jepa/ebwm/hazard.py`'s calibrated underwater/cave detector (the lighting-invariant
+channel-ratio heuristic validated in attempt #13 — chosen over raw brightness, which turned out
+to be a poor discriminator here since Treechop is actually darker on average due to canopy
+shade):
+
+- `ebwm.pt`'s **original** Treechop-only training data: only **1.0%** underwater/cave-flagged
+  frames — attempt #7's flagged gap was real, for the original model.
+- The Obtain-domain data attempt #14 Phase 2 actually fine-tuned on (`data/minerl_craft` +
+  `data/minerl_coverage`, ~4x oversampled): **16-22%** such frames, even after oversampling.
+
+The specific anomalous frame from attempt #14 Phase 2 (the one dark cave/underwater frame whose
+score got *worse*, 0.0130 → 0.025-0.031, after fine-tuning) was tentatively identified by visual
+and numeric match — with one unreconciled discrepancy honestly flagged rather than papered
+over — and sits well inside the range of already-present training examples, not as an extreme
+outlier the model had never seen anything like.
+
+> **LESSON: the gap that motivated Prong B is already closed for the data actually used in
+> attempt #14 Phase 2.** New data collection is not well-supported as the next step for this
+> specific anomaly. If the encoder-retraining line is revisited, a reweighting or
+> training-objective fix — nothing in the current VICReg + prediction loss explicitly rewards
+> correct *relative distance ordering* across biomes, only local prediction accuracy — is the
+> better-motivated next question, not more data.
+
+### Standing diagnosis, now on its firmest footing yet
+
+Six independent, mechanistically diverse approaches now agree on the same brightness/
+scene-composition confound: two trained heads on frozen latents (#7, #11), one off-the-shelf
+400M-image model never touched by this project (#14 Phase 1, CLIP), one direct fine-tune of the
+encoder itself (#14 Phase 2), one hand-designed lighting-invariant feature (#15), and now one
+untrained closed-form statistic (#17 Prong A). Combined with Prong B closing the "just needs more
+data" theory for the specific case it was raised for, the confound looks **structural** to
+`ebwm.pt`'s frozen representation and/or its training objective — not fixable by anything built
+on top of the existing checkpoint without retraining its core objective, a materially more
+expensive undertaking than anything tried in attempts #7-#17.
+
+**Not yet decided whether that is worth pursuing, or whether to consolidate around the
+mechanisms that already work (`commit_length`, frontier coverage, hazard avoidance) and accept
+the central score as a permanent known limitation.**
+
+*Previous: `docs/09_curiosity_coldstart.md`; commit_length through attempt #16's Coverage-Value
+Predictor (real aggregate signal, no learnable per-trial model at N≈100). Current: attempt #17 —
+two independent, cheap, direct attacks on the never-fixed central score (an untrained OOD
+detector, and a check of whether attempt #14 Phase 2's anomaly was a data-coverage gap) both come
+back NO-GO — the 6th confirmation of the confound via the most structurally decisive mechanism
+yet (a closed-form statistic with no way to learn a shortcut), and the closure of the "more data"
+theory for the case that raised it. Next: not yet decided — retrain `ebwm.pt`'s core training
+objective (expensive, never attempted) vs. consolidate around the campaign's working
+coverage/execution mechanisms and accept the central score as a permanent limitation.*
+
+## Cold-start attempt #18 (PC, 2026-07-27 to 2026-07-28) — literature-motivated: a same-day
+correction of the campaign's first apparent GO, plus a genuinely new non-photometric factor,
+plus a live sanity test that surfaced an unrelated regression signal
+
+A dedicated arXiv search pass (2026-07-27, covering the prior two weeks) surfaced 5 new JEPA
+papers, added to `docs/references/index.md`. Two reopened concrete, cheap sub-questions ahead of
+the retrain-vs-consolidate decision attempt #17 left open. This attempt is unusual in the
+campaign's history: its most important event is not a result but a **correction issued the same
+day**, exactly the kind of self-check this project's honesty discipline exists for.
+
+### Diagnostic 1 — pseudo-depth generalization: an apparent first-ever GO that did not survive
+a larger sample
+
+Motivated by Khan, "Depth-Regularized JEPA World Models Learn More Transferable Representations
+from Real Outdoor Robot Data" (arXiv:2607.16314) — a JEPA world model gets measurably better
+in-domain AND out-of-domain generalization from a depth-supervision auxiliary term, the first
+published instance of attempt #15's own conclusion that the brightness confound needs "a
+different modality entirely." `scripts/diagnose_depth_gate.py` runs MiDaS_small (torch.hub
+`intel-isl/MiDaS`, off-the-shelf, zero Minecraft-specific training — same "outside model" logic
+as attempt #14 Phase 1's CLIP test) over the campaign's standard 251-frame diagnostic set,
+scoring each frame by the mean of its closest 10% of MiDaS-predicted pixels (a nearest-object
+proxy, per-frame or per-column).
+
+**First pass, the campaign's usual tiny hand-labeled sample (tree_close n=4, no_tree n=6):**
+
+| Gate | Threshold | Result |
+|---|---|---|
+| A — separation | ≥ 1.3x | **PASS — 1.304x** |
+| B — brightness-independence | \|r\| < 0.3 | **PASS — r = 0.0451** (campaign's best by far; prior confounds ranged 0.117–0.947) |
+
+Read at face value, this was the first mechanism in 7 independent tests (#7, #11, #14
+Phase1/Phase2, #15, #17 Prong A, and this) to pass both established gates — flagged at the time
+as "a thin margin on a small sample," not a declared victory, because that margin looked fragile
+on inspection (Gate A cleared the 1.3x bar by 0.004).
+
+**Same-day follow-up: the hand-labeled set was expanded from 10 to 27 frames** (21 new
+candidates visually inspected — the *entire* remaining gate-eligible population in
+`data/minerl_coverage/episodes.npz` and `assets/spawn_thumbs/`, not a cherry-picked subset; 4
+discarded as genuinely ambiguous, a 19% discard rate, reported rather than hidden).
+
+| Gate | Original (n=10) | Expanded (n=27) |
+|---|---|---|
+| A — separation | 1.304x (PASS) | **1.086x (FAIL)** |
+| B — brightness-independence | r=0.0451 (PASS) | r=0.0451 (PASS, unchanged) |
+
+> **LESSON: the original 1.304x pass was a small-sample artifact, not a robust separation.**
+> Tree-close frames still score higher than no-tree frames on average (644.3 vs. 593.5) — the
+> *direction* is still correct — but the margin collapsed well below the 1.3x bar once the
+> sample nearly tripled. Gate B's brightness-independence result is real and unaffected: depth
+> genuinely is not a brightness shortcut, the best result of any mechanism this campaign has
+> tested. But independence from one confound is not the same as being a working tree-detector.
+
+**Corrected VERDICT: MIXED, not GO.** The standing diagnosis from attempt #17 — that no
+mechanism has yet cleanly separated tree-close from open scenes while staying
+brightness-independent at a trustworthy sample size — still holds. What genuinely changed: depth
+is now a confirmed non-photometric, non-brightness-confounded signal, even though it isn't (yet,
+alone) a working separator. This is being corrected in the same session it was found, not left
+standing as a false first GO — the campaign's honesty discipline applied to itself, not just to
+each new mechanism.
+
+### Diagnostic 2 — Treechop/Obtain action-coverage overlap: a genuinely new, non-photometric
+factor, still standing
+
+Motivated by Zhang, Guan, Zhang, Zhang, Li, "On the Identifiability of Controlled World Models"
+(arXiv:2607.22430): an action-conditioned JEPA only recovers reliable state/dynamics when the
+training action distribution has adequate coverage. `scripts/diagnose_action_coverage.py`
+measured this directly — no GPU, pure action-array statistics, seeded, self-calibrated against a
+Treechop-vs-Treechop split-half null rather than an invented threshold.
+
+- **Out-of-vocabulary fraction**: only 2.33% of pooled Obtain-domain actions use an index outside
+  `ebwm.pt`'s trained 17-action vocabulary — far lower than the naive "5/22≈22.7%" estimate this
+  diagnostic started from (the craft-heavy expert demos rarely invoke crafting actions relative
+  to movement; the random-policy coverage set alone is 22.6% OOV).
+- **Jensen-Shannon divergence on shared indices**: Treechop vs. pooled Obtain = **0.1453**,
+  against a Treechop-vs-Treechop-split-half null of **0.0014** — a **104x** ratio, not
+  explainable by sampling noise. Treechop's own demos are 58.5% attack / 14.7% forward / 12.0%
+  noop ("walk to a tree, hold attack"); Obtain is comparatively noop/forward-heavy and
+  attack-light (33%/31%/25%).
+- **Bonus finding, more specific than what was asked**: Treechop's *own* training data only ever
+  exercises 8 of `ebwm.pt`'s 17 trained action indices — strafe, jump, and both camera-tilt
+  directions are never sampled during training at all, an internal coverage gap independent of
+  the Obtain domain entirely.
+
+> **LESSON, held to the campaign's "hypothesis vs. confirmed" discipline**: this establishes a
+> real, large, non-photometric distributional gap — the first diagnostic in 18 attempts to
+> surface a candidate factor outside the brightness/scene-composition family — but does NOT by
+> itself prove this causes attempt #10's score reversal. The paper's claim concerns
+> state-action-next-state identifiability; this diagnostic only measured the marginal
+> action-usage histogram. A plausible contributing factor, not a confirmed cause.
+
+This finding reframes "retrain the core objective" from a vague, expensive idea into two
+concrete, scoped candidates: broaden Treechop's own action coverage, and/or reweight training
+toward the actions Obtain actually exercises. Unaffected by Diagnostic 1's correction.
+
+### Live sanity test — `scan.macro: "depth"` (N=6): no chopping, mechanism barely exercised,
+one regression signal flagged not buried
+
+Dispatched against Diagnostic 1's ORIGINAL (since-corrected) result, before the larger sample
+came back. Correctly re-scoped once the correction landed: read as "does a depth-driven heading
+behave sanely," not as validating a fix. `mine_jepa/ebwm/depth.py` (new module — MiDaS loading,
+per-column depth scoring, heading-delta computation) feeds a new scan-macro variant
+(`configs/play_craft_commit4_depth.yaml`, built on the already-validated commit_length=4 +
+hazard-avoidance baseline). By design it never touches `CraftPlannerV4`/`SwitchingCraftPlanner`'s
+latent-space scoring — MiDaS needs real pixels, the planner's candidate rollouts are imagined
+latents with no pixels to decode, so depth can only inform a navigation heading on the real
+current frame, not a rollout score.
+
+- **0/6 logs, 0/6 planks, mean reward 0.000** (below MineRL's ~0.4 random-policy baseline) —
+  expected, not the question this batch was asked.
+- **The scan macro triggered only 3 times across all 6 episodes** — `goal_score_std` rarely
+  dropped low enough to invoke it. The sanity question is only weakly answered by this batch,
+  independent of the small-N caveat that applies everywhere in this campaign.
+- Of the 3 triggers: no severe lock-in (unlike attempt #6's CEM or attempt #8's action-pool
+  priming, both >80% single-action concentration); one converged in 2 ticks; one held a
+  consistent rightmost-column heading across 4 of 6 ticks with one detour; **one reversed from
+  the rightmost column (delta +26.2°) to the leftmost (delta -26.2°) in a single 16-tick step** —
+  not the campaign's classic ping-pong-every-replan oscillation bug (attempt #13's first steered-
+  escape round), but a real, unexplained full reversal on too small a sample (2 data points) to
+  characterize further.
+- **Regression signal, flagged rather than buried**: 2/6 episodes ended `died_during_escape=True`
+  (death while the hazard-avoidance reflex was actively trying to escape water) — the exact
+  failure mode attempt #13's final round (widened `align_deg` + debounced dry-anchor) believed
+  fixed at 6/6 survived, 0 deaths, the same N=6. This batch reused that identical hazard config,
+  only adding the new depth scan macro alongside it. Not established as causal at this N — could
+  be batch-to-batch noise recurring by chance — but plausible: monocular depth models are known
+  to behave unpredictably on reflective/transparent surfaces like water, so a depth-driven
+  heading could steer toward or linger near water in a way `"turn"`/`"frontier"` didn't. **Before
+  trusting the attempt #13 hazard fix as robust across scan-macro choices, this deserves a
+  dedicated check.**
+
+GIF: `assets/agent_play_craft_commit4_depth.gif`. Full log:
+`logs/coldstart_attempt18_depth_sanity_n6.log`.
+
+### Standing diagnosis after attempt #18
+
+The "encoder/scoring confound is structural and unfixable short of retraining" conclusion from
+attempt #17 **still stands on the separation question** — no mechanism has yet cleanly separated
+tree-close from open scenes while staying brightness-independent at a trustworthy sample size.
+What genuinely changed: depth's brightness-independence is real and reproducible (a non-
+photometric signal that isn't itself a brightness shortcut, even if not yet a working detector
+alone), and Diagnostic 2's action-coverage gap is a separate, still-standing, genuinely new
+non-photometric factor — the first of its kind in 18 attempts. Neither is a proven live fix.
+Diagnostic 2 reframes "retrain the core objective" into two concrete, scoped candidates (broaden
+Treechop's own action coverage; reweight toward Obtain's actual action mix) rather than a vague,
+expensive idea. The live sanity test's drowning-regression signal is a new, separate open
+question about mechanism interaction (scan macro choice vs. hazard avoidance), unrelated to the
+central score. **Decision on how to proceed (retrain vs. consolidate) still belongs to the user —
+this attempt records results, not a commitment to any next step.**
+
+*Previous: `docs/09_curiosity_coldstart.md`; commit_length through attempt #17's two-pronged
+confirmation of the brightness confound. Current: attempt #18 — a same-day self-correction (an
+apparent first GO on the central score did not survive a larger sample), a new non-photometric
+action-coverage factor that does still stand, and a live sanity test that stayed inconclusive on
+its own question but surfaced an unrelated hazard-interaction regression signal worth checking.
+Next: not yet decided — retrain `ebwm.pt`'s core training objective vs. consolidate around the
+campaign's working coverage/execution mechanisms, now with two more concrete candidate levers
+(action-coverage reweighting; SIGReg in place of VICReg) than attempt #17 left on the table.*
+
+---
+
+## Attempt #20 — Context Collapse: is the world model's rollout responsive to actions at all?
+
+> ⚠️ **Documentation gap, flagged not smoothed over**: attempt #19 (the first real retrain of
+> `ebwm.pt`'s core objective — Run A action-coverage, Run B SIGReg, both NO-GO) was never written
+> up in this file. `CLAUDE.md` remains its only record. This section jumps from #18 to #20;
+> read `CLAUDE.md`'s Phase 5+ section for #19 before treating this file as continuous.
+
+### Where this came from
+
+A bibliography refresh (2026-08-10, covering 2026-07-27 onward, arXiv + Google Scholar) surfaced
+Gan et al., "ActSWM: Action-Sensitive World Models for Long-Horizon Planning in Open-World Games"
+([arXiv:2607.26712](https://arxiv.org/abs/2607.26712)) — whose baseline is **LeWM, the same
+architecture family as `mine_jepa/ebwm`**, evaluated on closed-loop Minecraft planning.
+
+It names a failure mode called **Context Collapse**: an autoregressive latent predictor keeps
+high cosine similarity to the true future while producing *nearly indistinguishable futures under
+different action sequences*. A model in that state has a healthy prediction `ratio` and a blind
+planner, because MPC can only rank candidate action sequences by the differences their rollouts
+produce.
+
+That is a candidate mechanical explanation for this campaign's standing diagnosis. In 19 attempts
+nobody had ever measured whether `ebwm.pt`'s rollouts respond to actions at all — every attempt
+targeted the *score* (attempts #7-#11, #14, #15, #17) or the *search/execution* (#2-#6, #8, #12,
+#13, #16).
+
+### Method
+
+`scripts/diagnose_context_collapse.py` + `configs/diagnose_context_collapse.yaml`. Fully offline:
+no MineRL, no Java, `ebwm.pt` loaded frozen with `requires_grad_(False)` and md5-reverified
+(`ac14e65361fbddeb057963362ea1382d`, unchanged).
+
+ActSWM's Eq. 10, adapted: from one encoded context frame, roll out K=12 steps twice from the same
+context, comparing each against the encoded true future `z_{t+k}`:
+
+- `s_gt_k = cos(z_hat_gt, z)` — recorded actions
+- `s_zero_k = cos(z_hat_zero, z)` — all-noop counterfactual (action index 0)
+- `delta_k = s_gt_k - s_zero_k` — the action gap
+
+Two deliberate departures from ActSWM, reported separately rather than blended into their number:
+
+1. A **random-action arm**. The planner never compares "recorded vs. noop"; it compares many
+   non-noop candidates against each other.
+2. A **planner-matched spread arm**: the std, across 64 candidate sequences, of the exact
+   final-step latent distance `planner.py::_score` ranks on — the offline counterpart of the live
+   `goal_score_std` logged since attempt #2.
+
+**Treechop is its own positive control.** This project has no established threshold for `delta_k`
+(never measured before), but the agent demonstrably plans successfully on Treechop (Phase 4,
+25-50% chop). A healthy delta there and a collapsed one on Obtain would be interpretable without
+an external bar.
+
+**A near-zero delta is ambiguous**, and ActSWM's metric alone cannot disambiguate it, so a second
+measurement was added: the L2 spread of the 1-step prediction across all 17 action choices from
+the same frame, divided by the true 1-step latent change `||z_{t+1} - z_t||`. This separates
+"the predictor ignores the action" (share ~ 0) from "it responds, but not usefully" (share > 0,
+delta still ~ 0).
+
+### Result — neither Context Collapse as defined, nor a healthy model
+
+n=400 windows/domain (266 for `obtain_coverage` — the only windows surviving the `max_action=17`
+filter, so that column is noisier than the other two and is not treated as equal evidence).
+
+| domain | real 1-step move | action spread | action share | delta@k=1 win-rate | delta_zero@K | delta_rand@K |
+|---|---|---|---|---|---|---|
+| treechop | 16.22 | 0.615 | 3.8% | 35.5% | -0.00028 | +0.00012 |
+| obtain_craft | 4.82 | 0.520 | 10.8% | 13.0% | -0.00055 | +0.00204 |
+| obtain_coverage | 11.31 | 0.703 | 6.2% | 28.2% | -0.00150 | +0.00011 |
+
+**The action pathway is not dead.** The 17 actions genuinely move the prediction, and the action
+embedding table is healthy (near-orthogonal, mean pairwise cosine -0.014). So this is *not*
+ActSWM's Context Collapse as literally defined.
+
+**But conditioning on the true action does not beat assuming the agent did nothing.** `delta_zero`
+is negative in every domain, and significantly so at k=1 — the exact regime `ebwm.pt` was trained
+on (`train_eb_jepa.py` uses `nsteps=1`), so this cannot be blamed on multi-step rollout drift:
+
+- treechop: -0.000444 +/- 0.000178, t=-2.49, p=0.0130, true action wins in **35.5%** of windows
+- obtain_craft: -0.000113 +/- 0.000026, t=-4.37, p<0.0001, wins in **13.0%**
+- obtain_coverage: -0.000149 +/- 0.000059, t=-2.51, p=0.0126, wins in **28.2%**
+
+The consistent ordering across all three domains is **noop > true action > random action**. The
+model has learned something real (the true action beats a random one) but not enough to clear the
+trivial copy-last baseline that the noop rollout approximates — consistent with `ratio=0.9265`,
+i.e. prediction only beats copy-last by ~7%.
+
+**Internal consistency check that supports the mechanism**: the win-rate is perfectly monotone in
+how *dynamic* the domain is (real 1-step move 4.82 → 13.0%, 11.31 → 28.2%, 16.22 → 35.5%). The
+more static the footage, the stronger copy-last is as a baseline, and the more the miscalibrated
+action perturbation costs. This is the expected signature if the action response is a net
+liability against a strong copy baseline, and it was not designed for — it fell out of the data.
+
+**Negative control**: corr(delta, frame brightness) = -0.048 / +0.031 / -0.225 — the first
+mechanism in this campaign essentially uncorrelated with brightness (prior range 0.117-0.947).
+Expected by construction: delta is a difference between two rollouts from the *same* frame, so
+frame-level confounds cancel. Worth stating anyway, since six prior mechanisms failed here.
+
+### What this does and does not establish
+
+**Established**: `ebwm.pt` is, for planning purposes, close to a copy-last predictor carrying an
+action-dependent perturbation that does not track true consequences. This holds on **Treechop,
+its own training domain** — so unlike attempt #10's score reversal, it is not a domain-shift
+effect. It is a second, independent defect on the **dynamics** side, whereas attempts #7-#19
+targeted the **scoring** side almost exclusively.
+
+**NOT established — and this is a genuine tension, not a footnote**: this cannot by itself be the
+cause of the cold-start wall, because the agent chops trees 25-50% on Treechop *with this exact
+deficit present*. Any account of the cold-start failure that leans on this finding has to explain
+that too. No such account is offered here; it would be a hypothesis, not a measurement.
+
+**NOT established**: that ActSWM's fix transfers. Their predictor carries H=32 context and their
+causal story ("long context lets the predictor extrapolate scene progression while ignoring the
+action") cannot apply unchanged to `ACConvPredictor`'s `context_length=1`.
+
+**What it reframes**: `commit_length=4` remains the only lever that ever produced a non-zero
+result (9.7% pooled). If per-step action information is at noise level against copy-last, then
+committing to a block of actions instead of re-ranking every tick on a noise-dominated score is
+exactly the right compensation. The campaign found that empirically without knowing why.
+
+### Concrete lever this opens
+
+ActSWM's `L_readout` term (Eq. 8) makes "the action associated with each local transition
+recoverable" — precisely the property measured broken here. **Half that machinery already exists
+in this repo, disabled since the beginning**: `mine_jepa/eb_jepa/losses.py::InverseDynamicsLoss`
+takes `(state_t, state_t+1) -> action` and is wired into `VC_IDM_Sim_Regularizer`, but
+`build_ac_jepa` passes `idm_coeff=0.0, idm=None` (`mine_jepa/ebwm/__init__.py:146`), so it has
+never been instantiated. Missing versus ActSWM: parameter freezing (their `idm.stop_grad=true`
+excludes phi_0 from the optimizer while still backpropagating through the latent inputs),
+application to rollout-predicted transitions (Eq. 8b), and the hinge term (Eq. 5) entirely.
+
+Whether to spend a retrain on that is the user's call — attempt #19 spent two retrains for two
+NO-GOs, and this diagnostic does not on its own promise that a third would land.
+
+
+### Campaign closed on attempt #20 (decision, 2026-08-10)
+
+The cold-start campaign is **closed here**, by the user's decision, with attempt #20 as its
+concluding result rather than a 21st attempt.
+
+The reasoning, stated plainly so a later reader does not mistake this for exhaustion:
+
+- **The campaign as structured was working on the wrong layer.** Attempts #2-#19 tuned the search,
+  the scoring, and the execution on top of a frozen `ebwm.pt`. Attempt #20 measured that
+  `ebwm.pt`'s own action conditioning is a net liability against copy-last — so an MPC planner
+  sitting on it ranks candidate action sequences by differences that do not track consequences.
+  That retrospectively explains why three score fixes (#7, #11, #17), two search fixes (#5, #6),
+  and two retrains (#19 Run A/B) each failed differently: none of them addressed the dynamics.
+- **The remaining lever is a rebuild, not a patch.** ActSWM's `L_readout`/hinge terms target
+  exactly the measured defect, and half the machinery is already present but disabled
+  (`InverseDynamicsLoss`). But applying it well plausibly also means changing
+  `ACConvPredictor`'s `context_length=1` — their causal story depends on a 32-frame context. That
+  is a world-model rebuild, not another attempt in this campaign's idiom.
+- **The project's stated purpose is already met.** `CLAUDE.md` line 1: "spectacular packaging of
+  existing open-source building blocks, not from-scratch research." Phases 0-4 are validated with
+  real gates, the agent chops trees in real Minecraft (25-50%), the live craft demo runs at 100%
+  over 6+ episodes, and the campaign itself is documented end to end.
+
+**What is NOT claimed by closing here**: not that cold-start chopping is impossible, and not that
+the remaining lever would fail. ActSWM demonstrates a LeWM-family model planning successfully in
+closed-loop Minecraft (mining 19/20), so the capability is real for this architecture family at a
+larger scale. What is claimed is narrower and better supported: **this campaign's approach — fix
+the planner around a frozen 664K-parameter world model with `context_length=1` — is exhausted,
+and attempt #20 explains why.**
+
+**Standing baseline if work ever resumes.** The three mechanisms that demonstrably work, all
+non-photometric, all outside the broken score: `commit_length=4` (9.7% pooled, the campaign's best
+result), `FrontierTracker` coverage search (attempt #12), and the hazard-avoidance drowning fix
+(attempt #13, confirmed at N=20: drowning 60% → 15%, fair-shot episodes 40% → 60%). The
+deferred open question from attempt #18's live sanity test (2/6 `died_during_escape` with the
+depth scan macro, a possible regression of the #13 fix under a different scan macro) is left
+open, not resolved.
+
+*Previous: attempt #18 (see also `CLAUDE.md` for the undocumented attempt #19). Current: attempt
+#20 — the first measurement in the campaign of whether the world model's rollouts respond to
+actions, motivated by a paper whose baseline is our own architecture family. Result: they respond,
+but not usefully; conditioning on the true action is significantly worse than assuming noop, on
+the training domain itself. Offline gates only — nothing wired into the live planner, no
+checkpoint written or modified.*
