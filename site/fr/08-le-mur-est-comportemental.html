@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Le mur est comportemental : une vraie première réussite, puis quatre preuves qu'affiner le signal ne suffit pas — et une cinquième qui confirme le diagnostic — Mine-JEPA</title>
-<meta name="description" content="Chapitre 8 du parcours Mine-JEPA : un bug d'exécution du planificateur (commit_length) produit le premier résultat non-nul du cold-start (3/31 logs) ; RND en ligne, un vrai CEM, une métrique de distance entraînée, puis un priming du pool de candidats + une manœuvre bushwhack échouent chacun différemment — le mur est dans la génération de gestes, pas dans leur jugement.">
+<title>Le mur est comportemental : une vraie première réussite, puis quatre preuves qu&#x27;affiner le signal ne suffit pas — et une cinquième qui confirme le diagnostic — Mine-JEPA</title>
+<meta name="description" content="Chapitre 8 du parcours Mine-JEPA : Le mur est comportemental : une vraie première réussite, puis quatre preuves qu&#x27;affiner le signal ne suffit pas — et une cinquième qui confirme le diagnostic.">
 <link rel="stylesheet" href="../style.css">
 <script>document.documentElement.classList.add("js");</script>
 </head>
@@ -15,8 +15,8 @@
   <div class="wrap site-header-inner">
     <a class="site-brand" href="index.html"><span class="brand-mark" aria-hidden="true">&#9935;</span> Mine-JEPA</a>
     <div class="header-controls">
-      <span class="last-updated" title="Date de mise à jour">Mis à jour le : 2026-07-21</span>
-                                                                  <nav class="lang-switch" aria-label="Langue du site">
+      <span class="last-updated" title="Date de mise à jour">Mis à jour le: 2026-08-11</span>
+            <nav class="lang-switch" aria-label="Langue du site">
         <a href="08-le-mur-est-comportemental.html" aria-current="true" lang="fr" hreflang="fr">FR</a>
         <a href="../en/08-the-wall-is-behavioral.html" lang="en" hreflang="en">EN</a>
       </nav>
@@ -44,18 +44,8 @@
 
       <header class="chapter-header">
         <p class="chapter-kicker">Chapitre 8</p>
-        <h1>Le mur est comportemental : une vraie première réussite, puis quatre preuves qu'affiner le signal ne suffit pas — et une cinquième qui confirme le diagnostic</h1>
-        <p class="chapter-prereqs">
-          Prérequis :
-          <a href="01-c-est-quoi-jepa.html">Qu'est-ce que JEPA, et pourquoi apprendre à un programme à jouer à Minecraft avec ça ?</a>,
-          <a href="02-le-piege-du-collapse.html">Le raccourci que le modèle essaie toujours de trouver (et comment on l'en empêche)</a>,
-          <a href="03-le-modele-du-monde.html">Apprendre au modèle à imaginer la suite</a>,
-          <a href="04-planifier-en-imagination.html">Essayer 512 avenirs dans sa tête avant d'appuyer sur un bouton</a>,
-          <a href="05-le-vrai-minecraft.html">Le grand saut vers le vrai Minecraft : quatre échecs, puis un agent qui coupe des arbres</a>,
-          <a href="06-apprendre-a-fabriquer.html">Apprendre à fabriquer : la règle est comprise, le premier arbre reste hors de portée</a>
-          et
-          <a href="07-la-curiosite-en-panne.html">La curiosité en panne, puis deux rustines qui marchent à moitié</a>
-        </p>
+        <h1>Le mur est comportemental : une vraie première réussite, puis quatre preuves qu&#x27;affiner le signal ne suffit pas — et une cinquième qui confirme le diagnostic</h1>
+        <p class="chapter-prereqs">Prérequis : Chapitres 1 à 7 — y compris les deux premières tentatives, échouées, de trouver seul le premier arbre.</p>
       </header>
 
       <figure class="chapter-media">
@@ -63,14 +53,12 @@
           src="../assets/agent_play_craft_commit4.gif"
           width="64"
           height="64"
-          alt="Vue à la première personne : l'agent avance dans une prairie en direction d'un bosquet d'arbres sombres, sous un ciel de crépuscule.">
+          alt="Vue à la première personne dans Minecraft : l&#x27;agent enchaîne 4 actions consécutives par cycle de planification pour approcher et couper un arbre.">
         <figcaption>
-          Un épisode avec <code>commit_length=4</code> — la correction décrite dans ce chapitre,
-          responsable du tout premier résultat non-nul du cold-start (3 succès sur 31 épisodes
-          regroupés, soit 9,7%). Chaque succès est identique : une bûche, puis la même recette de
-          craft que le Chapitre 6.
+          L&#x27;effet de commit_length=4 : l&#x27;agent tient ses gestes sur 4 pas consécutifs au lieu de réinitialiser à chaque pas.
         </figcaption>
       </figure>
+
 
       <div class="tracks" data-tracks>
         <div class="track-tabs" role="tablist" aria-label="Niveau de lecture">
@@ -81,627 +69,399 @@
         <div class="track-panel is-active chapter-prose" data-track-panel="beginner" role="tabpanel" id="panel-beginner" aria-labelledby="tab-beginner">
           <p class="track-kicker">Piste débutant</p>
 
-          <h2>Là où on en était</h2>
-          <p>
-            Le Chapitre 7 s'est terminé sur un constat frustrant : sharper le signal « suis-je
-            perdu ? » (en donnant au modèle plus d'exemples de situations où on est vraiment perdu)
-            n'a rien changé au résultat final — toujours zéro bûche coupée depuis un point de
-            départ aléatoire. Ce chapitre raconte la suite de l'enquête : une vraie découverte qui
-            débloque enfin un premier résultat (pas énorme, mais réel), suivie d'une série de
-            tentatives supplémentaires qui échouent chacune d'une façon différente et instructive,
-            jusqu'à ce qu'un diagnostic clair émerge — puis d'une toute nouvelle tentative qui teste
-            ce diagnostic lui-même directement, avec un résultat négatif mais très informatif :
-            <strong>le mur n'est pas dans la perception, il est dans le comportement.</strong>
-          </p>
-
-          <h2>La découverte : le planificateur jetait son propre bon plan à la poubelle</h2>
-          <p>
-            En relisant, ligne par ligne, le code du planificateur (celui du Chapitre 4, qui
-            imagine 512 histoires de 12 actions et garde la meilleure), un bug est apparu — pas un
-            bug qui plante le programme, un bug silencieux dans la logique elle-même. Le
-            planificateur imagine correctement une histoire de 12 actions, identifie correctement
-            la meilleure... et puis n'en exécute que <strong>la toute première action</strong>,
-            avant de tout recommencer depuis zéro au tour suivant. Même quand le plan imaginé était
-            excellent — « tourne-toi vers le tronc, avance, frappe, frappe, frappe » — l'agent
-            n'exécutait que le premier pas de ce plan, jetait les 11 suivants, et retirait 512
-            histoires complètement nouvelles au tour d'après. Un bon geste soutenu était donc
-            systématiquement dilué en une suite de décisions isolées et indépendantes.
-          </p>
-          <p>
-            La correction est minuscule : exécuter les 4 premières actions du meilleur plan
-            trouvé, au lieu d'une seule, avant de replanifier. Sur un lot combiné de 31 épisodes
-            (plusieurs lancements regroupés), cette seule correction produit
-            <strong>3 succès sur 31 (environ 10%)</strong> — alors que toutes les tentatives
-            précédentes de ce chapitre et du précédent, combinées (27 épisodes en tout), n'avaient
-            produit <strong>aucun</strong> succès. Ce n'est pas un chiffre énorme, et il n'est
-            statistiquement pas encore solide à cette taille d'échantillon — mais c'est le tout
-            premier résultat non-nul de toute l'histoire du projet sur ce problème précis.
-          </p>
-          <p>
-            La leçon est amusante et un peu déstabilisante : <strong>un bug de notation et un bug
-            de raisonnement se ressemblent de l'extérieur.</strong> Les chapitres précédents
-            avaient passé beaucoup de temps à améliorer la qualité du <em>signal</em> utilisé par
-            le planificateur (l'échantillonnage collant, le réflexe de recherche, l'affinage des
-            données) — tout cela était réel et nécessaire, mais rien de tout ça ne touchait au vrai
-            défaut : le planificateur choisissait correctement, mais n'agissait ensuite que sur un
-            douzième de son propre choix.
-          </p>
-
-          <h2>Une tentative de renfort : la curiosité, à nouveau, mais « en direct » cette fois</h2>
-          <p>
-            Fort de ce petit succès, le projet a tenté d'y ajouter la curiosité (Chapitre 7), mais
-            dans une version différente : au lieu d'entraîner le comité de devineurs une fois pour
-            toutes sur des enregistrements figés (ce qui avait causé son effondrement), on
-            l'entraîne <strong>en continu, pendant que l'agent joue</strong>, sur ce qu'il voit
-            réellement, instant après instant.
-          </p>
-          <p>
-            Premier lancement : trois épisodes sur sept ont planté à cause d'un vrai bug technique
-            (corrigé en cours de route). Sur les quatre épisodes valides restants, aucun succès —
-            mais avec si peu d'épisodes, ce n'est pas surprenant en soi (le taux de succès attendu
-            à ce niveau, sur seulement 4 essais, serait de moins d'un demi-succès). Le vrai
-            problème, découvert après coup : <strong>le diagnostic qui aurait permis de savoir si
-            le signal de curiosité fonctionnait n'avait même pas été enregistré.</strong> Une leçon
-            simple mais qui mérite d'être répétée : un outil de diagnostic qui existe dans le code
-            mais qu'on oublie d'activer équivaut à ne pas avoir d'outil du tout.
-          </p>
-          <p>
-            Une fois ce réglage corrigé et le diagnostic activé sur un nouveau lot de six épisodes,
-            la réponse est devenue claire — et négative, mais d'une façon précise et intéressante :
-            le signal de « nouveauté » démarre relativement élevé au début de chaque épisode, puis
-            <strong>décroît doucement et régulièrement</strong> jusqu'à devenir dix à soixante fois
-            plus faible, et ce <strong>quoi qu'il se passe à l'écran</strong>. Le moment le plus
-            visuellement marquant de tout un épisode (une scène de canopée d'arbre, le signal « je
-            vois quelque chose d'important » au plus haut) coïncide avec un signal de curiosité au
-            plus <strong>bas</strong>. La cause : la mémoire à court terme du système de curiosité
-            se remplit très vite avec des images visuellement proches (l'agent reste souvent dans
-            la même petite zone visuelle), et son prédicteur s'y habitue en quelques centaines
-            d'instants — après quoi, plus rien ne le surprend, indépendamment de ce qui compte
-            réellement. Le signal suit le temps écoulé, pas le contenu de la scène. Le projet
-            arrête cette piste sans lancer un lot plus large, la mécanique du problème étant déjà
-            claire.
-          </p>
-
-          <h2>Deuxième tentative : réactiver le réflexe de recherche, mais correctement câblé</h2>
-          <p>
-            Le Chapitre 7 avait désactivé le réflexe « tourne la tête quand tu es perdu » pour le
-            mode fabrication, parce que son seuil ne correspondait pas au bon modèle. Mais
-            entre-temps, l'agent à deux cerveaux avait été introduit : celui qui recherche l'arbre
-            utilise toujours l'ancien modèle, celui-là même où le réflexe avait été calibré
-            correctement. Cette expérience réactive donc le réflexe, exactement là où le calibrage
-            devrait être valide.
-          </p>
-          <p>
-            Résultat sur 7 épisodes : toujours <strong>zéro succès</strong>. Et le signe le plus
-            révélateur : dans l'épisode où l'on peut le mieux observer ce qui se passe, l'agent
-            traverse une longue période (près de 900 instants) où le signal « je vois quelque
-            chose d'important » est effectivement élevé — comparable à la meilleure scène de
-            canopée du Chapitre 5 — et le réflexe de recherche reste correctement inactif pendant
-            tout ce temps (il sait qu'il n'est pas perdu). <strong>Et pourtant, l'agent ne coupe
-            toujours pas de bûche durant toute cette période.</strong> C'est la réplique la plus
-            nette possible du constat du Chapitre 7 : câbler correctement le détecteur « je suis
-            perdu » ne sert à rien si le vrai problème est de convertir « je vois quelque chose »
-            en « j'agis dessus ».
-          </p>
-
-          <h2>Troisième tentative : une méthode de planification plus « intelligente »</h2>
-          <p>
-            La bibliographie du projet recommande une méthode de planification plus raffinée que
-            le simple tirage aléatoire du Chapitre 4 : au lieu de tirer 512 histoires une seule
-            fois, on tire un premier lot, on garde les meilleures (les « élites »), puis on refait
-            un second tirage <em>centré sur ce que les élites ont en commun</em>, et on répète
-            plusieurs fois. L'idée : converger progressivement vers de meilleures histoires
-            imaginées plutôt que de se contenter d'un seul tirage brut.
-          </p>
-          <p>
-            Résultat sur 8 épisodes : zéro succès, et surtout, un <strong>vrai recul</strong>
-            visible dans le comportement : l'agent se met à répéter une seule et même action de
-            façon beaucoup plus extrême que d'habitude — en moyenne, l'action la plus fréquente
-            occupe deux fois plus de temps que dans les épisodes normaux, avec un épisode où
-            l'agent frappe dans le vide, immobile, 89% du temps.
-          </p>
-          <p>
-            L'explication tient en une phrase : <strong>cette méthode a besoin d'un signal qui
-            distingue vraiment les bonnes histoires des mauvaises pour pouvoir converger vers les
-            bonnes.</strong> Quand aucun arbre n'est visible (la situation la plus fréquente dans
-            un cold-start), le signal est presque plat — les petites différences entre histoires ne
-            sont que du bruit statistique. Une méthode qui <em>raffine</em> son tirage au fil des
-            itérations prend ce bruit pour un vrai signal et s'y accroche de plus en plus fort à
-            chaque itération, au lieu de rester varié comme le fait un simple tirage aléatoire
-            répété à chaque tour. Plus la méthode est « intelligente », plus elle se trompe
-            <em>avec confiance</em> quand il n'y a, au fond, rien à apprendre de la situation.
-          </p>
-
-          <h2>Quatrième tentative : entraîner une vraie règle de distance</h2>
-          <p>
-            Dernière piste de cette campagne : jusqu'ici, la distance utilisée pour comparer une
-            histoire imaginée à l'objectif était une simple distance mathématique brute entre deux
-            embeddings — jamais entraînée à représenter quelque chose de précis comme « combien
-            d'actions me séparent réellement du but ». Cette tentative entraîne une petite fonction
-            supplémentaire pour que la distance dans cet espace transformé se rapproche mieux du
-            vrai nombre de pas nécessaires.
-          </p>
-          <p>
-            Testée hors ligne d'abord (avant de dépenser du temps de jeu réel), cette nouvelle
-            règle de distance passe le test avec un score net : les paires d'images vraiment
-            proches obtiennent une distance bien plus petite que les paires vraiment lointaines,
-            avec un écart d'environ 8 fois — largement au-dessus du seuil minimal exigé. Un bon
-            signe, très différent de l'effondrement plat observé avec la curiosité.
-          </p>
-          <p>
-            Mais en jeu réel, sur 6 épisodes : toujours zéro succès. Et l'analyse des images révèle
-            une explication précise et nouvelle : le signal de distance entraîné réagit très
-            fortement à la <strong>luminosité de la scène</strong> (jour, crépuscule, intérieur
-            d'une grotte) plutôt qu'à la vraie proximité d'un arbre — et pas de façon simple : les
-            images les plus sombres de tout l'épisode donnent, paradoxalement, le signal le plus
-            bas, pas le plus haut. La cause : ni les enregistrements d'experts, ni les épisodes
-            aléatoires utilisés pour entraîner cette règle de distance ne contiennent de vraies
-            scènes de nuit ou de grotte — cette règle n'a donc jamais appris à distinguer « c'est
-            la nuit » de « je suis loin du but », deux choses très différentes dans le vrai jeu. Un
-            signal plat (comme la curiosité) échoue proprement, sans rien casser ; un signal
-            <strong>faux avec confiance</strong> peut activement égarer le planificateur vers ce
-            qui <em>ressemble</em> à proche sans l'être — pire, en un sens, qu'un simple manque de
-            signal.
-          </p>
-
-          <h2>Cinquième tentative : mettre de bons gestes dans le menu, et une manœuvre pour couvrir du terrain</h2>
-          <p>
-            Le diagnostic esquissé après la quatrième tentative proposait une explication précise :
-            le problème n'est pas que le planificateur juge mal, c'est que le bon geste n'est
-            presque jamais <em>proposé</em> parmi les 512 histoires qu'il imagine. Deux idées pour
-            corriger directement ça ont été testées ensemble, en plus de la correction
-            <code>commit_length=4</code> déjà en place :
-          </p>
-          <ul>
-            <li>
-              <strong>Mettre de bons gestes tout faits dans la liste</strong> : au lieu de tirer les
-              512 histoires uniquement au hasard (avec ou sans « collant »), environ 90 d'entre
-              elles sont désormais des gestes écrits à la main — avancer-en-frappant de façon
-              soutenue, tourner la caméra en continu, reculer.
-            </li>
-            <li>
-              <strong>Une manœuvre de croisière</strong> : quand le signal « je suis perdu » reste
-              plat trop longtemps, au lieu de tourner la tête sur place (le réflexe déjà vu plus
-              haut, qui ne peut rien trouver là où il n'y a rien), l'agent sprinte tout droit et
-              saute par-dessus les obstacles pendant un temps limité, avant de rendre la main au
-              planificateur habituel.
-            </li>
-          </ul>
-          <p>
-            Sur 8 épisodes : toujours <strong>zéro bûche, zéro planche, récompense nulle</strong>.
-            Mais les deux mécanismes ont bien <strong>fonctionné pour de vrai</strong>, pas juste
-            été ajoutés sans effet : le geste avancer-en-frappant tout fait a effectivement été
-            choisi par le planificateur dans 3 épisodes sur 8 (jusqu'à environ la moitié du temps de
-            jeu dans un épisode) ; la manœuvre de croisière s'est déclenchée dans un épisode, où
-            elle a occupé environ un quart du temps. Ce n'est donc pas un cas où les nouveaux outils
-            dorment sans être utilisés.
-          </p>
-          <p>
-            Le vrai résultat intéressant de cette tentative n'est pas le zéro, c'est ceci : dans 3
-            épisodes sur 8, l'agent s'est mis à répéter <strong>une seule et même action</strong>
-            entre 83% et 100% du temps — un verrouillage presque total sur un seul geste. Ça
-            rappelle beaucoup ce qui s'était passé avec la méthode de planification plus
-            « intelligente » de la troisième tentative (le CEM), qui avait aussi produit un
-            verrouillage extrême sur une action quand le signal était plat. Attention cependant :
-            cette ressemblance est notée ici comme une <strong>observation</strong>, pas encore
-            comme une preuve que c'est exactement le même mécanisme — une vérification plus poussée
-            est en cours avant de l'affirmer comme un fait établi.
-          </p>
-          <p>
-            Ce résultat affine le diagnostic une fois de plus : quand le signal « à quel point cette
-            histoire imaginée est-elle bonne » est plat (aucun arbre en vue), le planificateur n'a
-            <strong>rien pour se corriger</strong>. Lui donner du bruit aléatoire pur (tentatives
-            précédentes) le fait juste s'agiter sur place sans but. Lui donner un menu concentré de
-            bons candidats (le CEM) ou des gestes continus tout faits (cette tentative) le fait au
-            contraire <strong>se verrouiller aveuglément</strong> sur l'un d'eux — parce que rien,
-            dans un signal plat, ne vient jamais le faire changer d'avis. Écrire de bons gestes à la
-            main ou affiner la méthode de tirage attaquent chacun le problème depuis un bout
-            différent, mais aucun des deux ne donne au planificateur ce qui lui manque vraiment :
-            avoir <em>appris</em>, à partir de vraies parties, comment un joueur cherche réellement
-            quand il ne voit rien d'intéressant — plutôt que de se voir imposer un petit menu figé
-            de gestes.
-          </p>
-
-          <h2>Le diagnostic qui tient, après ces cinq tentatives</h2>
-          <p>
-            Quatre tentatives indépendantes ont chacune essayé d'améliorer la <em>qualité du
-            signal</em> utilisé par le planificateur pour juger où chercher ou aller : la curiosité
-            en direct (plate), le réflexe de recherche bien câblé (inutile face à un signal pourtant
-            correct), une méthode de planification plus raffinée (contre-productive sur un signal
-            plat), une distance entraînée (fausse hors de sa zone d'entraînement). Une cinquième a
-            attaqué directement la <em>génération</em> des candidats plutôt que leur jugement —
-            deux idées à coût nul, testées ensemble — et a échoué elle aussi, mais d'une façon qui
-            confirme et affine le diagnostic plutôt que de le remettre en cause : les deux nouveaux
-            outils ont bien fonctionné, et l'agent s'est malgré tout verrouillé aveuglément sur un
-            seul geste dans plusieurs épisodes. La seule modification qui ait jamais produit un vrai
-            résultat non nul, dans tout ce chapitre et le précédent, reste la correction du
-            Chapitre 8 qui ne change <strong>rien</strong> à la qualité du jugement du
-            planificateur — elle change seulement <strong>combien de son propre bon plan il exécute
-            réellement.</strong>
-          </p>
-          <p>
-            Le diagnostic maintenant établi : <strong>le mur n'est pas que le monde imaginé par le
-            modèle soit mauvais — il sait déjà juger correctement une situation, comme le prouve le
-            test hors-ligne de la distance entraînée. Le mur, c'est que les histoires imaginées à
-            chaque tour, qu'elles soient tirées au hasard, collantes, raffinées par CEM, ou
-            partiellement pré-remplies de gestes écrits à la main, ne contiennent presque jamais le
-            bon geste appris pour vraiment chercher et approcher un arbre — et quand le menu proposé
-            est trop étroit ou trop concentré, le planificateur s'y verrouille au lieu de continuer
-            à explorer.</strong> C'est un problème de <em>génération</em> d'actions candidates, pas
-            de <em>jugement</em> de ces candidates — et la piste la plus probable n'est plus
-            « écrire de meilleurs gestes à la main » mais « apprendre ces gestes à partir de vraies
-            parties ». Le Chapitre 9 explique où en est cette piste, et les deux idées
-            complémentaires encore non testées à ce stade.
-          </p>
+<h2>Là où on en était</h2>
+<p>Le Chapitre 7 s&#x27;est terminé sur un constat frustrant : sharper le signal « suis-je perdu ? »</p>
+<p>(en donnant au modèle plus d&#x27;exemples de situations où on est vraiment perdu) n&#x27;a rien changé au</p>
+<p>résultat final — toujours zéro bûche coupée depuis un point de départ aléatoire. Ce chapitre</p>
+<p>raconte la suite de l&#x27;enquête : une vraie découverte qui débloque enfin un premier résultat (pas</p>
+<p>énorme, mais réel), suivie d&#x27;une série de tentatives supplémentaires qui échouent chacune d&#x27;une</p>
+<p>façon différente et instructive, jusqu&#x27;à ce qu&#x27;un diagnostic clair émerge — puis d&#x27;une toute</p>
+<p>nouvelle tentative qui teste ce diagnostic lui-même directement, avec un résultat négatif mais très</p>
+<p>informatif : <strong>le mur n&#x27;est pas dans la perception, il est dans le comportement.</strong></p>
+<h2>La découverte : le planificateur jetait son propre bon plan à la poubelle</h2>
+<p>En relisant, ligne par ligne, le code du planificateur (celui du Chapitre 4, qui imagine 512</p>
+<p>histoires de 12 actions et garde la meilleure), un bug est apparu — pas un bug qui plante le</p>
+<p>programme, un bug silencieux dans la logique elle-même. Le planificateur imagine correctement une</p>
+<p>histoire de 12 actions, identifie correctement la meilleure... et puis n&#x27;en exécute que <em></em>la toute</p>
+<p>première action<em></em>, avant de tout recommencer depuis zéro au tour suivant. Même quand le plan</p>
+<p>imaginé était excellent — « tourne-toi vers le tronc, avance, frappe, frappe, frappe » — l&#x27;agent</p>
+<p>n&#x27;exécutait que le premier pas de ce plan, jetait les 11 suivants, et retirait 512 histoires</p>
+<p>complètement nouvelles au tour d&#x27;après. Un bon geste soutenu était donc systématiquement dilué en</p>
+<p>une suite de décisions isolées et indépendantes.</p>
+<p>La correction est minuscule : exécuter les 4 premières actions du meilleur plan trouvé, au lieu</p>
+<p>d&#x27;une seule, avant de replanifier. Sur un lot combiné de 31 épisodes (plusieurs lancements</p>
+<p>regroupés), cette seule correction produit <strong>3 succès sur 31 (environ 10%)</strong> — alors que toutes</p>
+<p>les tentatives précédentes de ce chapitre et du précédent, combinées (27 épisodes en tout),</p>
+<p>n&#x27;avaient produit <strong>aucun</strong> succès. Ce n&#x27;est pas un chiffre énorme, et il n&#x27;est statistiquement pas</p>
+<p>encore solide à cette taille d&#x27;échantillon — mais c&#x27;est le tout premier résultat non-nul de toute</p>
+<p>l&#x27;histoire du projet sur ce problème précis.</p>
+<p>La leçon est amusante et un peu déstabilisante : <em></em>un bug de notation et un bug de raisonnement se</p>
+<p>ressemblent de l&#x27;extérieur.<em></em> Les chapitres précédents avaient passé beaucoup de temps à améliorer</p>
+<p>la qualité du <em>signal</em> utilisé par le planificateur (l&#x27;échantillonnage collant, le réflexe de</p>
+<p>recherche, l&#x27;affinage des données) — tout cela était réel et nécessaire, mais rien de tout ça ne</p>
+<p>touchait au vrai défaut : le planificateur choisissait correctement, mais n&#x27;agissait ensuite que</p>
+<p>sur un douzième de son propre choix.</p>
+<h2>Une tentative de renfort : la curiosité, à nouveau, mais « en direct » cette fois</h2>
+<p>Fort de ce petit succès, le projet a tenté d&#x27;y ajouter la curiosité (Chapitre 7), mais dans une</p>
+<p>version différente : au lieu d&#x27;entraîner le comité de devineurs une fois pour toutes sur des</p>
+<p>enregistrements figés (ce qui avait causé son effondrement), on l&#x27;entraîne <em></em>en continu, pendant</p>
+<p>que l&#x27;agent joue<em></em>, sur ce qu&#x27;il voit réellement, instant après instant.</p>
+<p>Premier lancement : trois épisodes sur sept ont planté à cause d&#x27;un vrai bug technique (corrigé en</p>
+<p>cours de route). Sur les quatre épisodes valides restants, aucun succès — mais avec si peu</p>
+<p>d&#x27;épisodes, ce n&#x27;est pas surprenant en soi (le taux de succès attendu à ce niveau, sur seulement 4</p>
+<p>essais, serait de moins d&#x27;un demi-succès). Le vrai problème, découvert après coup : <em></em>le</p>
+<p>diagnostic qui aurait permis de savoir si le signal de curiosité fonctionnait n&#x27;avait même pas été</p>
+<p>enregistré.<em></em> Une leçon simple mais qui mérite d&#x27;être répétée : un outil de diagnostic qui existe</p>
+<p>dans le code mais qu&#x27;on oublie d&#x27;activer équivaut à ne pas avoir d&#x27;outil du tout.</p>
+<p>Une fois ce réglage corrigé et le diagnostic activé sur un nouveau lot de six épisodes, la réponse</p>
+<p>est devenue claire — et négative, mais d&#x27;une façon précise et intéressante : le signal de</p>
+<p>« nouveauté » démarre relativement élevé au début de chaque épisode, puis <em></em>décroît doucement et</p>
+<p>régulièrement<strong> jusqu&#x27;à devenir dix à soixante fois plus faible, et ce </strong>quoi qu&#x27;il se passe à</p>
+<p>l&#x27;écran<em></em>. Le moment le plus visuellement marquant de tout un épisode (une scène de canopée</p>
+<p>d&#x27;arbre, le signal « je vois quelque chose d&#x27;important » au plus haut) coïncide avec un signal de</p>
+<p>curiosité au plus <strong>bas</strong>. La cause : la mémoire à court terme du système de curiosité se remplit</p>
+<p>très vite avec des images visuellement proches (l&#x27;agent reste souvent dans la même petite zone</p>
+<p>visuelle), et son prédicteur s&#x27;y habitue en quelques centaines d&#x27;instants — après quoi, plus</p>
+<p>rien ne le surprend, indépendamment de ce qui compte réellement. Le signal suit le temps écoulé,</p>
+<p>pas le contenu de la scène. Le projet arrête cette piste sans lancer un lot plus large, la</p>
+<p>mécanique du problème étant déjà claire.</p>
+<h2>Deuxième tentative : réactiver le réflexe de recherche, mais correctement câblé</h2>
+<p>Le Chapitre 7 avait désactivé le réflexe « tourne la tête quand tu es perdu » pour le mode</p>
+<p>fabrication, parce que son seuil ne correspondait pas au bon modèle. Mais entre-temps, l&#x27;agent à</p>
+<p>deux cerveaux avait été introduit : celui qui recherche l&#x27;arbre utilise toujours l&#x27;ancien modèle,</p>
+<p>celui-là même où le réflexe avait été calibré correctement. Cette expérience réactive donc le</p>
+<p>réflexe, exactement là où le calibrage devrait être valide.</p>
+<p>Résultat sur 7 épisodes : toujours <strong>zéro succès</strong>. Et le signe le plus révélateur : dans l&#x27;épisode</p>
+<p>où l&#x27;on peut le mieux observer ce qui se passe, l&#x27;agent traverse une longue période (près de 900</p>
+<p>instants) où le signal « je vois quelque chose d&#x27;important » est effectivement élevé — comparable</p>
+<p>à la meilleure scène de canopée du Chapitre 5 — et le réflexe de recherche reste correctement</p>
+<p>inactif pendant tout ce temps (il sait qu&#x27;il n&#x27;est pas perdu). <em></em>Et pourtant, l&#x27;agent ne coupe</p>
+<p>toujours pas de bûche durant toute cette période.<em></em> C&#x27;est la réplique la plus nette possible du</p>
+<p>constat du Chapitre 7 : câbler correctement le détecteur « je suis perdu » ne sert à rien si le</p>
+<p>vrai problème est de convertir « je vois quelque chose » en « j&#x27;agis dessus ».</p>
+<h2>Troisième tentative : une méthode de planification plus « intelligente »</h2>
+<p>La bibliographie du projet recommande une méthode de planification plus raffinée que le simple</p>
+<p>tirage aléatoire du Chapitre 4 : au lieu de tirer 512 histoires une seule fois, on tire un premier</p>
+<p>lot, on garde les meilleures (les « élites »), puis on refait un second tirage *centré sur ce que</p>
+<p>les élites ont en commun*, et on répète plusieurs fois. L&#x27;idée : converger progressivement vers de</p>
+<p>meilleures histoires imaginées plutôt que de se contenter d&#x27;un seul tirage brut.</p>
+<p>Résultat sur 8 épisodes : zéro succès, et surtout, un <strong>vrai recul</strong> visible dans le comportement :</p>
+<p>l&#x27;agent se met à répéter une seule et même action de façon beaucoup plus extrême que d&#x27;habitude —</p>
+<p>en moyenne, l&#x27;action la plus fréquente occupe deux fois plus de temps que dans les épisodes</p>
+<p>normaux, avec un épisode où l&#x27;agent frappe dans le vide, immobile, 89% du temps.</p>
+<p>L&#x27;explication tient en une phrase : <em></em>cette méthode a besoin d&#x27;un signal qui distingue vraiment</p>
+<p>les bonnes histoires des mauvaises pour pouvoir converger vers les bonnes.<em></em> Quand aucun arbre</p>
+<p>n&#x27;est visible (la situation la plus fréquente dans un cold-start), le signal est presque plat — les</p>
+<p>petites différences entre histoires ne sont que du bruit statistique. Une méthode qui <em>raffine</em></p>
+<p>son tirage au fil des itérations prend ce bruit pour un vrai signal et s&#x27;y accroche de plus en</p>
+<p>plus fort à chaque itération, au lieu de rester varié comme le fait un simple tirage aléatoire</p>
+<p>répété à chaque tour. Plus la méthode est « intelligente », plus elle se trompe <em>avec confiance</em></p>
+<p>quand il n&#x27;y a, au fond, rien à apprendre de la situation.</p>
+<h2>Quatrième tentative : entraîner une vraie règle de distance</h2>
+<p>Dernière piste de cette campagne : jusqu&#x27;ici, la distance utilisée pour comparer une histoire</p>
+<p>imaginée à l&#x27;objectif était une simple distance mathématique brute entre deux embeddings — jamais</p>
+<p>entraînée à représenter quelque chose de précis comme « combien d&#x27;actions me séparent réellement</p>
+<p>du but ». Cette tentative entraîne une petite fonction supplémentaire pour que la distance dans</p>
+<p>cet espace transformé se rapproche mieux du vrai nombre de pas nécessaires.</p>
+<p>Testée hors ligne d&#x27;abord (avant de dépenser du temps de jeu réel), cette nouvelle règle de</p>
+<p>distance passe le test avec un score net : les paires d&#x27;images vraiment proches obtiennent une</p>
+<p>distance bien plus petite que les paires vraiment lointaines, avec un écart d&#x27;environ 8 fois —</p>
+<p>largement au-dessus du seuil minimal exigé. Un bon signe, très différent de l&#x27;effondrement plat</p>
+<p>observé avec la curiosité.</p>
+<p>Mais en jeu réel, sur 6 épisodes : toujours zéro succès. Et l&#x27;analyse des images révèle une</p>
+<p>explication précise et nouvelle : le signal de distance entraîné réagit très fortement à la</p>
+<p><strong>luminosité de la scène</strong> (jour, crépuscule, intérieur d&#x27;une grotte) plutôt qu&#x27;à la vraie</p>
+<p>proximité d&#x27;un arbre — et pas de façon simple : les images les plus sombres de tout l&#x27;épisode</p>
+<p>donnent, paradoxalement, le signal le plus bas, pas le plus haut. La cause : ni les</p>
+<p>enregistrements d&#x27;experts, ni les épisodes aléatoires utilisés pour entraîner cette règle de</p>
+<p>distance ne contiennent de vraies scènes de nuit ou de grotte — cette règle n&#x27;a donc jamais appris</p>
+<p>à distinguer « c&#x27;est la nuit » de « je suis loin du but », deux choses très différentes dans le</p>
+<p>vrai jeu. Un signal plat (comme la curiosité) échoue proprement, sans rien casser ; un signal</p>
+<p><strong>faux avec confiance</strong> peut activement égarer le planificateur vers ce qui <em>ressemble</em> à proche</p>
+<p>sans l&#x27;être — pire, en un sens, qu&#x27;un simple manque de signal.</p>
+<h2>Cinquième tentative : mettre de bons gestes dans le menu, et une manœuvre pour couvrir du terrain</h2>
+<p>Le diagnostic esquissé après la quatrième tentative proposait une explication précise : le</p>
+<p>problème n&#x27;est pas que le planificateur juge mal, c&#x27;est que le bon geste n&#x27;est presque jamais</p>
+<p><em>proposé</em> parmi les 512 histoires qu&#x27;il imagine. Deux idées pour corriger directement ça ont été</p>
+<p>testées ensemble, en plus de la correction <code>commit_length=4</code> déjà en place :</p>
+<ul>
+<li><strong>Mettre de bons gestes tout faits dans la liste</strong> : au lieu de tirer les 512 histoires</li>
+</ul>
+<p>uniquement au hasard (avec ou sans « collant »), environ 90 d&#x27;entre elles sont désormais des</p>
+<p>gestes écrits à la main — avancer-en-frappant de façon soutenue, tourner la caméra en continu,</p>
+<p>reculer.</p>
+<ul>
+<li><strong>Une manœuvre de croisière</strong> : quand le signal « je suis perdu » reste plat trop longtemps, au</li>
+</ul>
+<p>lieu de tourner la tête sur place (le réflexe déjà vu plus haut, qui ne peut rien trouver là où</p>
+<p>il n&#x27;y a rien), l&#x27;agent sprinte tout droit et saute par-dessus les obstacles pendant un temps</p>
+<p>limité, avant de rendre la main au planificateur habituel.</p>
+<p>Sur 8 épisodes : toujours <strong>zéro bûche, zéro planche, récompense nulle</strong>. Mais les deux mécanismes</p>
+<p>ont bien <strong>fonctionné pour de vrai</strong>, pas juste été ajoutés sans effet : le geste</p>
+<p>avancer-en-frappant tout fait a effectivement été choisi par le planificateur dans 3 épisodes sur</p>
+<p>8 (jusqu&#x27;à environ la moitié du temps de jeu dans un épisode) ; la manœuvre de croisière s&#x27;est</p>
+<p>déclenchée dans un épisode, où elle a occupé environ un quart du temps. Ce n&#x27;est donc pas un cas où</p>
+<p>les nouveaux outils dorment sans être utilisés.</p>
+<p>Le vrai résultat intéressant de cette tentative n&#x27;est pas le zéro, c&#x27;est ceci : dans 3 épisodes sur</p>
+<p>8, l&#x27;agent s&#x27;est mis à répéter <strong>une seule et même action</strong> entre 83% et 100% du temps — un</p>
+<p>verrouillage presque total sur un seul geste. Ça rappelle beaucoup ce qui s&#x27;était passé avec la</p>
+<p>méthode de planification plus « intelligente » de la troisième tentative (le CEM), qui avait aussi</p>
+<p>produit un verrouillage extrême sur une action quand le signal était plat. Attention cependant :</p>
+<p>cette ressemblance est notée ici comme une <strong>observation</strong>, pas encore comme une preuve que c&#x27;est</p>
+<p>exactement le même mécanisme — une vérification plus poussée est en cours avant de l&#x27;affirmer comme</p>
+<p>un fait établi.</p>
+<p>Ce résultat affine le diagnostic une fois de plus : quand le signal « à quel point cette histoire</p>
+<p>imaginée est-elle bonne » est plat (aucun arbre en vue), le planificateur n&#x27;a <em></em>rien pour se</p>
+<p>corriger<em></em>. Lui donner du bruit aléatoire pur (tentatives précédentes) le fait juste s&#x27;agiter sur</p>
+<p>place sans but. Lui donner un menu concentré de bons candidats (le CEM) ou des gestes continus tout</p>
+<p>faits (cette tentative) le fait au contraire <strong>se verrouiller aveuglément</strong> sur l&#x27;un d&#x27;eux — parce</p>
+<p>que rien, dans un signal plat, ne vient jamais le faire changer d&#x27;avis. Écrire de bons gestes à la</p>
+<p>main ou affiner la méthode de tirage attaquent chacun le problème depuis un bout différent, mais</p>
+<p>aucun des deux ne donne au planificateur ce qui lui manque vraiment : avoir <em>appris</em>, à partir de</p>
+<p>vraies parties, comment un joueur cherche réellement quand il ne voit rien d&#x27;intéressant — plutôt</p>
+<p>que de se voir imposer un petit menu figé de gestes.</p>
+<h2>Le diagnostic qui tient, après ces cinq tentatives</h2>
+<p>Quatre tentatives indépendantes ont chacune essayé d&#x27;améliorer la <em>qualité du signal</em> utilisé par</p>
+<p>le planificateur pour juger où chercher ou aller : la curiosité en direct (plate), le réflexe de</p>
+<p>recherche bien câblé (inutile face à un signal pourtant correct), une méthode de planification</p>
+<p>plus raffinée (contre-productive sur un signal plat), une distance entraînée (fausse hors de sa</p>
+<p>zone d&#x27;entraînement). Une cinquième a attaqué directement la <em>génération</em> des candidats plutôt que</p>
+<p>leur jugement — deux idées à coût nul, testées ensemble — et a échoué elle aussi, mais d&#x27;une façon</p>
+<p>qui confirme et affine le diagnostic plutôt que de le remettre en cause : les deux nouveaux outils</p>
+<p>ont bien fonctionné, et l&#x27;agent s&#x27;est malgré tout verrouillé aveuglément sur un seul geste dans</p>
+<p>plusieurs épisodes. La seule modification qui ait jamais produit un vrai résultat non nul, dans</p>
+<p>tout ce chapitre et le précédent, reste la correction du Chapitre 8 qui ne change <strong>rien</strong> à la</p>
+<p>qualité du jugement du planificateur — elle change seulement <em></em>combien de son propre bon plan il</p>
+<p>exécute réellement.<em></em></p>
+<p>Le diagnostic maintenant établi : <em></em>le mur n&#x27;est pas que le monde imaginé par le modèle soit</p>
+<p>mauvais — il sait déjà juger correctement une situation, comme le prouve le test hors-ligne de la</p>
+<p>distance entraînée. Le mur, c&#x27;est que les histoires imaginées à chaque tour, qu&#x27;elles soient</p>
+<p>tirées au hasard, collantes, raffinées par CEM, ou partiellement pré-remplies de gestes écrits à la</p>
+<p>main, ne contiennent presque jamais le bon geste appris pour vraiment chercher et approcher un</p>
+<p>arbre — et quand le menu proposé est trop étroit ou trop concentré, le planificateur s&#x27;y verrouille</p>
+<p>au lieu de continuer à explorer.<em></em> C&#x27;est un problème de <em>génération</em> d&#x27;actions candidates, pas de</p>
+<p><em>jugement</em> de ces candidates — et la piste la plus probable n&#x27;est plus « écrire de meilleurs</p>
+<p>gestes à la main » mais « apprendre ces gestes à partir de vraies parties ». Le Chapitre 9 explique</p>
+<p>où en est cette piste, et les deux idées complémentaires encore non testées à ce stade.</p>
         </div>
 
         <div class="track-panel chapter-prose" data-track-panel="expert" role="tabpanel" id="panel-expert" aria-labelledby="tab-expert">
           <p class="track-kicker">Piste expert</p>
 
-          <h2>Cadrage : quatre attaques indépendantes du signal, un seul lever réel</h2>
-          <p>
-            À l'issue du Chapitre 7 (sticky sampling, scan, coverage fine-tune — tous des
-            correctifs du côté <em>signal/perception</em>), ce chapitre couvre les attempts #4-#7
-            de <code>docs/10_coldstart_engineering.md</code> sur
-            <code>MineRLObtainIronPickaxeDense-v0</code>, deux-cerveaux, seed 0.
-          </p>
-
-          <h2>Attempt #4A — <code>commit_length</code> : la faute était dans la convention d'appel</h2>
-          <p>
-            Relecture de <code>plan()</code> : chaque replan tire 512 séquences fraîches et
-            <strong>ne retourne que la première action</strong> de la meilleure séquence — même
-            quand le sticky sampling propose un geste multi-étapes correct (tourner vers le tronc,
-            avancer, frapper), les étapes 2..12 sont jetées à chaque tick.
-          </p>
-          <p>
-            Fix : <code>commit_length</code> (<code>mine_jepa/ebwm/planner.py</code>, câblé dans
-            <code>DiscreteLatentPlanner.plan()</code> et
-            <code>SwitchingCraftPlanner.plan()</code>) retourne les
-            <code>min(commit_length, horizon)</code> premières actions de la séquence gagnante.
-            <code>commit_length=1</code> (défaut) = chemin de code original, vérifié bit-for-bit.
-          </p>
-          <p>
-            <strong>Résultats, <code>commit_length=4</code> seul, deux-cerveaux, sticky 0,5, scan
-            off, seed 0 (pooling de plusieurs batchs, N=31) :</strong>
-          </p>
-          <div class="table-scroll">
-            <table>
-              <thead>
-                <tr><th></th><th>N</th><th>Logs</th><th>Craft réussi</th></tr>
-              </thead>
-              <tbody>
-                <tr><td><code>commit_length=4</code> (pooled)</td><td>31</td><td>3</td><td>3/31 (9,7%)</td></tr>
-                <tr><td><code>commit_length=1</code> (pooled, attempts #2-#3)</td><td>27</td><td>0</td><td>0/27 (0%)</td></tr>
-              </tbody>
-            </table>
-          </div>
-          <p>
-            Chaque succès identique : 1 log → craft-planks → +4 planches, reward 9 (la règle WM v4
-            connue, Chapitre 6). Fisher exact unilatéral 3/31 vs 0/27 : <strong>p ≈ 0,15</strong> —
-            non significatif à ce N, mais <strong>premier résultat non nul, reproductible, de
-            l'histoire du projet sur ce milestone.</strong>
-          </p>
-          <blockquote>
-            <p>
-              <strong>Leçon : un bug de scoring et un bug de convention d'appel sont
-              indiscernables de l'extérieur.</strong> Les attempts #2-#3 avaient amélioré le
-              <em>signal</em> (sticky, scan, coverage) — réel et nécessaire, mais individuellement
-              insuffisant. Le vrai manque n'était pas un meilleur plan mais <em>exécuter davantage
-              du plan déjà correctement choisi</em>.
-            </p>
-          </blockquote>
-          <p>
-            À 9,7%, loin du seuil-milestone de 30% ; chaque succès reste tributaire d'un spawn
-            chanceux (steps-to-success moyen ≈3000 — la plupart des épisodes ne voient jamais
-            d'arbre exploitable dans le budget). Gardé comme défaut de
-            <code>configs/play_craft_commit4*.yaml</code> ; <code>play_craft.yaml</code>
-            (<code>commit_length</code> non défini → 1) inchangé.
-          </p>
-
-          <h2>Attempt #4B — RND en ligne : inconclusif, puis écarté mécaniquement</h2>
-          <p>
-            Predictor/target RND entraînés en continu sur les états visités pendant le jeu
-            (<code>mine_jepa/ebwm/rnd.py</code>), bonus z-scoré (<code>novelty_coeff=0,5</code>)
-            dans le planificateur chop du deux-cerveaux.
-          </p>
-          <p>
-            <strong>Bug de lancement trouvé et corrigé en cours de batch</strong> (pas de la
-            flakiness Java) : <code>ResNet5.out_dim</code> inexistant — corrigé pour lire
-            <code>state_dim</code> depuis la config du checkpoint. N=7 : épisodes 1-3 plantent
-            avant le fix, épisodes 4-7 tournent proprement.
-          </p>
-          <p>
-            <strong>Données valides : N=4, 0/4 succès.</strong> Au taux de base pooled de 9,7%,
-            l'espérance sur 4 essais est ≈0,4 — non informatif seul. <strong>Le diagnostic qui
-            aurait tranché n'a jamais été enregistré</strong> : <code>novelty_mean</code> existait
-            dans <code>plan(return_info=True)</code> mais <code>scan.log_std: false</code> a
-            supprimé l'impression. Verdict : <strong>inconclusif, arrêt sans lot de
-            confirmation</strong> (pas d'N=15-20 sans signal qualitatif positif d'abord, règle
-            propre du projet).
-          </p>
-          <p>
-            <strong>Re-run instrumenté, <code>scan.log_std: true</code>, N=6 :</strong> 0/6 succès
-            (attendu ≈0,6, non surprenant). <code>novelty_mean</code> sur les 6 épisodes montre
-            systématiquement la <strong>même forme</strong> : montée ou plateau sur les ~50-130
-            premiers pas, puis <strong>décroissance monotone et lisse</strong> vers une valeur
-            10-60× plus basse en fin d'épisode — indépendamment de la longueur d'épisode, de la
-            survie, et de ce que fait <code>goal_score_std</code> (le signal indépendant déjà
-            validé). Corrélation entre les deux signaux incohérente en signe et magnitude entre
-            épisodes (-0,83 à +0,15).
-          </p>
-          <p>
-            <strong>Le point le plus net</strong> : épisode 5 (188 replans),
-            <code>goal_score_std</code> atteint son pic absolu de l'épisode (0,045-0,046,
-            comparable à la bande "canopée" de Treechop) exactement au moment où
-            <code>novelty_mean</code> est parmi ses valeurs les <strong>plus basses</strong>
-            (0,0015-0,0017).
-          </p>
-          <blockquote>
-            <p>
-              <strong>Lecture : ce n'est pas la séparation du smoke test qui apparaît en jeu,
-              c'est sa propre phase de convergence précoce.</strong> Le buffer-anneau de 256
-              emplacements se remplit en ~130 pas avec des frames visuellement homogènes (canopée
-              dense, zone de spawn) ; le predictor converge sur cette distribution étroite, après
-              quoi la nouvelté est basse presque partout où la trajectoire va réellement — parce
-              que la trajectoire elle-même ne visite rien que le buffer n'a pas déjà montré au
-              predictor de façon répétée. Le moment qui a rompu cette homogénéité (le pic à
-              l'étape 2480) n'a pas été détecté comme nouveau, parce que « différent du batch
-              d'entraînement récent » et « scène la plus saillante selon
-              <code>goal_score_std</code> » ne sont pas le même critère.
-            </p>
-          </blockquote>
-          <p>
-            <strong>VERDICT : STOP.</strong> Même symptôme que le Chapitre 7 (aucune discrimination
-            là où ça compte — perdu vs. trouvé), mais par un mécanisme différent : pas un collapse
-            d'ensemble (offline), mais une convergence trop rapide sur une distribution d'état trop
-            étroite (online). L'avantage de RND sur l'ensemble offline est « le predictor ne
-            s'effondre pas vers une constante », pas « le predictor suit la distribution d'états
-            que l'agent a réellement besoin de discriminer ».
-          </p>
-
-          <h2>Attempt #5 — Scan réactivé en mode deux-cerveaux : câblage confirmé correct, résultat toujours négatif</h2>
-          <p>
-            Vérification du câblage (avant tout run) : <code>chop_planner.plan(...,
-            return_info=True)</code> lit bien <code>goal_score_std</code> sur <code>ebwm.pt</code>,
-            jamais sur <code>craft_wm_v4</code> (structurellement exclu par <code>if scan_enabled
-            and mode == "chop"</code>). Config : <code>flat_threshold: 0,003</code>,
-            <code>patience: 3</code>, <code>max_replans: 40</code> (calibration Treechop du
-            Chapitre 7), combiné à <code>commit_length=4</code>.
-          </p>
-          <p>
-            <strong>Résultat N=7 : 0/7 succès.</strong> 2/7 épisodes reproduisent une version
-            bornée (par <code>max_replans</code>, pas par tout l'épisode) de la pathologie
-            « l'agent tourne sur lui-même » (<code>a12</code> 51%/87%). Un épisode passe ~880 des
-            3000 pas dans la bande "scène saillante" (0,008-0,026) avec le scan correctement
-            inactif — <strong>et l'agent ne coupe toujours pas</strong> durant cette fenêtre. Un
-            épisode se termine dans un passage rocheux/type grotte sans arbre — un cas que le scan
-            ne peut pas résoudre par construction.
-          </p>
-          <p>
-            <strong>VERDICT : hypothèse de câblage confirmée, utilité non confirmée —
-            NO-GO.</strong> Le point de donnée le plus détaillé (le stretch à haut std de
-            l'épisode 1) montre que le mur n'est pas "l'agent ne sait pas qu'un arbre est là" mais
-            "le savoir ne se convertit pas en coupe" — exactement le diagnostic deux-cerveaux du
-            Chapitre 7, cette fois sur un signal confirmé bien calibré.
-          </p>
-
-          <h2>Attempt #6 — CEM réel (raffinement itératif catégoriel) : régression, pas juste un échec</h2>
-          <p>
-            <code>DiscreteLatentPlanner</code> gagne <code>cem_iters</code>,
-            <code>cem_elite_frac</code>, <code>cem_smoothing</code> : génération 1 par
-            <code>_sample_actions()</code> habituel, générations suivantes ré-échantillonnées
-            depuis une table catégorielle construite sur les fréquences d'action des élites
-            (+lissage Laplace). <code>cem_iters&lt;=1</code> = chemin original, vérifié
-            bit-for-bit sur 8 cas (<code>ebwm.pt</code>/<code>craft_wm_v4</code>, sticky
-            {0,0/0,5}, commit_length {1/4}). Coût mesuré : ×2,94 par appel à
-            <code>cem_iters=3</code> (~41% de baisse de throughput réel).
-          </p>
-          <p>
-            <strong>Résultat N=8 : 0/8 succès</strong>, <code>chop=188 craft=0</code> — le mode ne
-            bascule jamais. <strong>Régression qualitative nette</strong> : concentration de
-            l'action dominante moyenne <strong>66,3%</strong> (50-89%) contre <strong>35,8%</strong>
-            en moyenne pour <code>commit_length=4</code> seul (19-69%, un seul épisode dépasse
-            51%). Épisode 8 : 89% d'attaque immobile (<code>a6</code>) ; épisodes 2/4/5 : 74-81% de
-            sprint-attaque figé dans une direction fixe (<code>a14</code>), quasi aucune action de
-            rotation dans le top-3.
-          </p>
-          <blockquote>
-            <p>
-              <strong>Leçon : le raffinement CEM a besoin d'un score discriminant pour affiner — il
-              n'a aucun moyen de savoir que le score est plat.</strong> Le tirage/collant se
-              dégrade en douceur quand le paysage de score est plat (chaque replan tire un pool
-              encore varié) ; le raffinement itératif fait l'inverse : il prend le bruit résiduel
-              d'un classement plat pour un vrai signal et concentre génération après génération sur
-              ce bruit — plus la méthode est fine, plus elle s'engage avec confiance dans le
-              mauvais sens quand le signal sous-jacent n'a rien à dire.
-            </p>
-          </blockquote>
-          <p>
-            <strong>NO-GO</strong> : 0/8, régression du seul axe qualitatif que CEM devait
-            améliorer, coût fps réel — aucun des trois critères n'est satisfait.
-          </p>
-
-          <h2>Attempt #7 — Métrique de distance entraînée (Destrade et al., arXiv:2601.00844) : gate offline PASSÉ, résultat live NO-GO, diagnostic nouveau et précis</h2>
-          <p>
-            Petit projecteur <code>P</code>
-            (<code>mine_jepa/ebwm/value_head.py::DistanceProjector</code>, 2 couches,
-            <code>in_dim=4096</code> → <code>proj_dim=32</code>, ~1,06M params) entraîné pour que
-            <code>||P(z_t)-P(z_goal)||</code> approxime le vrai nombre de pas jusqu'au but ;
-            <code>ebwm.pt</code> figé (49 params gelés, vérifié). Données : démos Treechop +
-            épisodes de couverture (Chapitre 7) comme paires "lointaines" censurées (hinge
-            unilatéral).
-          </p>
-          <p>
-            <strong>Gate offline (obligatoire avant tout temps de jeu) — PASSÉ nettement</strong> :
-            paires proches (k≤5, n=2560) <code>pred_dist</code> moyenne=12,317 ; paires
-            lointaines/couverture (n=2560) moyenne=97,257. <strong>Ratio de séparation
-            7,896</strong> (seuil requis ≥1,3).
-          </p>
-          <p>
-            <strong>Live N=6 : 0/6 succès</strong>, pas de crash, concentration d'action normale
-            (16-40%, pas de régression CEM). Le GIF conservé (seule la dernière épisode sans
-            succès survit sur disque, la logique "meilleur épisode réussi" ne se déclenche jamais
-            à 0/6) montre l'agent finissant proche du noir — cave/ravine — cohérent avec la mort
-            constatée au Chapitre 7.
-          </p>
-          <p>
-            Corrélation Pearson(<code>goal_score_std</code>, luminosité de frame) =
-            <strong>-0,565</strong> sur 72 lectures d'un épisode. Frames diurnes (luminosité&gt;60) :
-            std moyen 0,499 ; frames sombres (≤60, crépuscule/nuit dès l'étape 480) : std moyen
-            1,174 — plus du double. <strong>Mais non monotone</strong> : les frames les plus
-            sombres de tout l'épisode (luminosité ~14-15, juste avant la fin) ont le std le
-            <strong>plus bas</strong> de toute la trace. Cause : ni les démos Treechop (luminosité
-            moyenne 45,5, déjà assez sombres — ombre de canopée, mais toujours de jour) ni les
-            épisodes de couverture (moyenne 92,4, plein jour) ne contiennent de vraies scènes de
-            nuit ou de grotte — le régime visuel exact où cet épisode passe une bonne partie de son
-            temps.
-          </p>
-          <blockquote>
-            <p>
-              <strong>Leçon : c'est une TROISIÈME catégorie de finding, plus spécifique que "ne
-              discrimine pas" (l'ensemble offline du Chapitre 7) ou "discrimine correctement mais
-              ce n'est toujours pas le verrou" (les attempts sur métrique brute). La métrique
-              entraînée discrimine bien — une vraie plage dynamique large, l'opposé du collapse
-              RND — mais selon un axe de nuisance lumière/composition de scène que le gate offline
-              ne pouvait structurellement pas détecter, puisque ses paires proches ET lointaines
-              viennent toutes de la même distribution d'entraînement (majoritairement diurne). Un
-              signal plat échoue proprement (tous les candidats sont à égalité, l'argmax est
-              arbitraire mais inoffensif) ; un signal confiant-mais-faux peut activement diriger le
-              plan vers ce qui <em>paraît</em> proche sans l'être — indiscernable du bruit pour le
-              planificateur, en un sens pire qu'une simple absence de signal.</strong>
-            </p>
-          </blockquote>
-          <p>
-            <strong>NO-GO</strong> sur un lot élargi avec ce checkpoint tel quel. Piste concrète si
-            repris : collecte ciblée crépuscule/nuit/grotte, ou augmentation photométrique pendant
-            l'entraînement du projecteur — pas plus d'épisodes diurnes.
-          </p>
-
-          <h2>Attempt #8 — Proposition A (priming du pool) + Proposition C (manœuvre bushwhack), combinées à <code>commit_length=4</code> : NO-GO, mais le négatif le plus informatif de la campagne</h2>
-          <p>
-            <code>planner.action_pool_priming</code> (nouveau bloc dans
-            <code>_sample_actions()</code>, <code>mine_jepa/ebwm/planner.py</code>) injecte ~30
-            lignes macro avant+attaque soutenue, ~30 rotation caméra continue, ~30 marche arrière
-            dans le pool de 512 candidats (Proposition A) ; <code>scan.macro: bushwhack</code>
-            (<code>scripts/play_craft.py</code>) remplace le réflexe tourner-en-place par un
-            sprint-saut avant borné, déclenché par le même <code>goal_score_std</code> plat sur le
-            chop planner (Proposition C). Les deux chemins de code sont vérifiés bit-for-bit
-            identiques désactivés. Config : <code>configs/play_craft_commit4_ac.yaml</code>.
-          </p>
-          <p>
-            <strong>N=8, seed 0 : 0/8 logs, 0/8 planches, reward 0.</strong> Contre le taux de base
-            pooled de <code>commit_length=4</code> seul (3/31 ≈ 9,7%, ≈0,8 succès attendus sur
-            N=8) : ni régression significative, ni confirmation.
-          </p>
-          <p>
-            <strong>Les deux mécanismes ont vérifiablement déclenché</strong> (pas juste
-            câblés-mais-inutilisés) : le macro avant+attaque primé (<code>a7</code>) atteint 21-49%
-            de part dans 3/8 épisodes ; le macro bushwhack (<code>a13</code>) atteint 28% avec 8
-            déclenchements de scan dans 1/8 épisode (seulement quand le signal plat a persisté
-            assez longtemps pour se déclencher).
-          </p>
-          <p>
-            <strong>Le finding qui compte plus que le 0/8</strong> : 3/8 épisodes montrent une
-            seule action (<code>a14</code>, le geste préexistant "avancer+attaquer") à 83-100% de
-            part — verrouillage comportemental quasi total. Ceci <strong>rappelle</strong> la
-            régression de concentration du CEM réel de l'attempt #6 (66,3% moyen contre 35,8% pour
-            <code>commit_length=4</code> seul) sur un mécanisme <em>différent</em> (menu figé +
-            macro de couverture de terrain, pas raffinement itératif) atteignant un mode d'échec
-            structurellement similaire.
-            ⚠️ <strong>Pas encore vérifié quantitativement contre les distributions d'action
-            propres à <code>commit_length=4</code> seul avant d'affirmer "le même verrouillage"
-            comme un fait établi — signalé pour vérification, pas encore une conclusion
-            confirmée.</strong>
-          </p>
-          <blockquote>
-            <p>
-              <strong>Affinement du diagnostic : l'argmax du MPC n'a rien pour se corriger quand
-              <code>goal_score_std</code> est plat (aucun arbre en vue).</strong> Du bruit i.i.d.
-              (attempts #1-3) le fait fidgeter sur place ; un menu concentré (CEM réel, attempt #6)
-              ou des macros continues (attempt #8) le font au contraire se verrouiller aveuglément
-              sur l'un d'eux, parce que rien dans un score plat ne vient jamais corriger le choix.
-              La génération d'actions écrite à la main (A/C) et l'affinement du score appliqué à
-              des macros codées en dur touchent le même mur depuis deux directions opposées. Le
-              mécanisme qui ne devrait pas se verrouiller aveuglément est celui qui a <em>appris</em>
-              la distribution complète du comportement contextuel (y compris comment les experts
-              cherchent), pas celui à qui l'on tend un petit menu figé.
-            </p>
-          </blockquote>
-          <p>
-            <strong>NO-GO</strong>, mais informatif : confirme que le manque de gradient dans un
-            score plat, pas la source des candidats (bruit vs. menu figé), est la cause commune des
-            trois modes d'échec observés depuis l'attempt #6 (fidgeting, verrouillage-CEM,
-            verrouillage-macro).
-          </p>
-
-          <h2>Le diagnostic qui tient, après ces cinq attaques indépendantes</h2>
-          <p>
-            <strong>Le mur est comportemental (génération d'actions), pas perceptif (qualité du
-            score) — et attaquer directement la génération de candidats (attempt #8) confirme le
-            diagnostic sans le résoudre.</strong> Trois correctifs visant la qualité du signal/de la
-            recherche (RND en ligne, CEM réel, une métrique de distance entraînée) ont chacun
-            échoué différemment — un plat, un activement régressif, un réel-mais-mal-aligné.
-            L'attempt #8, qui attaque la génération elle-même via un menu de macros écrites à la
-            main plutôt que le score, produit une <strong>troisième forme de défaillance liée au
-            manque de gradient dans un score plat</strong> : verrouillage comportemental, pas
-            fidgeting ni raffinement bruyant. Le seul lever ayant jamais produit un résultat non nul
-            (<code>commit_length=4</code>, attempt #4) reste un correctif purement d'exécution : il
-            ne change rien à la qualité du <em>choix</em>, seulement à la durée pendant laquelle un
-            choix est <em>tenu</em>. Le world model sait déjà évaluer correctement une situation
-            (le propre gate offline de l'attempt #7 le prouve) ; ce que les 512 séquences
-            candidates — tirées de façon aléatoire, collante, raffinée par CEM, ou partiellement
-            pré-remplies de macros — ne contiennent quasiment jamais, c'est le bon geste
-            <em>appris</em> à tenir pour vraiment chercher et approcher un arbre. La Proposition B
-            (a priori de politique latente entraîné par clonage comportemental) est désormais la
-            priorité de tête ; le Chapitre 9 détaille son état et deux affinements complémentaires
-            encore non exécutés.
-          </p>
-
-          <h2>Références (vérifiées, tirées de docs/references/index.md)</h2>
-          <ul>
-            <li>
-              Terver, Yang, Ponce, Bardes, LeCun, <em>What Drives Success in Physical Planning
-              with Joint-Embedding Predictive World Models?</em>, arXiv:2512.24497 (2025) — la
-              recommandation de CEM réel testée et invalidée dans ce régime précis (attempt #6).
-            </li>
-            <li>
-              Destrade, Bounou, Le Lidec, Ponce, LeCun, <em>Value-guided action planning with JEPA
-              world models</em>, arXiv:2601.00844 (2026) — la métrique de distance entraînée
-              (attempt #7).
-            </li>
-            <li>
-              Burda, Edwards, Storkey, Klimov, RND, arXiv:1810.12894 (2018) — le mécanisme testé en
-              ligne dans l'attempt #4B.
-            </li>
-          </ul>
+<h2>Cadrage : quatre attaques indépendantes du signal, un seul lever réel</h2>
+<p>À l&#x27;issue du Chapitre 7 (sticky sampling, scan, coverage fine-tune — tous des correctifs du côté</p>
+<p><em>signal/perception</em>), ce chapitre couvre les attempts #4-#7 de <code>docs/10<em>coldstart</em>engineering.md</code></p>
+<p>sur <code>MineRLObtainIronPickaxeDense-v0</code>, deux-cerveaux, seed 0.</p>
+<h2>Attempt #4A — <code>commit_length</code> : la faute était dans la convention d&#x27;appel</h2>
+<p>Relecture de <code>plan()</code> : chaque replan tire 512 séquences fraîches et <em></em>ne retourne que la première</p>
+<p>action<em></em> de la meilleure séquence — même quand le sticky sampling propose un geste multi-étapes</p>
+<p>correct (tourner vers le tronc, avancer, frapper), les étapes 2..12 sont jetées à chaque tick.</p>
+<p>Fix : <code>commit<em>length</code> (<code>mine</em>jepa/ebwm/planner.py</code>, câblé dans <code>DiscreteLatentPlanner.plan()</code> et</p>
+<p><code>SwitchingCraftPlanner.plan()</code>) retourne les <code>min(commit_length, horizon)</code> premières actions de la</p>
+<p>séquence gagnante. <code>commit_length=1</code> (défaut) = chemin de code original, vérifié bit-for-bit.</p>
+<p><em></em>Résultats, <code>commit_length=4</code> seul, deux-cerveaux, sticky 0,5, scan off, seed 0 (pooling de</p>
+<p>plusieurs batchs, N=31) :<em></em></p>
+<table>
+<thead><tr><th></th><th>N</th><th>Logs</th><th>Craft réussi</th></tr></thead>
+<tbody>
+<tr><td><code>commit_length=4</code> (pooled)</td><td>31</td><td>3</td><td>3/31 (9,7%)</td></tr>
+<tr><td><code>commit_length=1</code> (pooled, attempts #2-#3)</td><td>27</td><td>0</td><td>0/27 (0%)</td></tr>
+</tbody>
+</table>
+<p>Chaque succès identique : 1 log → craft-planks → +4 planches, reward 9 (la règle WM v4 connue,</p>
+<p>Chapitre 6). Fisher exact unilatéral 3/31 vs 0/27 : <strong>p ≈ 0,15</strong> — non significatif à ce N, mais</p>
+<p><strong>premier résultat non nul, reproductible, de l&#x27;histoire du projet sur ce milestone.</strong></p>
+<div class="callout">
+<p><strong>Leçon : un bug de scoring et un bug de convention d&#x27;appel sont indiscernables de l&#x27;extérieur.</strong></p>
+<p>Les attempts #2-#3 avaient amélioré le <em>signal</em> (sticky, scan, coverage) — réel et nécessaire,</p>
+<p>mais individuellement insuffisant. Le vrai manque n&#x27;était pas un meilleur plan mais *exécuter</p>
+<p>davantage du plan déjà correctement choisi*.</p>
+</div>
+<p>À 9,7%, loin du seuil-milestone de 30% ; chaque succès reste tributaire d&#x27;un spawn chanceux</p>
+<p>(steps-to-success moyen ≈3000 — la plupart des épisodes ne voient jamais d&#x27;arbre exploitable dans</p>
+<p>le budget). Gardé comme défaut de <code>configs/play<em>craft</em>commit4*.yaml</code> ; <code>play_craft.yaml</code></p>
+<p>(<code>commit_length</code> non défini → 1) inchangé.</p>
+<h2>Attempt #4B — RND en ligne : inconclusif, puis écarté mécaniquement</h2>
+<p>Predictor/target RND entraînés en continu sur les états visités pendant le jeu (<code>mine_jepa/ebwm/rnd.py</code>),</p>
+<p>bonus z-scoré (<code>novelty_coeff=0,5</code>) dans le planificateur chop du deux-cerveaux.</p>
+<p><strong>Bug de lancement trouvé et corrigé en cours de batch</strong> (pas de la flakiness Java) :</p>
+<p><code>ResNet5.out<em>dim</code> inexistant — corrigé pour lire <code>state</em>dim</code> depuis la config du checkpoint.</p>
+<p>N=7 : épisodes 1-3 plantent avant le fix, épisodes 4-7 tournent proprement.</p>
+<p><strong>Données valides : N=4, 0/4 succès.</strong> Au taux de base pooled de 9,7%, l&#x27;espérance sur 4 essais est</p>
+<p>≈0,4 — non informatif seul. <strong>Le diagnostic qui aurait tranché n&#x27;a jamais été enregistré</strong> :</p>
+<p><code>novelty<em>mean</code> existait dans <code>plan(return</em>info=True)</code> mais <code>scan.log_std: false</code> a supprimé</p>
+<p>l&#x27;impression. Verdict : <strong>inconclusif, arrêt sans lot de confirmation</strong> (pas d&#x27;N=15-20 sans signal</p>
+<p>qualitatif positif d&#x27;abord, règle propre du projet).</p>
+<p><strong>Re-run instrumenté, <code>scan.log_std: true</code>, N=6 :</strong> 0/6 succès (attendu ≈0,6, non surprenant).</p>
+<p><code>novelty_mean</code> sur les 6 épisodes montre systématiquement la <strong>même forme</strong> : montée ou plateau</p>
+<p>sur les ~50-130 premiers pas, puis <strong>décroissance monotone et lisse</strong> vers une valeur 10-60× plus</p>
+<p>basse en fin d&#x27;épisode — indépendamment de la longueur d&#x27;épisode, de la survie, et de ce que fait</p>
+<p><code>goal<em>score</em>std</code> (le signal indépendant déjà validé). Corrélation entre les deux signaux</p>
+<p>incohérente en signe et magnitude entre épisodes (-0,83 à +0,15).</p>
+<p><strong>Le point le plus net</strong> : épisode 5 (188 replans), <code>goal<em>score</em>std</code> atteint son pic absolu de</p>
+<p>l&#x27;épisode (0,045-0,046, comparable à la bande &quot;canopée&quot; de Treechop) exactement au moment où</p>
+<p><code>novelty_mean</code> est parmi ses valeurs les <strong>plus basses</strong> (0,0015-0,0017).</p>
+<div class="callout">
+<p><em></em>Lecture : ce n&#x27;est pas la séparation du smoke test qui apparaît en jeu, c&#x27;est sa propre</p>
+<p>phase de convergence précoce.<em></em> Le buffer-anneau de 256 emplacements se remplit en ~130 pas</p>
+<p>avec des frames visuellement homogènes (canopée dense, zone de spawn) ; le predictor converge</p>
+<p>sur cette distribution étroite, après quoi la nouvelté est basse presque partout où la</p>
+<p>trajectoire va réellement — parce que la trajectoire elle-même ne visite rien que le buffer</p>
+<p>n&#x27;a pas déjà montré au predictor de façon répétée. Le moment qui a rompu cette homogénéité (le</p>
+<p>pic à l&#x27;étape 2480) n&#x27;a pas été détecté comme nouveau, parce que « différent du batch</p>
+<p>d&#x27;entraînement récent » et « scène la plus saillante selon <code>goal<em>score</em>std</code> » ne sont pas le</p>
+<p>même critère.</p>
+</div>
+<p><strong>VERDICT : STOP.</strong> Même symptôme que le Chapitre 7 (aucune discrimination là où ça compte —</p>
+<p>perdu vs. trouvé), mais par un mécanisme différent : pas un collapse d&#x27;ensemble (offline), mais</p>
+<p>une convergence trop rapide sur une distribution d&#x27;état trop étroite (online). L&#x27;avantage de RND</p>
+<p>sur l&#x27;ensemble offline est « le predictor ne s&#x27;effondre pas vers une constante », pas « le</p>
+<p>predictor suit la distribution d&#x27;états que l&#x27;agent a réellement besoin de discriminer ».</p>
+<h2>Attempt #5 — Scan réactivé en mode deux-cerveaux : câblage confirmé correct, résultat toujours négatif</h2>
+<p>Vérification du câblage (avant tout run) : <code>chop<em>planner.plan(..., return</em>info=True)</code> lit bien</p>
+<p><code>goal<em>score</em>std</code> sur <code>ebwm.pt</code>, jamais sur <code>craft<em>wm</em>v4</code> (structurellement exclu par</p>
+<p><code>if scan<em>enabled and mode == &quot;chop&quot;</code>). Config : <code>flat</em>threshold: 0,003</code>, <code>patience: 3</code>,</p>
+<p><code>max<em>replans: 40</code> (calibration Treechop du Chapitre 7), combiné à <code>commit</em>length=4</code>.</p>
+<p><strong>Résultat N=7 : 0/7 succès.</strong> 2/7 épisodes reproduisent une version bornée (par <code>max_replans</code>,</p>
+<p>pas par tout l&#x27;épisode) de la pathologie « l&#x27;agent tourne sur lui-même » (<code>a12</code> 51%/87%). Un</p>
+<p>épisode passe ~880 des 3000 pas dans la bande &quot;scène saillante&quot; (0,008-0,026) avec le scan</p>
+<p>correctement inactif — <strong>et l&#x27;agent ne coupe toujours pas</strong> durant cette fenêtre. Un épisode se</p>
+<p>termine dans un passage rocheux/type grotte sans arbre — un cas que le scan ne peut pas résoudre</p>
+<p>par construction.</p>
+<p><strong>VERDICT : hypothèse de câblage confirmée, utilité non confirmée — NO-GO.</strong> Le point de donnée</p>
+<p>le plus détaillé (le stretch à haut std de l&#x27;épisode 1) montre que le mur n&#x27;est pas &quot;l&#x27;agent ne</p>
+<p>sait pas qu&#x27;un arbre est là&quot; mais &quot;le savoir ne se convertit pas en coupe&quot; — exactement le</p>
+<p>diagnostic deux-cerveaux du Chapitre 7, cette fois sur un signal confirmé bien calibré.</p>
+<h2>Attempt #6 — CEM réel (raffinement itératif catégoriel) : régression, pas juste un échec</h2>
+<p><code>DiscreteLatentPlanner</code> gagne <code>cem<em>iters</code>, <code>cem</em>elite<em>frac</code>, <code>cem</em>smoothing</code> : génération 1 par</p>
+<p><code><em>sample</em>actions()</code> habituel, générations suivantes ré-échantillonnées depuis une table</p>
+<p>catégorielle construite sur les fréquences d&#x27;action des élites (+lissage Laplace). <code>cem_iters&lt;=1</code></p>
+<p>= chemin original, vérifié bit-for-bit sur 8 cas (<code>ebwm.pt</code>/<code>craft<em>wm</em>v4</code>, sticky</p>
+<p>{0,0/0,5}, commit<em>length {1/4}). Coût mesuré : ×2,94 par appel à <code>cem</em>iters=3</code> (~41% de baisse de</p>
+<p>throughput réel).</p>
+<p><strong>Résultat N=8 : 0/8 succès</strong>, <code>chop=188 craft=0</code> — le mode ne bascule jamais. <em></em>Régression</p>
+<p>qualitative nette<strong> : concentration de l&#x27;action dominante moyenne </strong>66,3%<em></em> (50-89%) contre</p>
+<p><strong>35,8%</strong> en moyenne pour <code>commit_length=4</code> seul (19-69%, un seul épisode dépasse 51%). Épisode 8 :</p>
+<p>89% d&#x27;attaque immobile (<code>a6</code>) ; épisodes 2/4/5 : 74-81% de sprint-attaque figé dans une direction</p>
+<p>fixe (<code>a14</code>), quasi aucune action de rotation dans le top-3.</p>
+<div class="callout">
+<p><em></em>Leçon : le raffinement CEM a besoin d&#x27;un score discriminant pour affiner — il n&#x27;a aucun moyen</p>
+<p>de savoir que le score est plat.<em></em> Le tirage/collant se dégrade en douceur quand le paysage de</p>
+<p>score est plat (chaque replan tire un pool encore varié) ; le raffinement itératif fait</p>
+<p>l&#x27;inverse : il prend le bruit résiduel d&#x27;un classement plat pour un vrai signal et concentre</p>
+<p>génération après génération sur ce bruit — plus la méthode est fine, plus elle s&#x27;engage avec</p>
+<p>confiance dans le mauvais sens quand le signal sous-jacent n&#x27;a rien à dire.</p>
+</div>
+<p><strong>NO-GO</strong> : 0/8, régression du seul axe qualitatif que CEM devait améliorer, coût fps réel — aucun</p>
+<p>des trois critères n&#x27;est satisfait.</p>
+<h2>Attempt #7 — Métrique de distance entraînée (Destrade et al., arXiv:2601.00844) : gate offline PASSÉ, résultat live NO-GO, diagnostic nouveau et précis</h2>
+<p>Petit projecteur <code>P</code> (<code>mine<em>jepa/ebwm/value</em>head.py::DistanceProjector</code>, 2 couches, <code>in_dim=4096</code></p>
+<p>→ <code>proj<em>dim=32</code>, ~1,06M params) entraîné pour que <code>||P(z</em>t)-P(z_goal)||</code> approxime le vrai nombre</p>
+<p>de pas jusqu&#x27;au but ; <code>ebwm.pt</code> figé (49 params gelés, vérifié). Données : démos Treechop +</p>
+<p>épisodes de couverture (Chapitre 7) comme paires &quot;lointaines&quot; censurées (hinge unilatéral).</p>
+<p><strong>Gate offline (obligatoire avant tout temps de jeu) — PASSÉ nettement</strong> : paires proches (k≤5,</p>
+<p>n=2560) <code>pred_dist</code> moyenne=12,317 ; paires lointaines/couverture (n=2560) moyenne=97,257.</p>
+<p><strong>Ratio de séparation 7,896</strong> (seuil requis ≥1,3).</p>
+<p><strong>Live N=6 : 0/6 succès</strong>, pas de crash, concentration d&#x27;action normale (16-40%, pas de régression</p>
+<p>CEM). Le GIF conservé (seule la dernière épisode sans succès survit sur disque, la logique</p>
+<p>&quot;meilleur épisode réussi&quot; ne se déclenche jamais à 0/6) montre l&#x27;agent finissant proche du noir</p>
+<p>— cave/ravine — cohérent avec la mort constatée au Chapitre 7.</p>
+<p>Corrélation Pearson(<code>goal<em>score</em>std</code>, luminosité de frame) = <strong>-0,565</strong> sur 72 lectures d&#x27;un</p>
+<p>épisode. Frames diurnes (luminosité&gt;60) : std moyen 0,499 ; frames sombres (≤60, crépuscule/nuit</p>
+<p>dès l&#x27;étape 480) : std moyen 1,174 — plus du double. <strong>Mais non monotone</strong> : les frames les plus</p>
+<p>sombres de tout l&#x27;épisode (luminosité ~14-15, juste avant la fin) ont le std le <strong>plus bas</strong> de</p>
+<p>toute la trace. Cause : ni les démos Treechop (luminosité moyenne 45,5, déjà assez sombres — ombre</p>
+<p>de canopée, mais toujours de jour) ni les épisodes de couverture (moyenne 92,4, plein jour) ne</p>
+<p>contiennent de vraies scènes de nuit ou de grotte — le régime visuel exact où cet épisode passe</p>
+<p>une bonne partie de son temps.</p>
+<div class="callout">
+<p><em></em>Leçon : c&#x27;est une TROISIÈME catégorie de finding, plus spécifique que &quot;ne discrimine pas&quot;</p>
+<p>(l&#x27;ensemble offline du Chapitre 7) ou &quot;discrimine correctement mais ce n&#x27;est toujours pas le</p>
+<p>verrou&quot; (les attempts sur métrique brute). La métrique entraînée discrimine bien — une vraie</p>
+<p>plage dynamique large, l&#x27;opposé du collapse RND — mais selon un axe de nuisance</p>
+<p>lumière/composition de scène que le gate offline ne pouvait structurellement pas détecter,</p>
+<p>puisque ses paires proches ET lointaines viennent toutes de la même distribution</p>
+<p>d&#x27;entraînement (majoritairement diurne). Un signal plat échoue proprement (tous les candidats</p>
+<p>sont à égalité, l&#x27;argmax est arbitraire mais inoffensif) ; un signal confiant-mais-faux peut</p>
+<p>activement diriger le plan vers ce qui <em>paraît</em> proche sans l&#x27;être — indiscernable du bruit</p>
+<p>pour le planificateur, en un sens pire qu&#x27;une simple absence de signal.<em></em></p>
+</div>
+<p><strong>NO-GO</strong> sur un lot élargi avec ce checkpoint tel quel. Piste concrète si repris : collecte</p>
+<p>ciblée crépuscule/nuit/grotte, ou augmentation photométrique pendant l&#x27;entraînement du</p>
+<p>projecteur — pas plus d&#x27;épisodes diurnes.</p>
+<h2>Attempt #8 — Proposition A (priming du pool) + Proposition C (manœuvre bushwhack), combinées à <code>commit_length=4</code> : NO-GO, mais le négatif le plus informatif de la campagne</h2>
+<p><code>planner.action<em>pool</em>priming</code> (nouveau bloc dans <code><em>sample</em>actions()</code>, <code>mine_jepa/ebwm/planner.py</code>)</p>
+<p>injecte ~30 lignes macro avant+attaque soutenue, ~30 rotation caméra continue, ~30 marche arrière</p>
+<p>dans le pool de 512 candidats (Proposition A) ; <code>scan.macro: bushwhack</code> (<code>scripts/play_craft.py</code>)</p>
+<p>remplace le réflexe tourner-en-place par un sprint-saut avant borné, déclenché par le même</p>
+<p><code>goal<em>score</em>std</code> plat sur le chop planner (Proposition C). Les deux chemins de code sont vérifiés</p>
+<p>bit-for-bit identiques désactivés. Config : <code>configs/play<em>craft</em>commit4_ac.yaml</code>.</p>
+<p><strong>N=8, seed 0 : 0/8 logs, 0/8 planches, reward 0.</strong> Contre le taux de base pooled de</p>
+<p><code>commit_length=4</code> seul (3/31 ≈ 9,7%, ≈0,8 succès attendus sur N=8) : ni régression significative,</p>
+<p>ni confirmation.</p>
+<p><strong>Les deux mécanismes ont vérifiablement déclenché</strong> (pas juste câblés-mais-inutilisés) : le macro</p>
+<p>avant+attaque primé (<code>a7</code>) atteint 21-49% de part dans 3/8 épisodes ; le macro bushwhack (<code>a13</code>)</p>
+<p>atteint 28% avec 8 déclenchements de scan dans 1/8 épisode (seulement quand le signal plat a</p>
+<p>persisté assez longtemps pour se déclencher).</p>
+<p><strong>Le finding qui compte plus que le 0/8</strong> : 3/8 épisodes montrent une seule action (<code>a14</code>, le</p>
+<p>geste préexistant &quot;avancer+attaquer&quot;) à 83-100% de part — verrouillage comportemental quasi total.</p>
+<p>Ceci <strong>rappelle</strong> la régression de concentration du CEM réel de l&#x27;attempt #6 (66,3% moyen contre</p>
+<p>35,8% pour <code>commit_length=4</code> seul) sur un mécanisme <em>différent</em> (menu figé + macro de couverture de</p>
+<p>terrain, pas raffinement itératif) atteignant un mode d&#x27;échec structurellement similaire.</p>
+<p>⚠️ <em></em>Pas encore vérifié quantitativement contre les distributions d&#x27;action propres à</p>
+<p><code>commit_length=4</code> seul avant d&#x27;affirmer &quot;le même verrouillage&quot; comme un fait établi — signalé pour</p>
+<p>vérification, pas encore une conclusion confirmée.<em></em></p>
+<div class="callout">
+<p><em></em>Affinement du diagnostic : l&#x27;argmax du MPC n&#x27;a rien pour se corriger quand <code>goal<em>score</em>std</code></p>
+<p>est plat (aucun arbre en vue).<em></em> Du bruit i.i.d. (attempts #1-3) le fait fidgeter sur place ; un</p>
+<p>menu concentré (CEM réel, attempt #6) ou des macros continues (attempt #8) le font au contraire</p>
+<p>se verrouiller aveuglément sur l&#x27;un d&#x27;eux, parce que rien dans un score plat ne vient jamais</p>
+<p>corriger le choix. La génération d&#x27;actions écrite à la main (A/C) et l&#x27;affinement du score</p>
+<p>appliqué à des macros codées en dur touchent le même mur depuis deux directions opposées. Le</p>
+<p>mécanisme qui ne devrait pas se verrouiller aveuglément est celui qui a <em>appris</em> la distribution</p>
+<p>complète du comportement contextuel (y compris comment les experts cherchent), pas celui à qui</p>
+<p>l&#x27;on tend un petit menu figé.</p>
+</div>
+<p><strong>NO-GO</strong>, mais informatif : confirme que le manque de gradient dans un score plat, pas la source</p>
+<p>des candidats (bruit vs. menu figé), est la cause commune des trois modes d&#x27;échec observés depuis</p>
+<p>l&#x27;attempt #6 (fidgeting, verrouillage-CEM, verrouillage-macro).</p>
+<h2>Le diagnostic qui tient, après ces cinq attaques indépendantes</h2>
+<p><em></em>Le mur est comportemental (génération d&#x27;actions), pas perceptif (qualité du score) — et</p>
+<p>attaquer directement la génération de candidats (attempt #8) confirme le diagnostic sans le</p>
+<p>résoudre.<em></em> Trois correctifs visant la qualité du signal/de la recherche (RND en ligne, CEM réel,</p>
+<p>une métrique de distance entraînée) ont chacun échoué différemment — un plat, un activement</p>
+<p>régressif, un réel-mais-mal-aligné. L&#x27;attempt #8, qui attaque la génération elle-même via un menu</p>
+<p>de macros écrites à la main plutôt que le score, produit une <em></em>troisième forme de défaillance liée</p>
+<p>au manque de gradient dans un score plat<em></em> : verrouillage comportemental, pas fidgeting ni</p>
+<p>raffinement bruyant. Le seul lever ayant jamais produit un résultat non nul (<code>commit_length=4</code>,</p>
+<p>attempt #4) reste un correctif purement d&#x27;exécution : il ne change rien à la qualité du <em>choix</em>,</p>
+<p>seulement à la durée pendant laquelle un choix est <em>tenu</em>. Le world model sait déjà évaluer</p>
+<p>correctement une situation (le propre gate offline de l&#x27;attempt #7 le prouve) ; ce que les 512</p>
+<p>séquences candidates — tirées de façon aléatoire, collante, raffinée par CEM, ou partiellement</p>
+<p>pré-remplies de macros — ne contiennent quasiment jamais, c&#x27;est le bon geste <em>appris</em> à tenir pour</p>
+<p>vraiment chercher et approcher un arbre. La Proposition B (a priori de politique latente entraîné</p>
+<p>par clonage comportemental) est désormais la priorité de tête ; le Chapitre 9 détaille son état et</p>
+<p>deux affinements complémentaires encore non exécutés.</p>
+<h2>Références (vérifiées, tirées de docs/references/index.md)</h2>
+<ul>
+<li>Terver, Yang, Ponce, Bardes, LeCun, *What Drives Success in Physical Planning with</li>
+</ul>
+<p>Joint-Embedding Predictive World Models?*, arXiv:2512.24497 (2025) — la recommandation de CEM</p>
+<p>réel testée et invalidée dans ce régime précis (attempt #6).</p>
+<ul>
+<li>Destrade, Bounou, Le Lidec, Ponce, LeCun, *Value-guided action planning with JEPA world</li>
+</ul>
+<p>models*, arXiv:2601.00844 (2026) — la métrique de distance entraînée (attempt #7).</p>
+<ul>
+<li>Burda, Edwards, Storkey, Klimov, RND, arXiv:1810.12894 (2018) — le mécanisme testé en ligne</li>
+</ul>
+<p>dans l&#x27;attempt #4B.</p>
         </div>
       </div>
 
-      <div class="achievement" role="note" aria-label="Résultat de ce chapitre">
-        <span class="achievement-icon" aria-hidden="true">&#127942;</span>
-        <div>
-          <p class="achievement-title">Achievement : premier résultat non-nul sur ce jalon, et cinq attaques indépendantes qui confirment un diagnostic net</p>
-          <p>
-            Un bug de convention d'appel du planificateur, corrigé (<code>commit_length=4</code>),
-            produit <strong>3 succès sur 31 épisodes (9,7%)</strong> — le premier résultat non-nul
-            de tout le projet sur le cold-start. Quatre attaques supplémentaires (RND en ligne, CEM
-            réel, distance entraînée, puis priming du pool de candidats + manœuvre bushwhack)
-            échouent chacune différemment sans jamais bouger le résultat, confirmant un diagnostic
-            net : le mur est dans la <strong>génération</strong> de gestes candidats, pas dans leur
-            jugement — même quand on attaque cette génération directement, elle se verrouille
-            plutôt que de se corriger.
-          </p>
-        </div>
-      </div>
 
     </div>
   </article>
-
-  <nav class="chapter-nav" aria-label="Navigation entre chapitres">
-    <div class="wrap chapter-nav-inner">
-      <a class="chapter-nav-link" href="index.html">&larr; Retour au parcours</a>
-    </div>
-  </nav>
 
 </main>
 

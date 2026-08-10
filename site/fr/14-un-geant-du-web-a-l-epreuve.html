@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Un géant du web à l'épreuve : CLIP repère bien la forêt, mais lui aussi confond ça avec la luminosité — Mine-JEPA</title>
-<meta name="description" content="Chapitre 14 du parcours Mine-JEPA : un test hors-ligne zero-shot de CLIP repère bien la direction arbre/pas-d'arbre mais reste lié à la luminosité (Phase 1) ; un fine-tuning direct du modèle du monde avec augmentation photométrique corrige le sens général mais fait rebasculer une frame sombre précise, type grotte ou sous-marine, dans le mauvais sens (Phase 2) — deux résultats mitigés qui font pencher le projet vers H-JEPA, une piste plus lourde, comme prochaine direction.">
+<title>Un géant du web à l&#x27;épreuve : CLIP repère bien la forêt, mais lui aussi confond ça avec la luminosité — Mine-JEPA</title>
+<meta name="description" content="Chapitre 14 du parcours Mine-JEPA : Un géant du web à l&#x27;épreuve : CLIP repère bien la forêt, mais lui aussi confond ça avec la luminosité.">
 <link rel="stylesheet" href="../style.css">
 <script>document.documentElement.classList.add("js");</script>
 </head>
@@ -15,10 +15,10 @@
   <div class="wrap site-header-inner">
     <a class="site-brand" href="index.html"><span class="brand-mark" aria-hidden="true">&#9935;</span> Mine-JEPA</a>
     <div class="header-controls">
-      <span class="last-updated" title="Date de mise à jour">Mis à jour le : 2026-07-22</span>
-      <nav class="lang-switch" aria-label="Langue du site">
+      <span class="last-updated" title="Date de mise à jour">Mis à jour le: 2026-08-11</span>
+            <nav class="lang-switch" aria-label="Langue du site">
         <a href="14-un-geant-du-web-a-l-epreuve.html" aria-current="true" lang="fr" hreflang="fr">FR</a>
-        <span aria-disabled="true" lang="en" title="Traduction anglaise pas encore disponible pour ce chapitre">EN</span>
+        <a href="../en/14-a-web-giant-put-to-the-test.html" lang="en" hreflang="en">EN</a>
       </nav>
       <div class="track-pref" data-track-pref>
         <span class="track-pref-label" id="track-pref-label">Afficher :</span>
@@ -44,39 +44,10 @@
 
       <header class="chapter-header">
         <p class="chapter-kicker">Chapitre 14</p>
-        <h1>Un géant du web à l'épreuve : CLIP repère bien la forêt, mais lui aussi confond ça avec la luminosité</h1>
-        <p class="chapter-prereqs">
-          Prérequis :
-          <a href="01-c-est-quoi-jepa.html">Qu'est-ce que JEPA, et pourquoi apprendre à un programme à jouer à Minecraft avec ça ?</a>,
-          <a href="02-le-piege-du-collapse.html">Le raccourci que le modèle essaie toujours de trouver (et comment on l'en empêche)</a>,
-          <a href="03-le-modele-du-monde.html">Apprendre au modèle à imaginer la suite</a>,
-          <a href="04-planifier-en-imagination.html">Essayer 512 avenirs dans sa tête avant d'appuyer sur un bouton</a>,
-          <a href="05-le-vrai-minecraft.html">Le grand saut vers le vrai Minecraft : quatre échecs, puis un agent qui coupe des arbres</a>,
-          <a href="06-apprendre-a-fabriquer.html">Apprendre à fabriquer : la règle est comprise, le premier arbre reste hors de portée</a>,
-          <a href="07-la-curiosite-en-panne.html">La curiosité en panne, puis deux rustines qui marchent à moitié</a>,
-          <a href="08-le-mur-est-comportemental.html">Le mur est comportemental : une vraie première réussite, puis quatre preuves qu'affiner le signal ne suffit pas — et une cinquième qui confirme le diagnostic</a>,
-          <a href="09-les-prochaines-pistes.html">Après les pistes A et C : la politique apprise a été promue, puis testée (suite au Chapitre 10)</a>,
-          <a href="10-le-negatif-le-plus-net.html">La piste apprise a été testée : elle non plus ne suffit pas — mais elle élimine deux explications</a>,
-          <a href="11-la-boussole-a-l-envers.html">La campagne fait une pause : la boussole ne s'est pas éteinte, elle pointe à l'envers</a>,
-          <a href="12-la-memoire-des-lieux-visites.html">Deux pistes du menu passées à l'épreuve : la réparation de la boussole échoue une troisième fois, la mémoire des lieux visités produit le deuxième vrai succès de la campagne</a>
-          et
-          <a href="13-le-sauvetage-aveugle.html">L'alarme à noyade fonctionne parfaitement ; le geste de sauvetage, lui, ne sait pas où est la terre ferme</a>
-        </p>
+        <h1>Un géant du web à l&#x27;épreuve : CLIP repère bien la forêt, mais lui aussi confond ça avec la luminosité</h1>
+        <p class="chapter-prereqs">Prérequis : Chapitres 1 à 13.</p>
       </header>
 
-      <figure class="chapter-media">
-        <div class="blueprint-slot" role="img" aria-label="Emplacement vide : ce chapitre couvre deux diagnostics hors-ligne sur des images fixes déjà utilisées au Chapitre 11 — ni CLIP ni le fine-tuning de la Phase 2 ne font jouer d'agent, il n'y a donc aucune nouvelle capture de gameplay à montrer.">
-          <span class="blueprint-slot-icon" aria-hidden="true">&#128269;</span>
-          <p aria-hidden="true">Pas de capture d'écran propre à ce chapitre</p>
-        </div>
-        <figcaption>
-          Ce chapitre est entièrement hors-ligne, en deux temps : les mêmes images fixes qui
-          avaient révélé la boussole inversée du projet au Chapitre 11 sont d'abord notées par
-          CLIP (Phase 1), puis re-notées une troisième fois par le modèle du monde après son
-          fine-tuning (Phase 2) — aucun agent ne joue dans ce chapitre, il n'y a donc pas de
-          nouvel épisode à montrer ici.
-        </figcaption>
-      </figure>
 
       <div class="tracks" data-tracks>
         <div class="track-tabs" role="tablist" aria-label="Niveau de lecture">
@@ -87,481 +58,260 @@
         <div class="track-panel is-active chapter-prose" data-track-panel="beginner" role="tabpanel" id="panel-beginner" aria-labelledby="tab-beginner">
           <p class="track-kicker">Piste débutant</p>
 
-          <h2>Là où on en était</h2>
-          <p>
-            Le Chapitre 11 avait posé le diagnostic le plus important de toute cette longue
-            enquête sur le point de départ à froid : la boussole du projet (le score qui compare
-            chaque histoire imaginée par le modèle du monde à un souvenir « d'arbre coupé », voir
-            Chapitre 4) ne s'éteint pas simplement une fois sortie de son terrain d'entraînement —
-            elle <strong>pointe à l'envers</strong>. Un arbre tout proche reçoit un score plus bas
-            qu'une prairie vide. Le Chapitre 12 a montré, en creusant encore, qu'une partie de ce
-            problème vient très probablement d'un raccourci caché dans le tout premier modèle de
-            vision du projet lui-même (Chapitre 1-2) : au lieu de vraiment comprendre « il y a un
-            arbre ici », le modèle semble surtout repérer si l'image est claire ou sombre — un
-            raccourci confirmé trois fois de suite, sous trois formes différentes.
-          </p>
-          <p>
-            Avant de se lancer dans la piste la plus lourde du menu laissé par le Chapitre 11
-            (construire un second cerveau, un modèle séparé et plus lent, rien que pour « trouver
-            une forêt »), une personne extérieure au projet, consultée par le responsable, a
-            proposé une question plus simple et beaucoup moins coûteuse à tester d'abord :
-            <strong>est-ce qu'un très gros modèle d'IA déjà tout fait, jamais entraîné
-            spécifiquement sur Minecraft, sait déjà repérer une forêt correctement ?</strong> Si
-            oui, pas besoin de construire quoi que ce soit de nouveau — on pourrait simplement le
-            réutiliser tel quel. Ce chapitre raconte ce test, et ce qu'il révèle — un résultat à
-            moitié encourageant, à moitié inquiétant, et honnêtement pas encore complètement
-            compris.
-          </p>
-
-          <h2>L'idée : emprunter les yeux d'un géant plutôt que d'en construire un nouveau</h2>
-          <p>
-            Le modèle proposé s'appelle <strong>CLIP</strong>. Il n'a jamais rien vu de ce projet
-            ni de Minecraft : il a été entraîné, par une autre équipe, sur des centaines de
-            millions de photos et de légendes prises sur internet — le genre de choses qu'on
-            trouve en cherchant des images sur le web. Ce que CLIP sait faire, une fois entraîné :
-            comparer une image quelconque à une phrase quelconque, et dire à quel point elles
-            « vont bien ensemble », sans avoir besoin d'être réentraîné pour chaque nouvelle tâche
-            (on appelle ça une comparaison « zero-shot » — littéralement « sans aucun essai
-            d'entraînement supplémentaire »).
-          </p>
-          <p>
-            Le test était simple : reprendre exactement les mêmes vraies images du jeu qui avaient
-            servi à découvrir le problème de boussole inversée au Chapitre 11, et demander à CLIP
-            de comparer chacune à deux phrases : « une forêt dense avec beaucoup d'arbres » contre
-            « un champ ouvert et herbeux sans arbre ». Deux conditions devaient être remplies pour
-            que le test soit un vrai succès :
-          </p>
-          <ol>
-            <li>
-              <strong>CLIP doit donner raison au bon sens</strong> : une image avec un arbre
-              proche doit recevoir un score plus favorable à « forêt » qu'une image sans arbre.
-              (C'est exactement l'inverse de ce que faisait la boussole cassée du projet au
-              Chapitre 11.)
-            </li>
-            <li>
-              <strong>Ce score ne doit pas être, en réalité, juste une façon détournée de mesurer
-              la luminosité de la scène</strong> — sinon ce serait le même vieux raccourci déjà
-              repéré trois fois (Chapitre 11), simplement caché derrière un modèle beaucoup plus
-              gros et beaucoup plus impressionnant.
-            </li>
-          </ol>
-
-          <h2>Le résultat : la moitié du test réussit clairement, l'autre moitié échoue largement</h2>
-          <p>
-            <strong>La première condition est réussie, et nettement</strong> : CLIP donne bien un
-            meilleur score « forêt » aux images qui montrent réellement des arbres proches qu'à
-            celles qui n'en montrent aucun. Sur ce point précis, CLIP fait mieux que la boussole
-            cassée du projet — il ne s'inverse pas.
-          </p>
-          <p>
-            <strong>La deuxième condition échoue, et largement.</strong> Le score de CLIP est très
-            fortement lié à la luminosité globale de l'image — presque comme si les deux
-            mesuraient quasiment la même chose. Et ce n'est pas seulement vrai sur les images
-            difficiles du jeu de fabrication (là où la boussole du projet s'inverse) : c'est vrai
-            <strong>même sur les images faciles du jeu de coupe d'arbres original</strong>, celui
-            où la boussole maison du projet fonctionne déjà correctement depuis le Chapitre 6.
-          </p>
-
-          <div class="callout callout-mixed">
-            <span class="badge badge-mixed">Testé — Résultat mixte</span>
-            <p>
-              CLIP réussit la première condition (repérer un arbre proche mieux qu'une scène
-              ouverte, ce que la boussole du projet ne fait pas hors de son terrain
-              d'entraînement) mais échoue nettement la seconde (son score reste très lié à la
-              luminosité de la scène, même sur l'environnement facile où la boussole maison
-              fonctionne déjà). Une frame de grotte sombre sans arbre, classée par CLIP avec les
-              scènes claires plutôt qu'avec un profil « forêt sombre », montre que ce n'est pas
-              juste une histoire de luminosité — sans qu'on sache encore laquelle.
-            </p>
-          </div>
-
-          <h2>Ce que ça veut dire, honnêtement — et ce qui reste un vrai mystère</h2>
-          <p>
-            Il faut être prudent ici, parce que c'est une question ouverte, pas une certitude
-            établie.
-          </p>
-          <p>
-            Ce résultat <strong>affaiblit, sans la démolir complètement</strong>, une idée qui
-            semblait raisonnable jusque-là : que le petit modèle du projet confond luminosité et
-            forêt simplement parce qu'il n'a pas vu assez de scènes variées (jour, nuit,
-            différentes météos) pendant son entraînement. Si un modèle géant, entraîné sur des
-            centaines de millions de photos bien plus variées que tout ce que ce projet pourra
-            jamais collecter, fait la <strong>même</strong> confusion — et même un peu pire —
-            alors le manque de diversité n'explique peut-être pas tout.
-          </p>
-          <p>
-            Il y a même une explication possible qui ne serait pas un « bug » du tout : une vraie
-            forêt dense, dans la vraie vie comme dans un jeu qui l'imite, <strong>est réellement
-            plus sombre</strong> qu'un champ ouvert en plein soleil, à cause de l'ombre des
-            feuillages. Repérer ça pourrait être un signal utile et sensé, pas une erreur de
-            raisonnement.
-          </p>
-          <p>
-            Mais une observation précise empêche de s'arrêter à cette explication simple : parmi
-            les images testées, une scène de <strong>grotte sombre, sans le moindre arbre</strong>,
-            a été classée par CLIP dans le même groupe que les scènes ouvertes et claires — « pas
-            de forêt » — au lieu d'être confondue avec une forêt sombre, comme une histoire de
-            « la noirceur = la forêt » l'aurait prédit. Il se passe donc autre chose que la simple
-            luminosité, mais quoi exactement reste, à ce jour, une vraie question sans réponse.
-          </p>
-
-          <h2>Phase 2 : réentraîner directement le modèle du monde — un résultat mitigé, pas un résultat propre</h2>
-          <p>
-            La décision prise à la suite du test CLIP n'était pas d'exiger que le futur correctif
-            devienne complètement indépendant de la luminosité (au risque de retirer un signal
-            peut-être légitime), mais de vérifier directement si le vrai problème d'origine — la
-            boussole qui pointe à l'envers sur de vrais points de départ aléatoires — disparaît,
-            peu importe par quel mécanisme. Ce travail est maintenant terminé, et voici ce qu'il a
-            donné.
-          </p>
-          <p>
-            Le projet a repris le modèle du monde existant (pas depuis zéro, un simple ajustement
-            des poids déjà entraînés) et l'a réentraîné sur un mélange : les images
-            garanties-forêt d'origine, plus de vraies démonstrations de spawn libre, plus des
-            épisodes d'exploration au hasard. Nouveauté par rapport à tous les essais précédents :
-            cette fois, une <strong>augmentation photométrique</strong> (les couleurs, la
-            luminosité et le contraste de chaque courte séquence sont modifiés au hasard, mais de
-            façon cohérente sur toute la séquence plutôt qu'image par image, pour forcer le modèle
-            à ne plus s'appuyer aveuglément sur la luminosité) a été appliquée directement à
-            l'entraînement du modèle du monde lui-même — pas à un petit module ajouté par-dessus,
-            comme dans les tentatives précédentes. C'est la première fois de toute cette enquête
-            que ce geste-là est fait directement sur le modèle principal.
-          </p>
-          <p>
-            Les vérifications de sécurité habituelles (pas d'effondrement de la représentation —
-            voir Chapitre 2 — et la qualité de prédiction qui ne bouge presque pas, ce qui était
-            voulu : l'idée était un ajustement léger, pas un nouvel entraînement complet) sont
-            passées sans accroc sur les 5 étapes d'entraînement.
-          </p>
-          <p>
-            <strong>Le vrai test consistait à refaire, sur chacune des 5 versions ajustées,
-            exactement le même diagnostic qui avait découvert le problème de boussole
-            inversée.</strong> Le résultat est réellement partagé, pas juste « ça a presque
-            marché » :
-          </p>
-          <ul>
-            <li>
-              <strong>En écartant une seule image précise</strong> — une scène sombre, comme une
-              grotte ou un passage sous l'eau, sans le moindre arbre — le correctif a l'air propre :
-              sur les 5 versions ajustées, les scènes avec un arbre proche obtiennent maintenant un
-              score plusieurs fois plus élevé que les scènes ouvertes sans arbre. C'est un vrai
-              renversement par rapport au sens inversé d'origine.
-            </li>
-            <li>
-              <strong>Mais en remettant cette seule image dans le calcul, le résultat repart dans
-              le mauvais sens</strong> sur chacune des 5 versions, parce que le score de cette
-              image précise <strong>est devenu pire</strong> après l'ajustement, pas meilleur.
-              C'est une anomalie nouvelle, liée à la faible luminosité, qui apparaît à un endroit
-              différent d'avant — mais qui appartient clairement à la même famille de problème que
-              le raccourci lié à la luminosité déjà repéré plus tôt (Chapitre 12, et la première
-              moitié de ce chapitre avec CLIP).
-            </li>
-          </ul>
-          <p>
-            Aucune des 5 versions ajustées n'a été promue pour remplacer le modèle de référence,
-            et aucun nouveau test en jeu réel n'a été fait : la règle du projet est de ne dépenser
-            un test en jeu que sur un candidat qui a clairement réussi son test hors-jeu d'abord —
-            et celui-ci n'a pas clairement réussi.
-          </p>
-
-          <div class="callout callout-mixed">
-            <span class="badge badge-mixed">Testé — Résultat mixte</span>
-            <p>
-              Le réentraînement direct avec augmentation photométrique corrige bien le sens
-              général sur 5 versions ajustées — arbre proche note maintenant plus haut qu'une
-              scène ouverte — mais une seule image précise, une scène sombre de grotte ou de
-              passage sous l'eau sans arbre, voit son score empirer et fait rebasculer tout le
-              résultat dans le mauvais sens dès qu'on la réintègre. Un vrai correctif sur presque
-              tout, une nouvelle anomalie de luminosité sur un cas précis : ni un succès propre, ni
-              un échec total.
-            </p>
-          </div>
-
-          <p>
-            <strong>Pourquoi c'est important, dit avec précision</strong> : c'est la quatrième
-            fois, avec quatre approches vraiment différentes, qu'une anomalie liée à la luminosité
-            apparaît — un petit module ajouté, entraîné sur les caractéristiques déjà figées du
-            modèle ; ce même module, ré-entraîné spécifiquement sur des données de spawn libre ; un
-            modèle géant tout fait, jamais entraîné pour ce projet (CLIP, plus haut dans ce
-            chapitre) ; et maintenant, un réentraînement direct du modèle du monde lui-même, avec
-            une vraie augmentation photométrique — l'attaque la plus directe tentée jusqu'ici sur
-            ce problème précis. Ça affaiblit sérieusement l'idée que « le modèle n'a simplement pas
-            encore vu assez de lumières différentes » explique tout — même la tentative la plus
-            directe et la plus soignée pour corriger exactement ça a quand même produit une
-            nouvelle anomalie, pas un correctif propre.
-          </p>
-
-          <h2>Et maintenant</h2>
-          <p>
-            La condition que le projet s'était lui-même fixée pour se lancer dans la piste la plus
-            lourde du menu laissé au Chapitre 11 — un second modèle du monde, plus lent, dédié à
-            « trouver une forêt » avant de rendre la main au modèle rapide existant pour couper
-            l'arbre, appelé <strong>H-JEPA</strong> — était : « seulement si le correctif direct et
-            moins coûteux échoue ». C'est maintenant chose faite, avec de vraies preuves à l'appui
-            plutôt qu'un simple argument plausible. Le projet s'oriente donc vers cette piste plus
-            structurellement différente comme prochaine direction, plutôt que de continuer à
-            chercher un correctif direct sur le modèle existant.
-          </p>
+<h2>Là où on en était</h2>
+<p>Le Chapitre 11 avait posé le diagnostic le plus important de toute cette longue enquête sur le</p>
+<p>point de départ à froid : la boussole du projet (le score qui compare chaque histoire imaginée par</p>
+<p>le modèle du monde à un souvenir « d&#x27;arbre coupé », voir Chapitre 4) ne s&#x27;éteint pas simplement une</p>
+<p>fois sortie de son terrain d&#x27;entraînement — elle <strong>pointe à l&#x27;envers</strong>. Un arbre tout proche reçoit</p>
+<p>un score plus bas qu&#x27;une prairie vide. Le Chapitre 12 a montré, en creusant encore, qu&#x27;une partie de</p>
+<p>ce problème vient très probablement d&#x27;un raccourci caché dans le tout premier modèle de vision du</p>
+<p>projet lui-même (Chapitre 1-2) : au lieu de vraiment comprendre « il y a un arbre ici », le modèle</p>
+<p>semble surtout repérer si l&#x27;image est claire ou sombre — un raccourci confirmé trois fois de suite,</p>
+<p>sous trois formes différentes.</p>
+<p>Avant de se lancer dans la piste la plus lourde du menu laissé par le Chapitre 11 (construire un</p>
+<p>second cerveau, un modèle séparé et plus lent, rien que pour « trouver une forêt »), une personne</p>
+<p>extérieure au projet, consultée par le responsable, a proposé une question plus simple et beaucoup</p>
+<p>moins coûteuse à tester d&#x27;abord : <em></em>est-ce qu&#x27;un très gros modèle d&#x27;IA déjà tout fait, jamais</p>
+<p>entraîné spécifiquement sur Minecraft, sait déjà repérer une forêt correctement ?<em></em> Si oui, pas</p>
+<p>besoin de construire quoi que ce soit de nouveau — on pourrait simplement le réutiliser tel quel. Ce</p>
+<p>chapitre raconte ce test, et ce qu&#x27;il révèle — un résultat à moitié encourageant, à moitié inquiétant,</p>
+<p>et honnêtement pas encore complètement compris.</p>
+<h2>L&#x27;idée : emprunter les yeux d&#x27;un géant plutôt que d&#x27;en construire un nouveau</h2>
+<p>Le modèle proposé s&#x27;appelle <strong>CLIP</strong>. Il n&#x27;a jamais rien vu de ce projet ni de Minecraft : il a été</p>
+<p>entraîné, par une autre équipe, sur des centaines de millions de photos et de légendes prises sur</p>
+<p>internet — le genre de choses qu&#x27;on trouve en cherchant des images sur le web. Ce que CLIP sait</p>
+<p>faire, une fois entraîné : comparer une image quelconque à une phrase quelconque, et dire à quel</p>
+<p>point elles « vont bien ensemble », sans avoir besoin d&#x27;être réentraîné pour chaque nouvelle tâche</p>
+<p>(on appelle ça une comparaison « zero-shot » — littéralement « sans aucun essai d&#x27;entraînement</p>
+<p>supplémentaire »).</p>
+<p>Le test était simple : reprendre exactement les mêmes vraies images du jeu qui avaient servi à</p>
+<p>découvrir le problème de boussole inversée au Chapitre 11, et demander à CLIP de comparer chacune</p>
+<p>à deux phrases : « une forêt dense avec beaucoup d&#x27;arbres » contre « un champ ouvert et herbeux sans</p>
+<p>arbre ». Deux conditions devaient être remplies pour que le test soit un vrai succès :</p>
+<ol>
+<li><strong>CLIP doit donner raison au bon sens</strong> : une image avec un arbre proche doit recevoir un score</li>
+</ol>
+<p>plus favorable à « forêt » qu&#x27;une image sans arbre. (C&#x27;est exactement l&#x27;inverse de ce que faisait</p>
+<p>la boussole cassée du projet au Chapitre 11.)</p>
+<ol>
+<li><em></em>Ce score ne doit pas être, en réalité, juste une façon détournée de mesurer la luminosité de la</li>
+</ol>
+<p>scène<em></em> — sinon ce serait le même vieux raccourci déjà repéré trois fois (Chapitre 11), simplement</p>
+<p>caché derrière un modèle beaucoup plus gros et beaucoup plus impressionnant.</p>
+<h2>Le résultat : la moitié du test réussit clairement, l&#x27;autre moitié échoue largement</h2>
+<p><strong>La première condition est réussie, et nettement</strong> : CLIP donne bien un meilleur score « forêt »</p>
+<p>aux images qui montrent réellement des arbres proches qu&#x27;à celles qui n&#x27;en montrent aucun. Sur ce</p>
+<p>point précis, CLIP fait mieux que la boussole cassée du projet — il ne s&#x27;inverse pas.</p>
+<p><strong>La deuxième condition échoue, et largement.</strong> Le score de CLIP est très fortement lié à la</p>
+<p>luminosité globale de l&#x27;image — presque comme si les deux mesuraient quasiment la même chose. Et ce</p>
+<p>n&#x27;est pas seulement vrai sur les images difficiles du jeu de fabrication (là où la boussole du projet</p>
+<p>s&#x27;inverse) : c&#x27;est vrai <strong>même sur les images faciles du jeu de coupe d&#x27;arbres original</strong>, celui où</p>
+<p>la boussole maison du projet fonctionne déjà correctement depuis le Chapitre 6.</p>
+<h2>Ce que ça veut dire, honnêtement — et ce qui reste un vrai mystère</h2>
+<p>Il faut être prudent ici, parce que c&#x27;est une question ouverte, pas une certitude établie.</p>
+<p>Ce résultat <strong>affaiblit, sans la démolir complètement</strong>, une idée qui semblait raisonnable jusque-là :</p>
+<p>que le petit modèle du projet confond luminosité et forêt simplement parce qu&#x27;il n&#x27;a pas vu assez de</p>
+<p>scènes variées (jour, nuit, différentes météos) pendant son entraînement. Si un modèle géant,</p>
+<p>entraîné sur des centaines de millions de photos bien plus variées que tout ce que ce projet pourra</p>
+<p>jamais collecter, fait la <strong>même</strong> confusion — et même un peu pire — alors le manque de diversité</p>
+<p>n&#x27;explique peut-être pas tout.</p>
+<p>Il y a même une explication possible qui ne serait pas un « bug » du tout : une vraie forêt dense,</p>
+<p>dans la vraie vie comme dans un jeu qui l&#x27;imite, <strong>est réellement plus sombre</strong> qu&#x27;un champ ouvert en</p>
+<p>plein soleil, à cause de l&#x27;ombre des feuillages. Repérer ça pourrait être un signal utile et sensé,</p>
+<p>pas une erreur de raisonnement.</p>
+<p>Mais une observation précise empêche de s&#x27;arrêter à cette explication simple : parmi les images</p>
+<p>testées, une scène de <strong>grotte sombre, sans le moindre arbre</strong>, a été classée par CLIP dans le même</p>
+<p>groupe que les scènes ouvertes et claires — « pas de forêt » — au lieu d&#x27;être confondue avec une</p>
+<p>forêt sombre, comme une histoire de « la noirceur = la forêt » l&#x27;aurait prédit. Il se passe donc</p>
+<p>autre chose que la simple luminosité, mais quoi exactement reste, à ce jour, une vraie question sans</p>
+<p>réponse.</p>
+<h2>Phase 2 : réentraîner directement le modèle du monde — un résultat mitigé, pas un résultat propre</h2>
+<p>La décision prise à la suite du test CLIP n&#x27;était pas d&#x27;exiger que le futur correctif devienne</p>
+<p>complètement indépendant de la luminosité (au risque de retirer un signal peut-être légitime), mais</p>
+<p>de vérifier directement si le vrai problème d&#x27;origine — la boussole qui pointe à l&#x27;envers sur de</p>
+<p>vrais points de départ aléatoires — disparaît, peu importe par quel mécanisme. Ce travail est</p>
+<p>maintenant terminé, et voici ce qu&#x27;il a donné.</p>
+<p>Le projet a repris le modèle du monde existant (pas depuis zéro, un simple ajustement des poids déjà</p>
+<p>entraînés) et l&#x27;a réentraîné sur un mélange : les images garanties-forêt d&#x27;origine, plus de vraies</p>
+<p>démonstrations de spawn libre, plus des épisodes d&#x27;exploration au hasard. Nouveauté par rapport à</p>
+<p>tous les essais précédents : cette fois, une <strong>augmentation photométrique</strong> (les couleurs, la</p>
+<p>luminosité et le contraste de chaque courte séquence sont modifiés au hasard, mais de façon cohérente</p>
+<p>sur toute la séquence plutôt qu&#x27;image par image, pour forcer le modèle à ne plus s&#x27;appuyer aveuglément</p>
+<p>sur la luminosité) a été appliquée directement à l&#x27;entraînement du modèle du monde lui-même — pas à</p>
+<p>un petit module ajouté par-dessus, comme dans les tentatives précédentes. C&#x27;est la première fois de</p>
+<p>toute cette enquête que ce geste-là est fait directement sur le modèle principal.</p>
+<p>Les vérifications de sécurité habituelles (pas d&#x27;effondrement de la représentation — voir Chapitre 2</p>
+<p>— et la qualité de prédiction qui ne bouge presque pas, ce qui était voulu : l&#x27;idée était un ajustement</p>
+<p>léger, pas un nouvel entraînement complet) sont passées sans accroc sur les 5 étapes d&#x27;entraînement.</p>
+<p><em></em>Le vrai test consistait à refaire, sur chacune des 5 versions ajustées, exactement le même</p>
+<p>diagnostic qui avait découvert le problème de boussole inversée.<em></em> Le résultat est réellement partagé,</p>
+<p>pas juste « ça a presque marché » :</p>
+<ul>
+<li><strong>En écartant une seule image précise</strong> — une scène sombre, comme une grotte ou un passage sous</li>
+</ul>
+<p>l&#x27;eau, sans le moindre arbre — le correctif a l&#x27;air propre : sur les 5 versions ajustées, les scènes</p>
+<p>avec un arbre proche obtiennent maintenant un score plusieurs fois plus élevé que les scènes ouvertes</p>
+<p>sans arbre. C&#x27;est un vrai renversement par rapport au sens inversé d&#x27;origine.</p>
+<ul>
+<li><em></em>Mais en remettant cette seule image dans le calcul, le résultat repart dans le mauvais sens sur</li>
+</ul>
+<p>chacune des 5 versions<strong>, parce que le score de cette image précise </strong>est devenu pire<em></em> après</p>
+<p>l&#x27;ajustement, pas meilleur. C&#x27;est une anomalie nouvelle, liée à la faible luminosité, qui apparaît à</p>
+<p>un endroit différent d&#x27;avant — mais qui appartient clairement à la même famille de problème que le</p>
+<p>raccourci lié à la luminosité déjà repéré plus tôt (Chapitre 12, et la première moitié de ce</p>
+<p>chapitre avec CLIP).</p>
+<p>Aucune des 5 versions ajustées n&#x27;a été promue pour remplacer le modèle de référence, et aucun nouveau</p>
+<p>test en jeu réel n&#x27;a été fait : la règle du projet est de ne dépenser un test en jeu que sur un</p>
+<p>candidat qui a clairement réussi son test hors-jeu d&#x27;abord — et celui-ci n&#x27;a pas clairement réussi.</p>
+<p><strong>Pourquoi c&#x27;est important, dit avec précision</strong> : c&#x27;est la quatrième fois, avec quatre approches</p>
+<p>vraiment différentes, qu&#x27;une anomalie liée à la luminosité apparaît — un petit module ajouté, entraîné</p>
+<p>sur les caractéristiques déjà figées du modèle ; ce même module, ré-entraîné spécifiquement sur des</p>
+<p>données de spawn libre ; un modèle géant tout fait, jamais entraîné pour ce projet (CLIP, plus haut</p>
+<p>dans ce chapitre) ; et maintenant, un réentraînement direct du modèle du monde lui-même, avec une</p>
+<p>vraie augmentation photométrique — l&#x27;attaque la plus directe tentée jusqu&#x27;ici sur ce problème précis.</p>
+<p>Ça affaiblit sérieusement l&#x27;idée que « le modèle n&#x27;a simplement pas encore vu assez de lumières</p>
+<p>différentes » explique tout — même la tentative la plus directe et la plus soignée pour corriger</p>
+<p>exactement ça a quand même produit une nouvelle anomalie, pas un correctif propre.</p>
+<h2>Et maintenant</h2>
+<p>La condition que le projet s&#x27;était lui-même fixée pour se lancer dans la piste la plus lourde du menu</p>
+<p>laissé au Chapitre 11 — un second modèle du monde, plus lent, dédié à « trouver une forêt » avant de</p>
+<p>rendre la main au modèle rapide existant pour couper l&#x27;arbre, appelé <strong>H-JEPA</strong> — était : « seulement</p>
+<p>si le correctif direct et moins coûteux échoue ». C&#x27;est maintenant chose faite, avec de vraies</p>
+<p>preuves à l&#x27;appui plutôt qu&#x27;un simple argument plausible. Le projet s&#x27;oriente donc vers cette piste</p>
+<p>plus structurellement différente comme prochaine direction, plutôt que de continuer à chercher un</p>
+<p>correctif direct sur le modèle existant.</p>
         </div>
 
         <div class="track-panel chapter-prose" data-track-panel="expert" role="tabpanel" id="panel-expert" aria-labelledby="tab-expert">
           <p class="track-kicker">Piste expert</p>
 
-          <h2>Contexte</h2>
-          <p>
-            Le Chapitre 11 a établi que la notation goal-centroid native de <code>ebwm.pt</code>
-            s'inverse hors distribution Treechop (arbre proche → score plus bas qu'une scène
-            ouverte). Le Chapitre 12 a confirmé, une troisième fois indépendante, qu'un raccourci
-            de luminosité vit très probablement dans l'encodeur visuel figé lui-même (attempt
-            #11 : corrélation score/luminosité 0,643, et corrélation
-            <code>is_tree_close</code>/luminosité de -0,917 sur le propre jeu d'étiquetage manuel
-            du gate, démontrant que le gate de direction à 87,5% mesurait en réalité le même
-            raccourci). Ce chapitre couvre la phase 1 de l'attempt #14 : un diagnostic purement
-            offline, sans entraînement Minecraft-spécifique, testant si un modèle de
-            vision-langage pré-entraîné générique et totalement hors-domaine résout déjà le
-            problème de direction — avant d'engager le coût de la piste candidate 3 du Chapitre
-            11 (H-JEPA hiérarchique).
-          </p>
-
-          <h2>Méthode</h2>
-          <p>
-            Un expert externe consulté par le porteur du projet a proposé de tester
-            <strong>CLIP</strong> (Radford et al., OpenAI) en zero-shot, avant toute autre
-            intervention — un modèle jamais touché ni affiné pour ce projet, entraîné sur des
-            centaines de millions de paires image-texte du web. Protocole : similarité zero-shot
-            CLIP entre chaque frame et deux descriptions textuelles, « a dense forest with many
-            trees » contre « an open grassy field with no trees », appliquée sur le
-            <strong>même jeu de frames réelles</strong> qui avait servi à découvrir l'inversion à
-            l'attempt #10 (Chapitre 11) — ni nouvelles données, ni ré-échantillonnage, pour une
-            comparaison directement appariée avec le diagnostic précédent.
-          </p>
-          <p>Deux conditions de passage étaient exigées, pas une seule :</p>
-          <ol>
-            <li>
-              <strong>(a)</strong> CLIP doit noter correctement les frames arbre-proche au-dessus
-              des frames sans arbre — le test de direction que la notation native de
-              <code>ebwm.pt</code> échoue (attempt #10).
-            </li>
-            <li>
-              <strong>(b)</strong> Le score de CLIP ne doit pas être une simple fonction de la
-              luminosité globale de la scène — sinon ce serait le même raccourci que celui
-              confirmé trois fois à l'attempt #11, redécouvert derrière un modèle plus gros plutôt
-              que résolu.
-            </li>
-          </ol>
-
-          <h2>Résultat</h2>
-          <p>
-            <strong>(a) validée clairement</strong> : une séparation réelle et correctement
-            orientée, contrairement à la notation native de <code>ebwm.pt</code> sur la même
-            distribution.
-          </p>
-          <p>
-            <strong>(b) échouée, largement.</strong> Le score CLIP corrèle fortement avec la
-            luminosité de scène — une relation proche d'une quasi-colinéarité entre les deux
-            variables. Point notable : cette corrélation tient <strong>aussi sur l'environnement
-            Treechop d'origine</strong>, celui où la notation native de <code>ebwm.pt</code>
-            fonctionne déjà correctement (Chapitre 6, Chapitre 8) — pas seulement sur la
-            distribution difficile de spawn libre où le problème avait été découvert.
-          </p>
-
-          <div class="callout callout-mixed">
-            <span class="badge badge-mixed">Testé — Résultat mixte</span>
-            <p>
-              <strong>(a) validée, (b) échouée</strong> — CLIP sépare correctement les frames
-              arbre-proche des frames sans arbre là où la notation native de
-              <code>ebwm.pt</code> s'inverse (Chapitre 11), mais son score reste quasi-colinéaire
-              avec la luminosité de scène, y compris sur Treechop où la boussole du projet
-              fonctionne déjà (Chapitre 6, Chapitre 8). Une frame de grotte sombre sans arbre,
-              groupée par CLIP avec les scènes ouvertes et claires plutôt qu'avec un profil
-              « forêt sombre », reste un contre-exemple non expliqué — traité ici comme question
-              ouverte, pas comme fait établi.
-            </p>
-          </div>
-
-          <h2>Lecture prudente — hypothèse, pas fait établi</h2>
-          <p>
-            Ce résultat <strong>affaiblit, sans la réfuter</strong>, l'hypothèse portée depuis
-            l'attempt #9/#11 selon laquelle le raccourci de luminosité serait dû à un manque de
-            diversité d'éclairage dans les données d'entraînement Minecraft-spécifiques du projet
-            (Treechop, quasi exclusivement diurne). Un modèle entraîné sur un corpus web de
-            plusieurs ordres de grandeur plus divers en éclairage que tout corpus collectable
-            dans ce projet reproduit — et même dépasse en intensité — le même raccourci. Si la
-            diversité de données suffisait à éliminer ce raccourci, on ne s'attendrait pas à le
-            retrouver aussi fort chez CLIP.
-          </p>
-          <p>
-            Une lecture alternative, non exclue : « une forêt dense est physiquement plus sombre
-            qu'un champ ouvert » pourrait être un signal réel et légitime à capter, pas une erreur
-            de raisonnement — la luminosité et la présence de forêt sont authentiquement
-            corrélées dans le monde (et dans son imitation par le jeu).
-          </p>
-          <p>
-            Mais cette lecture alternative ne suffit pas à tout expliquer : une frame spécifique
-            de <strong>grotte sombre, sans arbre</strong>, a été groupée par CLIP avec les scènes
-            ouvertes et claires (« pas de forêt »), et non avec un profil « forêt sombre » — ce
-            qu'une histoire de pure luminosité prédirait pourtant. Quelque chose d'autre que la
-            luminosité brute intervient donc dans le score de CLIP, sans qu'on puisse dire
-            précisément quoi à ce stade. <strong>Ceci est explicitement laissé comme question
-            ouverte, pas comme fait établi</strong> — cohérent avec la discipline d'honnêteté du
-            projet sur les résultats non tranchés.
-          </p>
-
-          <h2>Phase 2 : fine-tuning direct de <code>ebwm.pt</code> avec augmentation photométrique — résultat mitigé</h2>
-          <p>
-            Plutôt que de poursuivre la piste CLIP zero-shot elle-même, ou d'exiger d'un futur
-            correctif qu'il devienne explicitement invariant à la luminosité (au risque de retirer
-            un signal potentiellement légitime, comme discuté ci-dessus), la décision prise à
-            l'issue de la phase 1 était de procéder directement à un fine-tuning du modèle du monde
-            du projet sur un mélange de données garanties-forêt (Treechop) et de données de spawn
-            libre réelles (démonstrations expertes Obtain + épisodes d'exploration aléatoire),
-            <strong>puis de re-vérifier directement si le problème d'inversion original (attempt
-            #10, Chapitre 11) disparaît — quel que soit le mécanisme qui médiatise ce changement
-            </strong> — plutôt que d'imposer une contrainte d'indépendance à la luminosité comme
-            critère de succès. Cette phase est maintenant conclue.
-          </p>
-          <p>
-            <strong>Méthode</strong> : reprise (warm-start) de <code>ebwm.pt</code> — même
-            architecture, pas un réentraînement depuis zéro — sur le mélange Treechop + spawn
-            libre expert + exploration aléatoire décrit ci-dessus, avec <strong>augmentation
-            photométrique</strong> (jitter de luminosité/contraste/saturation, randomisé mais
-            appliqué de façon cohérente sur toute une séquence courte, pas frame par frame) injectée
-            directement dans l'entraînement du modèle du monde lui-même — pas dans un module
-            additionnel comme dans les tentatives précédentes (le repair ColorJitter de l'attempt
-            #7, puis l'attempt #11). C'est la première fois dans toute la campagne que cette
-            augmentation est appliquée au modèle principal plutôt qu'à un composant greffé.
-          </p>
-          <p>
-            <strong>Gates de sécurité</strong> : passées proprement aux 5 epochs d'entraînement —
-            pas de collapse de représentation (voir Chapitre 2), qualité de prédiction quasi
-            inchangée (attendu : l'objectif était un ajustement léger, pas un réentraînement
-            complet).
-          </p>
-          <p>
-            <strong>Le vrai test</strong> : re-exécution du diagnostic exact de l'attempt #10 sur
-            chacun des 5 snapshots fine-tunés. Résultat authentiquement mixte, pas un win propre :
-          </p>
-          <ul>
-            <li>
-              En excluant une frame précise — une scène sombre de type grotte/sous-marine, sans
-              arbre — le correctif paraît propre : sur les 5 snapshots, les scènes arbre-proche
-              notent maintenant correctement plusieurs fois plus haut que les scènes
-              ouvertes/sans arbre — un vrai renversement du sens par rapport à l'inversion
-              d'origine.
-            </li>
-            <li>
-              En incluant cette même frame, le résultat repart dans le mauvais sens sur chacun des
-              5 snapshots, parce que le score de cette frame précise <strong>s'est
-              dégradé</strong> après le fine-tuning, pas amélioré — une anomalie nouvelle, liée à
-              la faible luminosité, apparaissant à un endroit différent de l'attempt #11, mais
-              reconnaissable comme appartenant à la même famille de raccourci lié à la luminosité
-              (Chapitre 12 / attempt #11, et la phase 1 CLIP de ce même chapitre).
-            </li>
-          </ul>
-          <p>
-            Aucun snapshot fine-tuné n'a été promu au rang de checkpoint de référence ; aucun test
-            en jeu réel (live) n'a été effectué, conformément à la règle du projet de ne réserver
-            un test live qu'à un candidat ayant clairement passé son gate offline d'abord — ce qui
-            n'est pas le cas ici.
-          </p>
-
-          <div class="callout callout-mixed">
-            <span class="badge badge-mixed">Testé — Résultat mixte</span>
-            <p>
-              Sur les 5 snapshots fine-tunés, la direction globale du score se corrige — arbre
-              proche note plus haut qu'une scène ouverte, en excluant une frame précise — mais une
-              seule frame sombre de type grotte/sous-marine sans arbre voit son score se
-              <strong>dégrader</strong> après le fine-tuning, ce qui suffit à faire rebasculer le
-              résultat dans le mauvais sens dès qu'elle est réintégrée. Quatrième mécanisme
-              indépendant (module greffé, module ré-entraîné sur Obtain, modèle hors-domaine CLIP,
-              et maintenant fine-tuning direct du modèle principal) à produire une anomalie de
-              luminosité plutôt qu'un correctif propre.
-            </p>
-          </div>
-
-          <p>
-            <strong>Pourquoi c'est significatif</strong> : c'est la quatrième fois, avec quatre
-            approches mécaniquement différentes, qu'une anomalie liée à la luminosité apparaît — un
-            petit module additionnel entraîné sur des features figées (attempt #7) ; ce même module
-            ré-entraîné spécifiquement sur des données Obtain (attempt #11) ; un modèle
-            vision-langage géant, hors-domaine, jamais touché (CLIP, phase 1 de ce chapitre) ; et
-            maintenant un réentraînement direct du modèle du monde lui-même avec une vraie
-            augmentation photométrique — l'attaque la plus directe tentée jusqu'ici sur ce problème
-            précis. Ceci affaiblit sensiblement l'hypothèse « le modèle n'a simplement pas vu assez
-            de diversité d'éclairage » : même la tentative la plus directe et la plus soignée pour
-            corriger exactement ce manque de diversité a produit une nouvelle anomalie plutôt qu'un
-            correctif propre.
-          </p>
-
-          <h2>Décision pour la suite</h2>
-          <p>
-            La condition que le projet s'était fixée pour engager la piste candidate 3 du menu du
-            Chapitre 11 — <strong>H-JEPA</strong>, un second modèle du monde hiérarchique, plus
-            lent, planifiant « trouver une forêt » sur un horizon long avant de rendre la main au
-            modèle rapide existant pour le geste de coupe — était explicitement « seulement si le
-            correctif direct et moins coûteux échoue ». Cette condition est désormais remplie par
-            des preuves empiriques (la phase 2 ci-dessus étant la tentative de correctif direct la
-            plus poussée du projet à ce jour), et non plus seulement par un argument plausible. Le
-            projet s'oriente donc vers H-JEPA comme prochaine direction, plutôt que de continuer à
-            itérer sur des correctifs directs de <code>ebwm.pt</code> ou de ses modules
-            additionnels.
-          </p>
-          <p>
-            <code>ebwm.pt</code> (le checkpoint de référence) n'est modifié ni par le diagnostic
-            CLIP (modèle tiers, jamais chargé pour la planification) ni par le fine-tuning de la
-            phase 2 : les 5 snapshots produits sont conservés séparément versionnés, selon la
-            convention déjà suivie pour chaque variante de ce projet
-            (<code>craft_wm_v4_coverage.pt</code>, <code>value_projector_obtain.pt</code>, etc.) —
-            aucun remplacement silencieux du checkpoint de référence.
-          </p>
-
-          <h2>Références</h2>
-          <p>
-            CLIP (Radford, Kim, Hallacy, Ramesh, Goh, Agarwal, Sastry, Askell, Mishkin, Clark,
-            Krueger, Sutskever, <em>Learning Transferable Visual Models From Natural Language
-            Supervision</em>, 2021) est utilisé ici en zero-shot, hors-domaine, comme diagnostic
-            externe — ce projet n'a <strong>pas</strong> d'identifiant arXiv vérifié pour CLIP
-            dans <code>docs/references/index.md</code> à ce jour, et n'en invente aucun ici,
-            conformément à la règle du projet de ne citer que des références déjà vérifiées dans
-            ce fichier. Ce chapitre s'appuie par ailleurs sur le diagnostic de l'attempt #10
-            (Chapitre 11) et le raccourci de luminosité confirmé trois fois à l'attempt #11
-            (Chapitre 12), déjà documentés sans nouvelle citation bibliographique.
-          </p>
+<h2>Contexte</h2>
+<p>Le Chapitre 11 a établi que la notation goal-centroid native de <code>ebwm.pt</code> s&#x27;inverse hors</p>
+<p>distribution Treechop (arbre proche → score plus bas qu&#x27;une scène ouverte). Le Chapitre 12 a</p>
+<p>confirmé, une troisième fois indépendante, qu&#x27;un raccourci de luminosité vit très probablement dans</p>
+<p>l&#x27;encodeur visuel figé lui-même (attempt #11 : corrélation score/luminosité 0,643, et corrélation</p>
+<p><code>is<em>tree</em>close</code>/luminosité de -0,917 sur le propre jeu d&#x27;étiquetage manuel du gate, démontrant que</p>
+<p>le gate de direction à 87,5% mesurait en réalité le même raccourci). Ce chapitre couvre la phase 1</p>
+<p>de l&#x27;attempt #14 : un diagnostic purement offline, sans entraînement Minecraft-spécifique, testant</p>
+<p>si un modèle de vision-langage pré-entraîné générique et totalement hors-domaine résout déjà le</p>
+<p>problème de direction — avant d&#x27;engager le coût de la piste candidate 3 du Chapitre 11 (H-JEPA</p>
+<p>hiérarchique).</p>
+<h2>Méthode</h2>
+<p>Un expert externe consulté par le porteur du projet a proposé de tester <strong>CLIP</strong> (Radford et al.,</p>
+<p>OpenAI) en zero-shot, avant toute autre intervention — un modèle jamais touché ni affiné pour ce</p>
+<p>projet, entraîné sur des centaines de millions de paires image-texte du web. Protocole : similarité</p>
+<p>zero-shot CLIP entre chaque frame et deux descriptions textuelles, « a dense forest with many trees »</p>
+<p>contre « an open grassy field with no trees », appliquée sur le <strong>même jeu de frames réelles</strong> qui</p>
+<p>avait servi à découvrir l&#x27;inversion à l&#x27;attempt #10 (Chapitre 11) — ni nouvelles données, ni</p>
+<p>ré-échantillonnage, pour une comparaison directement appariée avec le diagnostic précédent.</p>
+<p>Deux conditions de passage étaient exigées, pas une seule :</p>
+<p><strong>(a)</strong> CLIP doit noter correctement les frames arbre-proche au-dessus des frames sans arbre —</p>
+<p>le test de direction que la notation native de <code>ebwm.pt</code> échoue (attempt #10).</p>
+<p><strong>(b)</strong> Le score de CLIP ne doit pas être une simple fonction de la luminosité globale de la</p>
+<p>scène — sinon ce serait le même raccourci que celui confirmé trois fois à l&#x27;attempt #11, redécouvert</p>
+<p>derrière un modèle plus gros plutôt que résolu.</p>
+<h2>Résultat</h2>
+<p><strong>(a) validée clairement</strong> : une séparation réelle et correctement orientée, contrairement à la</p>
+<p>notation native de <code>ebwm.pt</code> sur la même distribution.</p>
+<p><strong>(b) échouée, largement.</strong> Le score CLIP corrèle fortement avec la luminosité de scène — une</p>
+<p>relation proche d&#x27;une quasi-colinéarité entre les deux variables. Point notable : cette corrélation</p>
+<p>tient <strong>aussi sur l&#x27;environnement Treechop d&#x27;origine</strong>, celui où la notation native de <code>ebwm.pt</code></p>
+<p>fonctionne déjà correctement (Chapitre 6, Chapitre 8) — pas seulement sur la distribution difficile</p>
+<p>de spawn libre où le problème avait été découvert.</p>
+<h2>Lecture prudente — hypothèse, pas fait établi</h2>
+<p>Ce résultat <strong>affaiblit, sans la réfuter</strong>, l&#x27;hypothèse portée depuis l&#x27;attempt #9/#11 selon</p>
+<p>laquelle le raccourci de luminosité serait dû à un manque de diversité d&#x27;éclairage dans les données</p>
+<p>d&#x27;entraînement Minecraft-spécifiques du projet (Treechop, quasi exclusivement diurne). Un modèle</p>
+<p>entraîné sur un corpus web de plusieurs ordres de grandeur plus divers en éclairage que tout corpus</p>
+<p>collectable dans ce projet reproduit — et même dépasse en intensité — le même raccourci. Si la</p>
+<p>diversité de données suffisait à éliminer ce raccourci, on ne s&#x27;attendrait pas à le retrouver aussi</p>
+<p>fort chez CLIP.</p>
+<p>Une lecture alternative, non exclue : « une forêt dense est physiquement plus sombre qu&#x27;un champ</p>
+<p>ouvert » pourrait être un signal réel et légitime à capter, pas une erreur de raisonnement — la</p>
+<p>luminosité et la présence de forêt sont authentiquement corrélées dans le monde (et dans son</p>
+<p>imitation par le jeu).</p>
+<p>Mais cette lecture alternative ne suffit pas à tout expliquer : une frame spécifique de <em></em>grotte</p>
+<p>sombre, sans arbre<em></em>, a été groupée par CLIP avec les scènes ouvertes et claires (« pas de forêt »),</p>
+<p>et non avec un profil « forêt sombre » — ce qu&#x27;une histoire de pure luminosité prédirait pourtant.</p>
+<p>Quelque chose d&#x27;autre que la luminosité brute intervient donc dans le score de CLIP, sans qu&#x27;on</p>
+<p>puisse dire précisément quoi à ce stade. <em></em>Ceci est explicitement laissé comme question ouverte, pas</p>
+<p>comme fait établi<em></em> — cohérent avec la discipline d&#x27;honnêteté du projet sur les résultats</p>
+<p>non tranchés.</p>
+<h2>Phase 2 : fine-tuning direct de <code>ebwm.pt</code> avec augmentation photométrique — résultat mitigé</h2>
+<p>Plutôt que de poursuivre la piste CLIP zero-shot elle-même, ou d&#x27;exiger d&#x27;un futur correctif qu&#x27;il</p>
+<p>devienne explicitement invariant à la luminosité (au risque de retirer un signal potentiellement</p>
+<p>légitime, comme discuté ci-dessus), la décision prise à l&#x27;issue de la phase 1 était de procéder</p>
+<p>directement à un fine-tuning du modèle du monde du projet sur un mélange de données garanties-forêt</p>
+<p>(Treechop) et de données de spawn libre réelles (démonstrations expertes Obtain + épisodes</p>
+<p>d&#x27;exploration aléatoire), <em></em>puis de re-vérifier directement si le problème d&#x27;inversion original</p>
+<p>(attempt #10, Chapitre 11) disparaît — quel que soit le mécanisme qui médiatise ce changement<em></em> —</p>
+<p>plutôt que d&#x27;imposer une contrainte d&#x27;indépendance à la luminosité comme critère de succès. Cette</p>
+<p>phase est maintenant conclue.</p>
+<p><strong>Méthode</strong> : reprise (warm-start) de <code>ebwm.pt</code> — même architecture, pas un réentraînement depuis</p>
+<p>zéro — sur le mélange Treechop + spawn libre expert + exploration aléatoire décrit ci-dessus, avec</p>
+<p><strong>augmentation photométrique</strong> (jitter de luminosité/contraste/saturation, randomisé mais appliqué de</p>
+<p>façon cohérente sur toute une séquence courte, pas frame par frame) injectée directement dans</p>
+<p>l&#x27;entraînement du modèle du monde lui-même — pas dans un module additionnel comme dans les tentatives</p>
+<p>précédentes (le repair ColorJitter de l&#x27;attempt #7, puis l&#x27;attempt #11). C&#x27;est la première fois dans toute la</p>
+<p>campagne que cette augmentation est appliquée au modèle principal plutôt qu&#x27;à un composant greffé.</p>
+<p><strong>Gates de sécurité</strong> : passées proprement aux 5 epochs d&#x27;entraînement — pas de collapse de</p>
+<p>représentation (voir Chapitre 2), qualité de prédiction quasi inchangée (attendu : l&#x27;objectif était</p>
+<p>un ajustement léger, pas un réentraînement complet).</p>
+<p><strong>Le vrai test</strong> : re-exécution du diagnostic exact de l&#x27;attempt #10 sur chacun des 5 snapshots</p>
+<p>fine-tunés. Résultat authentiquement mixte, pas un win propre :</p>
+<ul>
+<li>En excluant une frame précise — une scène sombre de type grotte/sous-marine, sans arbre — le</li>
+</ul>
+<p>correctif paraît propre : sur les 5 snapshots, les scènes arbre-proche notent maintenant</p>
+<p>correctement plusieurs fois plus haut que les scènes ouvertes/sans arbre — un vrai renversement du</p>
+<p>sens par rapport à l&#x27;inversion d&#x27;origine.</p>
+<ul>
+<li>En incluant cette même frame, le résultat repart dans le mauvais sens sur chacun des 5 snapshots,</li>
+</ul>
+<p>parce que le score de cette frame précise <strong>s&#x27;est dégradé</strong> après le fine-tuning, pas amélioré — une</p>
+<p>anomalie nouvelle, liée à la faible luminosité, apparaissant à un endroit différent de</p>
+<p>l&#x27;attempt #11, mais reconnaissable comme appartenant à la même famille de raccourci lié à la</p>
+<p>luminosité (Chapitre 12 / attempt #11, et la phase 1 CLIP de ce même chapitre).</p>
+<p>Aucun snapshot fine-tuné n&#x27;a été promu au rang de checkpoint de référence ; aucun test en jeu réel</p>
+<p>(live) n&#x27;a été effectué, conformément à la règle du projet de ne réserver un test live qu&#x27;à un</p>
+<p>candidat ayant clairement passé son gate offline d&#x27;abord — ce qui n&#x27;est pas le cas ici.</p>
+<p><strong>Pourquoi c&#x27;est significatif</strong> : c&#x27;est la quatrième fois, avec quatre approches mécaniquement</p>
+<p>différentes, qu&#x27;une anomalie liée à la luminosité apparaît — un petit module additionnel entraîné sur</p>
+<p>des features figées (attempt #7) ; ce même module ré-entraîné spécifiquement sur des données Obtain</p>
+<p>(attempt #11) ; un modèle vision-langage géant, hors-domaine, jamais touché (CLIP, phase 1 de ce</p>
+<p>chapitre) ; et maintenant un réentraînement direct du modèle du monde lui-même avec une vraie</p>
+<p>augmentation photométrique — l&#x27;attaque la plus directe tentée jusqu&#x27;ici sur ce problème précis. Ceci</p>
+<p>affaiblit sensiblement l&#x27;hypothèse « le modèle n&#x27;a simplement pas vu assez de diversité d&#x27;éclairage » :</p>
+<p>même la tentative la plus directe et la plus soignée pour corriger exactement ce manque de diversité</p>
+<p>a produit une nouvelle anomalie plutôt qu&#x27;un correctif propre.</p>
+<h2>Décision pour la suite</h2>
+<p>La condition que le projet s&#x27;était fixée pour engager la piste candidate 3 du menu du Chapitre 11 —</p>
+<p><strong>H-JEPA</strong>, un second modèle du monde hiérarchique, plus lent, planifiant « trouver une forêt » sur un</p>
+<p>horizon long avant de rendre la main au modèle rapide existant pour le geste de coupe — était</p>
+<p>explicitement « seulement si le correctif direct et moins coûteux échoue ». Cette condition est</p>
+<p>désormais remplie par des preuves empiriques (la phase 2 ci-dessus étant la tentative de correctif</p>
+<p>direct la plus poussée du projet à ce jour), et non plus seulement par un argument plausible. Le</p>
+<p>projet s&#x27;oriente donc vers H-JEPA comme prochaine direction, plutôt que de continuer à itérer sur des</p>
+<p>correctifs directs de <code>ebwm.pt</code> ou de ses modules additionnels.</p>
+<p><code>ebwm.pt</code> (le checkpoint de référence) n&#x27;est modifié ni par le diagnostic CLIP (modèle tiers, jamais</p>
+<p>chargé pour la planification) ni par le fine-tuning de la phase 2 : les 5 snapshots produits sont</p>
+<p>conservés séparément versionnés, selon la convention déjà suivie pour chaque variante de ce projet</p>
+<p>(<code>craft<em>wm</em>v4<em>coverage.pt</code>, <code>value</em>projector_obtain.pt</code>, etc.) — aucun remplacement silencieux du</p>
+<p>checkpoint de référence.</p>
+<h2>Références</h2>
+<p>CLIP (Radford, Kim, Hallacy, Ramesh, Goh, Agarwal, Sastry, Askell, Mishkin, Clark, Krueger, Sutskever,</p>
+<p><em>Learning Transferable Visual Models From Natural Language Supervision</em>, 2021) est utilisé ici en</p>
+<p>zero-shot, hors-domaine, comme diagnostic externe — ce projet n&#x27;a <strong>pas</strong> d&#x27;identifiant arXiv vérifié</p>
+<p>pour CLIP dans <code>docs/references/index.md</code> à ce jour, et n&#x27;en invente aucun ici, conformément à la</p>
+<p>règle du projet de ne citer que des références déjà vérifiées dans ce fichier. Ce chapitre s&#x27;appuie</p>
+<p>par ailleurs sur le diagnostic de l&#x27;attempt #10 (Chapitre 11) et le raccourci de luminosité confirmé</p>
+<p>trois fois à l&#x27;attempt #11 (Chapitre 12), déjà documentés sans nouvelle citation bibliographique.</p>
         </div>
       </div>
 
-      <div class="achievement" role="note" aria-label="Résultat de ce chapitre">
-        <span class="achievement-icon" aria-hidden="true">&#127942;</span>
-        <div>
-          <p class="achievement-title">Achievement : deux résultats mixtes, une vraie décision — cap sur H-JEPA</p>
-          <p>
-            Deux tests hors-ligne, deux résultats mitigés, ni l'un ni l'autre un correctif propre.
-            <strong>Phase 1</strong> : CLIP, un modèle de vision-langage géant jamais entraîné sur
-            Minecraft, note correctement les frames arbre-proche au-dessus des frames sans arbre —
-            ce que la notation maison du projet ne fait pas hors distribution — mais son score
-            reste fortement lié à la luminosité de la scène, même sur l'environnement facile où la
-            boussole du projet fonctionne déjà. <strong>Phase 2</strong> : un fine-tuning direct du
-            modèle du monde avec augmentation photométrique corrige le sens général sur 5 versions
-            ajustées, mais une seule frame sombre de type grotte ou passage sous l'eau voit son
-            score empirer et fait rebasculer tout le résultat dans le mauvais sens dès qu'elle est
-            réintégrée. Quatre approches indépendantes ont maintenant buté sur la même famille de
-            raccourci lié à la luminosité. Cette fois, le résultat mixte débouche sur une vraie
-            décision, pas sur une nouvelle tentative : la condition que le projet s'était fixée
-            pour lancer la piste la plus lourde du menu — <strong>H-JEPA</strong>, un second modèle
-            du monde dédié à « trouver une forêt » — est remplie, et le projet s'y engage comme
-            prochaine direction.
-          </p>
-        </div>
-      </div>
 
     </div>
   </article>
-
-  <nav class="chapter-nav" aria-label="Navigation entre chapitres">
-    <div class="wrap chapter-nav-inner">
-      <a class="chapter-nav-link" href="index.html">&larr; Retour au parcours</a>
-    </div>
-  </nav>
 
 </main>
 

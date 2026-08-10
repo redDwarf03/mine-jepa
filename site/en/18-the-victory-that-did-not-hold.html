@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The campaign&#x27;s first victory did not survive a larger sample — and it was the team itself that caught it — Mine-JEPA</title>
+<meta name="description" content="Chapter 18 of the Mine-JEPA learning path: The campaign&#x27;s first victory did not survive a larger sample — and it was the team itself that caught it.">
+<link rel="stylesheet" href="../style.css">
+<script>document.documentElement.classList.add("js");</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="wrap site-header-inner">
+    <a class="site-brand" href="index.html"><span class="brand-mark" aria-hidden="true">&#9935;</span> Mine-JEPA</a>
+    <div class="header-controls">
+      <span class="last-updated" title="Date de mise à jour">Updated: 2026-08-11</span>
+      <nav class="lang-switch" aria-label="Site language">
+        <a href="../fr/18-la-victoire-qui-n-a-pas-tenu.html" lang="fr" hreflang="fr">FR</a>
+        <a href="18-the-victory-that-did-not-hold.html" aria-current="true" lang="en" hreflang="en">EN</a>
+      </nav>
+      <div class="track-pref" data-track-pref>
+        <span class="track-pref-label" id="track-pref-label">Show:</span>
+        <button type="button" data-track-pref-value="beginner" aria-pressed="true" aria-describedby="track-pref-label">Beginner</button>
+        <button type="button" data-track-pref-value="expert" aria-pressed="false" aria-describedby="track-pref-label">Expert</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <nav class="breadcrumb" aria-label="Breadcrumbs">
+    <div class="wrap">
+      <a href="index.html">Learning Path</a>
+      <span aria-hidden="true">/</span>
+      <span>Chapter 18</span>
+    </div>
+  </nav>
+
+  <article class="chapter">
+    <div class="wrap">
+
+      <header class="chapter-header">
+        <p class="chapter-kicker">Chapter 18</p>
+        <h1>The campaign&#x27;s first victory did not survive a larger sample — and it was the team itself that caught it</h1>
+        <p class="chapter-prereqs">Prerequisites: Chapters 1 to 17.</p>
+      </header>
+
+
+      <div class="tracks" data-tracks>
+        <div class="track-tabs" role="tablist" aria-label="Reading level">
+          <button class="track-tab" role="tab" id="tab-beginner" aria-controls="panel-beginner" aria-selected="true" data-track-tab="beginner">Beginner</button>
+          <button class="track-tab" role="tab" id="tab-expert" aria-controls="panel-expert" aria-selected="false" tabindex="-1" data-track-tab="expert">Expert</button>
+        </div>
+
+        <div class="track-panel is-active chapter-prose" data-track-panel="beginner" role="tabpanel" id="panel-beginner" aria-labelledby="tab-beginner">
+          <p class="track-kicker">Beginner track</p>
+
+<h2>Where we left off</h2>
+<p>Chapter 17 ended on a heavy number: <strong>six</strong> completely different ways of measuring &quot;is there a</p>
+<p>tree close by?&quot; — two small trained modules, a web giant never touched by this project, a direct</p>
+<p>retraining, a hand-built colour calculation, and even a plain statistical formula with no learning</p>
+<p>at all — had all fallen into the same trap: they got distracted by the brightness of the scene</p>
+<p>instead of genuinely judging whether a tree was present. The decision about what came next</p>
+<p>(retrain the model&#x27;s core, or accept this limit and continue with what already works) remained</p>
+<p>with the user, unsettled.</p>
+<p>Before settling it, a re-reading of the latest scientific publications on nearby topics surfaced</p>
+<p>two new ideas, cheap to test ahead of any heavy commitment. This chapter tells what happened when</p>
+<p>they were — and its most important event is not a result, but a <em></em>correction the team inflicted on</p>
+<p>itself, within the same working session<em></em>, before anyone had time to declare victory too soon.</p>
+<h2>Idea 1: what if we looked at distance rather than colour?</h2>
+<p>Every previous attempt tried to guess &quot;there is a tree close by&quot; from the colour and texture of the</p>
+<p>image — exactly the kind of clue brightness can pollute. A recent scientific publication proposed</p>
+<p>something else: add to a JEPA model a notion of <strong>depth</strong> — how far away each part of the image is,</p>
+<p>a bit like a radar measuring distances rather than an eye looking at colours — and that publication</p>
+<p>showed it helped a model generalise better to unfamiliar scenes.</p>
+<p>The test is built exactly on Chapter 14&#x27;s template: take an off-the-shelf vision model, never</p>
+<p>trained on Minecraft, able to estimate how far away each zone of an image is from a single photo.</p>
+<p>No setting is adjusted for Minecraft — it is an outside tool, used as is, precisely to prevent any</p>
+<p>project-specific learning from reinventing the same brightness shortcut.</p>
+<p>On the very small image sample already used by every previous chapter (4 images with a nearby tree,</p>
+<p>6 without), this test passed <strong>both</strong> conditions that six previous attempts had never passed</p>
+<p>together: it did distinguish scenes with trees from scenes without, AND it was almost entirely</p>
+<p>undistracted by brightness — by far the best result on that second point since the campaign began.</p>
+<p>At the time, it looked like the very first &quot;yes&quot; of this long investigation.</p>
+<h2>But the team did not stop there — and was right not to</h2>
+<p>One figure immediately raised suspicion: on the first condition (distinguishing tree from no-tree),</p>
+<p>the result cleared the passing bar by only a hair — the kind of margin that can vanish once you</p>
+<p>look at more examples. Rather than publishing that result as a victory, the same team, in the same</p>
+<p>working session, immediately widened the image sample: instead of settling for the usual 10 images,</p>
+<p>it examined and hand-classified <strong>all</strong> the remaining images available for this test — not a</p>
+<p>cherry-picked selection, the entire population — reaching 27 images in total (honestly setting</p>
+<p>aside 4 images judged too ambiguous to classify).</p>
+<p><strong>On that larger sample, the result collapsed.</strong> The ability to distinguish tree from no-tree fell</p>
+<p>back below the passing bar. The direction stayed correct — images with trees continued to score</p>
+<p>slightly higher on average — but the gap had become too small to be a real discovery: it was the</p>
+<p>kind of gap a small sample sometimes produces by pure chance, not a reliable property of the</p>
+<p>signal.</p>
+<p>That is the heart of this chapter: <em></em>the very first apparent victory of this eighteen-attempt</p>
+<p>campaign did not survive a broader examination — and it was the same team, the same day, that</p>
+<p>detected and corrected it<em></em>, rather than letting the first flattering result become the official</p>
+<p>story. It is exactly the same honesty that, since this site&#x27;s very first chapter, has made it say</p>
+<p>&quot;0/20&quot;, &quot;not significant&quot; or &quot;this does not work&quot; whenever that was the truth — applied here, for</p>
+<p>the first time, to a result of the project itself rather than to someone else&#x27;s.</p>
+<p>One important thing not to conflate, however: <strong>two different claims</strong>, and only one of them</p>
+<p>survived. &quot;This signal is not distracted by brightness&quot; — true, confirmed, and it is even the best</p>
+<p>result of the whole campaign on that precise point. &quot;This signal really detects a nearby tree&quot; —</p>
+<p>false, or at any rate not yet proven, as soon as you look at enough examples. Not being fooled by</p>
+<p>brightness is not enough to be a good tree detector.</p>
+<h2>Idea 2: what if the real problem were not visual at all?</h2>
+<p>A second scientific publication, on a different topic, inspired a question with nothing to do with</p>
+<p>colours or light: has the agent learned to <strong>move</strong> differently enough across the two training sets</p>
+<p>for that to be a problem in its own right?</p>
+<p>The test counts, without training anything or running a GPU, which actions appear in the expert</p>
+<p>runs used for each of the two tasks. Striking result: in the expert runs for the &quot;chop a tree&quot;</p>
+<p>task (Treechop), the most frequent action by far is <strong>attack</strong> (58.5% of the time) — logically, the</p>
+<p>expert spends its time logging. In the expert runs for the crafting task (Obtain), actions are much</p>
+<p>more evenly split between &quot;do nothing&quot;, &quot;move forward&quot; and &quot;attack&quot;, with far less attacking. A</p>
+<p>statistical calculation measuring how different two action distributions are gives a gap <em></em>104</p>
+<p>times larger<em></em> than what you would get by pure chance comparing one half of an expert run against</p>
+<p>the other half of the same run.</p>
+<p>This proves nothing causal for now — it is a new fact, honestly presented as a lead rather than a</p>
+<p>certainty. But it is the very first time, in eighteen attempts, that a test has surfaced a real and</p>
+<p>important gap between the two training sets that has <strong>nothing to do with colour or light</strong>. It</p>
+<p>opens a door nobody had opened yet: perhaps the model simply never trained enough on moving the way</p>
+<p>an exploring agent moves, because its expert runs mostly showed it how to chop wood.</p>
+<h2>A small live test: nothing spectacularly broken, but a signal to watch</h2>
+<p>A small live experiment (6 runs) tried to navigate the agent using this distance estimate rather</p>
+<p>than the usual compass, whenever the agent seemed lost. The mechanism triggered only 3 times across</p>
+<p>the 6 runs — too few to really judge whether it behaves well — and showed no severe lock-in on a</p>
+<p>single direction, unlike several past failed attempts. No wood chopped, unsurprisingly; that was</p>
+<p>not the question being asked.</p>
+<p>A worrying signal did appear, however, and was reported honestly rather than hidden: in 2 runs out</p>
+<p>of 6, the agent died <strong>while</strong> the anti-drowning reflex (repaired and confirmed in Chapter 13) was</p>
+<p>actively trying to get it out of the water. Yet that reflex had survived 6 runs out of 6 with no</p>
+<p>deaths at its last check. Nothing yet proves this new distance-based navigation causes the problem</p>
+<p>— it could be chance across so few runs — but the most plausible explanation is interesting: models</p>
+<p>that estimate distance from a single image often get water wrong, a surface that reflects light</p>
+<p>deceptively. This point deserves a dedicated check before trusting the anti-drowning solution</p>
+<p>alongside this new navigation mechanism.</p>
+<h2>What this chapter changes, and what it does not</h2>
+<ul>
+<li>Chapter 17&#x27;s diagnosis (the brightness defect is deeply embedded in the way the base model</li>
+</ul>
+<p>compresses an image, not in one particular learning method) <strong>still stands</strong> — the &quot;depth&quot; test</p>
+<p>did not repair the central problem, only showed that a signal can escape that precise trap without</p>
+<p>thereby becoming a good tree detector.</p>
+<ul>
+<li><strong>One genuine novelty appears</strong>: a gap in behaviour, not in perception, between the two training</li>
+</ul>
+<p>sets — never measured before, and with nothing to do with colour or light.</p>
+<ul>
+<li><strong>This chapter&#x27;s most important moment remains the correction itself</strong>: a result that looked like</li>
+</ul>
+<p>the first real victory in eighteen attempts turned out to be a mirage caused by too small a</p>
+<p>sample — and the team discovered and corrected it the same day, without letting the flattering</p>
+<p>version take hold. It is concrete proof that the &quot;verify before believing&quot; rule, applied since</p>
+<p>this site&#x27;s first chapter, also works when it is applied to one&#x27;s own work.</p>
+<ul>
+<li>The underlying decision (retrain the base model, or consolidate around what already works)</li>
+</ul>
+<p>remains, as in Chapter 17, an open question for the user — not settled by this chapter.</p>
+        </div>
+
+        <div class="track-panel chapter-prose" data-track-panel="expert" role="tabpanel" id="panel-expert" aria-labelledby="tab-expert">
+          <p class="track-kicker">Expert track</p>
+
+<h2>Context</h2>
+<p>Chapter 17 (attempt #17) closed two direct attacks on <code>ebwm.pt</code>&#x27;s goal-centroid scoring (an OOD</p>
+<p>Mahalanobis-distance fallback, and a check on the &quot;not enough dark data&quot; hypothesis) at a standstill:</p>
+<p>6 independent confirmations of the same brightness/scene-composition confound, retrain-vs-consolidate</p>
+<p>decision left to the user. This chapter covers attempt #18 in</p>
+<p><code>docs/10<em>coldstart</em>engineering.md</code>/<code>CLAUDE.md#Phase 5+</code>: a dedicated bibliography search pass</p>
+<p>(2026-07-27, covering 2026-07-13 to 2026-07-27) surfaced 5 new JEPA papers (added to</p>
+<p><code>docs/references/index.md</code>), two of which reopened cheap sub-questions ahead of any retraining</p>
+<p>commitment. This attempt&#x27;s notable event is not a result but a <em></em>correction issued within the same</p>
+<p>session<em></em>.</p>
+<h2>Diagnostic 1 — pseudo-depth generalisation: an apparent first GO that did not survive a larger sample</h2>
+<p>Motivated by Khan, &quot;Depth-Regularized JEPA World Models Learn More Transferable Representations from</p>
+<p>Real Outdoor Robot Data&quot; (<a href="https://arxiv.org/abs/2607.16314">arXiv:2607.16314</a>, 2026): an 18M-param</p>
+<p>JEPA world model + SIGReg on real outdoor robot video, with a depth-supervision auxiliary term,</p>
+<p>gains -33% error on a visual-odometry probe and better surprise-score separation in-domain AND</p>
+<p>out-of-domain (TartanGround benchmark) under real domain shift, at no extra inference cost — the</p>
+<p>first published instance of attempt #15&#x27;s own conclusion: the brightness confound needs &quot;a different</p>
+<p>modality&quot;, not another photometric feature.</p>
+<p><code>scripts/diagnose<em>depth</em>gate.py</code> runs MiDaS_small (<code>torch.hub</code>, <code>intel-isl/MiDaS</code>, off-the-shelf, no</p>
+<p>Minecraft-specific training — the same &quot;outside model&quot; logic as attempt #14 Phase 1&#x27;s CLIP test)</p>
+<p>over the campaign&#x27;s standard 251-frame set, scoring each frame by the mean of its closest 10% of</p>
+<p>MiDaS-predicted pixels (nearest-object proxy).</p>
+<p><strong>First pass, the campaign&#x27;s usual small sample (tree<em>close n=4, no</em>tree n=6):</strong></p>
+<table>
+<thead><tr><th>Gate</th><th>Bar</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>A — separation</td><td>≥ 1.3x</td><td><strong>PASS — 1.304x</strong></td></tr>
+<tr><td>B — brightness independence</td><td>\</td><td>r\</td><td>&lt; 0.3</td><td><strong>PASS — r = 0.0451</strong> (the campaign&#x27;s best by far; previous range 0.117-0.947)</td></tr>
+</tbody>
+</table>
+<p>Read at face value, this was the first mechanism in 7 independent tests (#7, #11, #14</p>
+<p>Phase1/Phase2, #15, #17 Prong A, and this one) to pass both established gates — flagged at the time</p>
+<p>as &quot;a thin margin on a small sample&quot;, not declared a victory, because that margin looked fragile on</p>
+<p>inspection (Gate A cleared the 1.3x bar by only 0.004).</p>
+<p><strong>Same-session follow-up: the hand-labelled sample was extended from 10 to 27 frames</strong> (21 new</p>
+<p>candidates visually inspected — the <em>entire</em> remaining population eligible for this gate in</p>
+<p><code>data/minerl<em>coverage/episodes.npz</code> and <code>assets/spawn</em>thumbs/</code>, not a cherry-picked subset; 4</p>
+<p>discarded as genuinely ambiguous, a 19% exclusion rate, reported rather than hidden).</p>
+<table>
+<thead><tr><th>Gate</th><th>n=10 (original)</th><th>n=27 (extended)</th></tr></thead>
+<tbody>
+<tr><td>A — separation</td><td>1.304x (PASS)</td><td><strong>1.086x (FAIL)</strong></td></tr>
+<tr><td>B — brightness independence</td><td>r=0.0451 (PASS)</td><td>r=0.0451 (PASS, unchanged)</td></tr>
+</tbody>
+</table>
+<div class="callout">
+<p><strong>LESSON: the first pass&#x27;s 1.304x was a small-sample artefact, not a real, robust separation.</strong></p>
+<p>Tree-close frames still score higher on average than no-tree frames (644.3 versus 593.5) — the</p>
+<p><em>direction</em> stays correct — but the margin collapsed well below the 1.3x bar once the sample was</p>
+<p>nearly tripled. Gate B&#x27;s brightness-independence result is real and unaffected: depth genuinely is</p>
+<p>not a brightness shortcut, the best such result of any mechanism this campaign has tested. But</p>
+<p>independence from a confound is not the same thing as being a working tree detector.</p>
+</div>
+<p><strong>CORRECTED VERDICT: MIXED, not GO.</strong> Attempt #17&#x27;s standing diagnosis — no mechanism has yet</p>
+<p>cleanly separated tree-close from open scenes while staying brightness-independent at a trustworthy</p>
+<p>sample size — <strong>still stands</strong>. What genuinely changed: depth&#x27;s brightness independence is confirmed</p>
+<p>and reproducible (a non-photometric signal that is not itself a brightness shortcut, even if it is</p>
+<p>not yet, alone, a working detector). Corrected in the same session it was found, not left standing</p>
+<p>as a false first GO — the campaign&#x27;s honesty discipline applied to itself, not only to each new</p>
+<p>mechanism tested.</p>
+<h2>Diagnostic 2 — Treechop/Obtain action-coverage overlap: a genuinely new, non-photometric factor that still stands</h2>
+<p>Motivated by Zhang, Guan, Zhang, Zhang, Li, &quot;On the Identifiability of Controlled World Models&quot;</p>
+<p>(<a href="https://arxiv.org/abs/2607.22430">arXiv:2607.22430</a>, 2026): an action-conditioned JEPA only</p>
+<p>recovers reliable state/dynamics when the training action distribution has adequate coverage.</p>
+<p><code>scripts/diagnose<em>action</em>coverage.py</code> measures this directly — no GPU, pure action-array statistics,</p>
+<p>seeded, self-calibrated against a Treechop-vs-Treechop split-half null rather than an invented bar.</p>
+<ul>
+<li><strong>Out-of-vocabulary fraction</strong>: only <strong>2.33%</strong> of pooled Obtain actions use an index outside</li>
+</ul>
+<p><code>ebwm.pt</code>&#x27;s trained 17-action vocabulary — far lower than the naive starting estimate of</p>
+<p>&quot;5/22≈22.7%&quot; (craft-heavy expert demos rarely invoke crafting relative to movement; the</p>
+<p>random-policy coverage set alone is 22.6% OOV).</p>
+<ul>
+<li><strong>Jensen-Shannon divergence on shared indices</strong>: Treechop vs. pooled Obtain = <strong>0.1453</strong>, against</li>
+</ul>
+<p>a Treechop-vs-Treechop split-half null of <strong>0.0014</strong> — a <strong>104x</strong> ratio, not explainable by</p>
+<p>sampling noise. Treechop demos are 58.5% attack / 14.7% forward / 12.0% noop (&quot;walk to a tree,</p>
+<p>hold attack&quot;); Obtain is comparatively noop/forward-heavy and attack-light (33%/31%/25%).</p>
+<ul>
+<li><strong>Bonus finding, more specific than the question asked</strong>: Treechop&#x27;s own training data only ever</li>
+</ul>
+<p>exercises 8 of <code>ebwm.pt</code>&#x27;s 17 trained action indices — strafe, jump, and both camera tilt</p>
+<p>directions are never sampled during training, an internal coverage gap inside Treechop itself,</p>
+<p>independent of the Obtain domain.</p>
+<div class="callout">
+<p><strong>LESSON, held to the campaign&#x27;s &quot;hypothesis vs. confirmed&quot; discipline</strong>: this establishes a real,</p>
+<p>large, non-photometric distributional gap — the first diagnostic in 18 attempts to surface a</p>
+<p>candidate factor outside the brightness/scene-composition family — but does NOT by itself prove</p>
+<p>that this mechanism causes attempt #10&#x27;s score reversal. The paper&#x27;s claim concerns</p>
+<p>state-action-next-state identifiability; this diagnostic only measured the marginal action-usage</p>
+<p>histogram. A plausible contributing factor, not a confirmed cause.</p>
+</div>
+<p>It reframes &quot;retrain the core objective&quot; from a vague, expensive idea into two concrete, scoped</p>
+<p>candidates: broaden Treechop&#x27;s own action coverage, and/or reweight training toward the actions</p>
+<p>Obtain actually exercises. Unaffected by Diagnostic 1&#x27;s correction.</p>
+<h2>Live sanity test — <code>scan.macro: &quot;depth&quot;</code> (N=6): no chopping, mechanism barely exercised, one regression signal flagged not buried</h2>
+<p>Dispatched against Diagnostic 1&#x27;s ORIGINAL (since corrected) result, before the larger sample came</p>
+<p>back. Correctly reframed once the correction landed: read as &quot;does a depth-driven heading behave</p>
+<p>sanely&quot;, not as validating a fix. <code>mine_jepa/ebwm/depth.py</code> (new module — MiDaS loading,</p>
+<p>per-column depth scoring, heading-delta computation) feeds a new scan-macro variant</p>
+<p>(<code>configs/play<em>craft</em>commit4<em>depth.yaml</code>, built on the already-validated commit</em>length=4 + hazard</p>
+<p>avoidance baseline). By construction it never touches <code>CraftPlannerV4</code>/<code>SwitchingCraftPlanner</code>&#x27;s</p>
+<p>latent-space scoring — MiDaS needs real pixels, and the planner&#x27;s candidate rollouts are imagined</p>
+<p>latents with no pixels to decode, so depth can only inform a navigation heading from the real</p>
+<p>current frame, not a rollout score.</p>
+<ul>
+<li><strong>0/6 logs, 0/6 planks, mean reward 0.000</strong> (below MineRL&#x27;s ~0.4 random-policy baseline) —</li>
+</ul>
+<p>expected, not the question this batch was asked.</p>
+<ul>
+<li><strong>The scan macro triggered only 3 times across the 6 episodes</strong> — <code>goal<em>score</em>std</code> rarely dropped</li>
+</ul>
+<p>low enough to invoke it. The sanity question is only weakly answered by this batch, independent of</p>
+<p>the small-N caveat that already applies everywhere in this campaign.</p>
+<ul>
+<li>Across the 3 triggers: no severe lock-in (unlike attempt #6&#x27;s CEM or attempt #8&#x27;s action-pool</li>
+</ul>
+<p>priming, both &gt;80% single-action concentration); one converged in 2 ticks; one held a consistent</p>
+<p>rightmost-column heading across 4 of 6 ticks with one detour; <em></em>one reversed completely from the</p>
+<p>rightmost column (delta +26.2°) to the leftmost (delta -26.2°) in a single 16-tick step<em></em> — not the</p>
+<p>campaign&#x27;s classic ping-pong-every-replan bug (attempt #13&#x27;s first steered-escape round), but a</p>
+<p>real, unexplained reversal on too small a sample (2 data points) to characterise further.</p>
+<ul>
+<li><strong>Regression signal, flagged rather than buried</strong>: 2/6 episodes ended with</li>
+</ul>
+<p><code>died<em>during</em>escape=True</code> (death while the hazard-avoidance reflex was actively trying to escape</p>
+<p>water) — exactly the failure mode attempt #13&#x27;s final round (widened <code>align_deg</code> + debounced dry</p>
+<p>anchor) believed FIXED at 6/6 episodes survived, 0 deaths, same N=6. This batch reuses that</p>
+<p>identical hazard configuration, only adding the new depth scan macro alongside it. Not established</p>
+<p>as causal at this N (could be batch-to-batch noise recurring by chance), but plausible: monocular</p>
+<p>depth models are known to behave unpredictably on reflective/transparent surfaces like water, so a</p>
+<p>depth-driven heading could plausibly steer toward or linger near water in a way the previous</p>
+<p><code>&quot;turn&quot;</code>/<code>&quot;frontier&quot;</code> macros did not. <em></em>Before trusting attempt #13&#x27;s hazard fix as robust across</p>
+<p>scan-macro choices, this deserves a dedicated check — not asserted as a confirmed regression, but</p>
+<p>not dismissed either.<em></em></p>
+<p>GIF: <code>assets/agent<em>play</em>craft<em>commit4</em>depth.gif</code>. Full log:</p>
+<p><code>logs/coldstart<em>attempt18</em>depth<em>sanity</em>n6.log</code>.</p>
+<h2>Standing diagnosis after attempt #18</h2>
+<p>Attempt #17&#x27;s &quot;the encoder/scoring confound is structural and unfixable short of retraining&quot;</p>
+<p>conclusion <strong>still stands on the separation question</strong> — no mechanism has yet cleanly separated</p>
+<p>tree-close from open scenes while staying brightness-independent at a trustworthy sample size. What</p>
+<p>genuinely changed: depth&#x27;s brightness independence (Gate B, r=0.045, unchanged across both samples)</p>
+<p>is real and reproducible — a non-photometric signal that is not itself a brightness shortcut, even</p>
+<p>though it is not yet, alone, a working tree detector — and Diagnostic 2&#x27;s action-coverage gap is a</p>
+<p>separate, still-standing, genuinely new non-photometric factor. Neither is a proven live fix.</p>
+<p>Diagnostic 2 reframes &quot;retrain the core objective&quot; into two concrete, scoped candidates</p>
+<p>(action-coverage reweighting; SIGReg in place of VICReg, see</p>
+<p><a href="https://arxiv.org/abs/2607.13612">arXiv:2607.13612</a>) rather than a vague, expensive idea. The live</p>
+<p>sanity test&#x27;s regression signal is a separate open question about mechanism interaction (scan macro</p>
+<p>choice vs. hazard avoidance), unrelated to the central score. <em></em>The decision on how to proceed</p>
+<p>(retrain <code>ebwm.pt</code>&#x27;s core objective vs. consolidate around the coverage/execution mechanisms that</p>
+<p>already work) still belongs to the user — this attempt records results, not a commitment to any</p>
+<p>next step.<em></em></p>
+<h2>References</h2>
+<ul>
+<li>Khan, &quot;Depth-Regularized JEPA World Models Learn More Transferable Representations from Real</li>
+</ul>
+<p>Outdoor Robot Data&quot;, <a href="https://arxiv.org/abs/2607.16314">arXiv:2607.16314</a> (2026) — foundation of</p>
+<p>Diagnostic 1 (MiDaS_small, depth separation, brightness independence).</p>
+<ul>
+<li>Zhang, Guan, Zhang, Zhang, Li, &quot;On the Identifiability of Controlled World Models&quot;,</li>
+</ul>
+<p><a href="https://arxiv.org/abs/2607.22430">arXiv:2607.22430</a> (2026) — foundation of Diagnostic 2</p>
+<p>(Treechop/Obtain action-coverage overlap).</p>
+<ul>
+<li>Arnez, Gomez-Villa, &quot;The SIGReg Objective as Variational Free Energy: A Theoretical</li>
+</ul>
+<p>Active-Inference Account of JEPA World Models&quot;,</p>
+<p><a href="https://arxiv.org/abs/2607.13612">arXiv:2607.13612</a> (2026) — mentioned in the standing diagnosis</p>
+<p>as a second concrete candidate should core-objective retraining ever be undertaken; not tested in</p>
+<p>this chapter.</p>
+<p>All three references are verified in <code>docs/references/index.md</code>.</p>
+        </div>
+      </div>
+
+
+    </div>
+  </article>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>Mine-JEPA — a JEPA agent learning to play Minecraft from pixels, documented along the way.</p>
+    <p class="footer-links">
+      Author / Auteur: <a href="https://x.com/reddwarf03" target="_blank" rel="noopener">@reddwarf03 (X/Twitter)</a> ·
+      <a href="https://github.com/redDwarf03" target="_blank" rel="noopener">redDwarf03 (GitHub)</a> |
+      <a href="https://github.com/redDwarf03/mine-jepa" target="_blank" rel="noopener">GitHub Repository</a>
+    </p>
+  </div>
+</footer>
+
+<script src="../script.js" defer></script>
+</body>
+</html>

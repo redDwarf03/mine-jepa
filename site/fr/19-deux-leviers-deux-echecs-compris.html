@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Le premier vrai réentraînement du cœur du modèle : deux leviers, deux échecs bien compris, une pause choisie — Mine-JEPA</title>
+<meta name="description" content="Chapitre 19 du parcours Mine-JEPA : Le premier vrai réentraînement du cœur du modèle : deux leviers, deux échecs bien compris, une pause choisie.">
+<link rel="stylesheet" href="../style.css">
+<script>document.documentElement.classList.add("js");</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Aller au contenu</a>
+
+<header class="site-header">
+  <div class="wrap site-header-inner">
+    <a class="site-brand" href="index.html"><span class="brand-mark" aria-hidden="true">&#9935;</span> Mine-JEPA</a>
+    <div class="header-controls">
+      <span class="last-updated" title="Date de mise à jour">Mis à jour le: 2026-08-11</span>
+            <nav class="lang-switch" aria-label="Langue du site">
+        <a href="19-deux-leviers-deux-echecs-compris.html" aria-current="true" lang="fr" hreflang="fr">FR</a>
+        <a href="../en/19-two-levers-two-understood-failures.html" lang="en" hreflang="en">EN</a>
+      </nav>
+      <div class="track-pref" data-track-pref>
+        <span class="track-pref-label" id="track-pref-label">Afficher :</span>
+        <button type="button" data-track-pref-value="beginner" aria-pressed="true" aria-describedby="track-pref-label">Débutant</button>
+        <button type="button" data-track-pref-value="expert" aria-pressed="false" aria-describedby="track-pref-label">Expert</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <nav class="breadcrumb" aria-label="Fil d'Ariane">
+    <div class="wrap">
+      <a href="index.html">Parcours d'apprentissage</a>
+      <span aria-hidden="true">/</span>
+      <span>Chapitre 19</span>
+    </div>
+  </nav>
+
+  <article class="chapter">
+    <div class="wrap">
+
+      <header class="chapter-header">
+        <p class="chapter-kicker">Chapitre 19</p>
+        <h1>Le premier vrai réentraînement du cœur du modèle : deux leviers, deux échecs bien compris, une pause choisie</h1>
+        <p class="chapter-prereqs">Prérequis : Chapitres 1 à 18.</p>
+      </header>
+
+
+      <div class="tracks" data-tracks>
+        <div class="track-tabs" role="tablist" aria-label="Niveau de lecture">
+          <button class="track-tab" role="tab" id="tab-beginner" aria-controls="panel-beginner" aria-selected="true" data-track-tab="beginner">Débutant</button>
+          <button class="track-tab" role="tab" id="tab-expert" aria-controls="panel-expert" aria-selected="false" tabindex="-1" data-track-tab="expert">Expert</button>
+        </div>
+
+        <div class="track-panel is-active chapter-prose" data-track-panel="beginner" role="tabpanel" id="panel-beginner" aria-labelledby="tab-beginner">
+          <p class="track-kicker">Piste débutant</p>
+
+<h2>Là où on en était</h2>
+<p>Le Chapitre 18 s&#x27;est terminé sur une vraie décision, prise le 28 juillet 2026 par l&#x27;utilisateur</p>
+<p>du projet : après <strong>dix-huit tentatives</strong> pour réparer, de l&#x27;extérieur, la façon dont le modèle</p>
+<p>principal (<code>ebwm.pt</code>) juge « y a-t-il un arbre proche ? », toutes tombées sur le même piège de</p>
+<p>luminosité, il était temps d&#x27;essayer autre chose — <em></em>toucher pour la première fois au cœur même</p>
+<p>de ce modèle<em></em>, plutôt que de continuer à empiler des béquilles autour de lui sans jamais</p>
+<p>rouvrir le capot. Deux idées précises et chiffrées étaient sur la table, trouvées au chapitre</p>
+<p>précédent : élargir le vocabulaire de gestes que le modèle a appris à reconnaître, et changer</p>
+<p>l&#x27;ingrédient anti-effondrement qui l&#x27;empêche de « tricher » en apprenant à tout confondre.</p>
+<p>Ce chapitre raconte ce qui s&#x27;est passé quand ces deux idées ont été essayées pour de vrai. Les</p>
+<p>deux ont échoué — mais <strong>chacune pour une raison précise qu&#x27;on a comprise</strong>, pas dans le flou. Et</p>
+<p>la décision qui suit n&#x27;est pas un abandon : c&#x27;est une pause choisie.</p>
+<h2>Levier 1 : apprendre au modèle plus de gestes</h2>
+<p>Souvenez-vous du Chapitre 18 : un test avait montré que dans les parties où l&#x27;expert coupe des</p>
+<p>arbres, le modèle n&#x27;a presque jamais vu certains gestes — sauter, se déplacer sur le côté,</p>
+<p>regarder vers le haut ou vers le bas. Sur dix-sept gestes possibles, seuls huit apparaissaient</p>
+<p>vraiment dans les données d&#x27;entraînement d&#x27;origine.</p>
+<p>Le correctif était concret : relire les parties enregistrées et <strong>récupérer</strong> ces gestes qui</p>
+<p>étaient là depuis le début, mais que le programme qui prépare les données ne savait pas encore</p>
+<p>lire correctement. Une fois corrigé, presque tous les gestes apparaissent (quinze sur dix-sept</p>
+<p>au lieu de huit). Le modèle a ensuite été réentraîné, en partant de ses poids actuels — pas</p>
+<p>depuis zéro — avec un taux d&#x27;apprentissage très prudent (l&#x27;équivalent d&#x27;ajuster à petits pas,</p>
+<p>pas de tout rebattre), pendant cinq passages complets sur les données.</p>
+<p><strong>Résultat : ça n&#x27;a pas marché.</strong> Le test qui mesure si le modèle distingue bien « arbre proche »</p>
+<p>de « pas d&#x27;arbre » a échoué avant ET après ce réentraînement, sans amélioration progressive au</p>
+<p>fil des cinq passages. Le vocabulaire de gestes s&#x27;est bien élargi, mais la façon dont le modèle</p>
+<p>juge une scène ne s&#x27;est pas améliorée pour autant.</p>
+<h3>Pourquoi ? Une enquête, pas une supposition</h3>
+<p>Face à cet échec, l&#x27;équipe s&#x27;est posé la bonne question avant de passer à autre chose : <em>pourquoi</em></p>
+<p>ça n&#x27;a pas marché ? Une première explication simple est venue à l&#x27;esprit — peut-être qu&#x27;en</p>
+<p>ajoutant l&#x27;étiquette « sauter », le programme avait accidentellement effacé l&#x27;étiquette</p>
+<p>« frapper » sur les mêmes images (un peu comme si, en cochant une nouvelle case sur un</p>
+<p>formulaire, on décochait une case déjà remplie par erreur). <em></em>Cette explication a été vérifiée</p>
+<p>deux fois, avec des comptages exacts<em></em> — et elle est fausse : le nombre d&#x27;images étiquetées</p>
+<p>« frappe » est resté rigoureusement identique, image pour image, avant et après.</p>
+<p>Ce qui a vraiment changé : environ 5 images sur 100 ont changé d&#x27;étiquette, et l&#x27;écrasante</p>
+<p>majorité de ce changement, ce sont des images où l&#x27;expert avançait ET sautait en même temps (une</p>
+<p>« bunny-hop », une technique de déplacement bien réelle dans Minecraft) — un vrai geste qu&#x27;on a</p>
+<p>enfin appris à voir, pas une erreur.</p>
+<p>L&#x27;explication la plus solide (mais <strong>pas encore prouvée</strong>, l&#x27;équipe est honnête là-dessus) :</p>
+<p>ces gestes rares représentaient environ 1 % de l&#x27;attention d&#x27;entraînement du modèle avant la</p>
+<p>correction, et sont soudainement passés à environ 4 % après — jusqu&#x27;à 9 fois plus sur certaines</p>
+<p>combinaisons de gestes. C&#x27;est un peu comme si un élève qui avait quasiment jamais pratiqué le</p>
+<p>piano recevait d&#x27;un coup neuf fois plus d&#x27;heures de cours que d&#x27;habitude sur cet instrument :</p>
+<p>même si ses autres matières ne changent pas, le choc de ce nouvel apprentissage déséquilibre ses</p>
+<p>habitudes générales. Une suite plus prudente (introduire ces gestes plus progressivement) a été</p>
+<p>envisagée mais pas essayée — l&#x27;utilisateur a préféré passer directement au deuxième levier.</p>
+<h2>Levier 2 : changer l&#x27;ingrédient anti-effondrement</h2>
+<p>Le deuxième levier touchait à quelque chose de plus profond : l&#x27;ingrédient qui empêche le modèle</p>
+<p>de « tricher ». Rappel du Chapitre 2 : un modèle JEPA peut apprendre à représenter <em>toutes</em> les</p>
+<p>images de la même façon (un effondrement, ou « collapse ») parce que ça minimise artificiellement</p>
+<p>son erreur sans rien apprendre d&#x27;utile. Ce projet utilise depuis le début un ingrédient appelé</p>
+<p>VICReg pour empêcher ça. Deux publications scientifiques récentes affirment qu&#x27;un ingrédient plus</p>
+<p>récent, appelé <strong>SIGReg</strong>, serait plus fiable en théorie.</p>
+<p>Avant même de coder quoi que ce soit, un examen du code existant a révélé une surprise : la</p>
+<p>version de VICReg réellement utilisée dans ce projet n&#x27;était déjà, depuis le début, qu&#x27;une</p>
+<p><strong>moitié</strong> de la recette complète — un seul des deux mécanismes que la théorie prévoit. Ça a</p>
+<p>simplifié le remplacement par SIGReg : pas besoin de reconstruire une architecture entière,</p>
+<p>juste d&#x27;échanger un ingrédient contre un autre au même endroit.</p>
+<p>Le nouvel ingrédient a été testé avec la recette <strong>la plus prudente de toute la campagne</strong> :</p>
+<p>taux d&#x27;apprentissage encore plus bas que le Levier 1, seulement trois passages maximum sur les</p>
+<p>données, et surtout — un <strong>nouveau garde-fou construit spécialement pour ce test</strong>, capable de</p>
+<p>détecter un type d&#x27;effondrement que l&#x27;ancien outil de surveillance ne peut pas voir.</p>
+<h3>Un effondrement d&#x27;un genre différent, détecté avant qu&#x27;il ne fasse trop de dégâts</h3>
+<p>Voici l&#x27;explication de ce nouveau danger, avec une image simple. Le vieil outil de surveillance</p>
+<p>du projet (<code>batch_var</code>, utilisé depuis le Chapitre 2) mesure si les représentations du modèle</p>
+<p>sont devenues toutes <em>identiques</em> — un effondrement « en hauteur », comme si toute une classe</p>
+<p>d&#x27;élèves donnait exactement la même réponse à chaque question. Mais il existe un <em></em>deuxième</p>
+<p>genre d&#x27;effondrement<em></em>, plus sournois : les représentations restent bien différentes les unes</p>
+<p>des autres dans l&#x27;ensemble (donc <code>batch_var</code> ne voit rien d&#x27;anormal), mais tout ce qui les rend</p>
+<p>différentes se concentre sur une poignée de détails, alors que le modèle avait auparavant plus</p>
+<p>de quatre mille façons différentes de varier. C&#x27;est comme si toute la classe continuait à donner</p>
+<p>des réponses variées, mais que ces réponses ne portaient plus que sur 4 ou 5 sujets au lieu de</p>
+<p>plusieurs milliers — une richesse illusoire.</p>
+<p><strong>C&#x27;est exactement ce qui s&#x27;est passé, dès le tout premier passage sur les données</strong>, et le</p>
+<p>nouveau garde-fou l&#x27;a détecté et a arrêté l&#x27;entraînement avant de continuer inutilement : le</p>
+<p>nombre effectif de « directions utiles » dans les représentations du modèle s&#x27;est effondré de</p>
+<p>26,7 à 4,5 — une chute de 83 % — pendant que le vieil outil de surveillance affichait un chiffre</p>
+<p>parfaitement sain, aussi bon que n&#x27;importe quel bon entraînement précédent. Sans ce nouveau</p>
+<p>garde-fou, personne ne s&#x27;en serait aperçu à temps.</p>
+<p>Sur cet unique instantané du modèle sauvé avant le naufrage complet, le test central (« distingue</p>
+<p>bien arbre proche de pas d&#x27;arbre ») a donné un résultat <strong>encore pire</strong> que le Levier 1 — et le</p>
+<p>test sur la tâche d&#x27;origine du modèle (couper des arbres dans le jeu simple) s&#x27;est quasiment</p>
+<p>effondré aussi. Ce nouvel ingrédient, tel qu&#x27;essayé ici, a cassé le modèle plus largement qu&#x27;il</p>
+<p>ne l&#x27;a réparé.</p>
+<p>Important : cet échec-là n&#x27;est <strong>pas</strong> compté comme une septième confirmation du fameux piège de</p>
+<p>luminosité des chapitres précédents. C&#x27;est un problème d&#x27;une autre nature — un effondrement des</p>
+<p>représentations, pas une confusion entre couleur et distance. Les deux problèmes se ressemblent</p>
+<p>dans leurs symptômes (« le modèle rate le test ») mais pas dans leur cause.</p>
+<h2>La décision : une pause, pas un abandon</h2>
+<p>Face à deux leviers, deux échecs, chacun désormais bien compris (pas juste « ça n&#x27;a pas marché »</p>
+<p>mais « voici pourquoi »), l&#x27;utilisateur a choisi de <strong>mettre la campagne en pause</strong> plutôt que</p>
+<p>d&#x27;enchaîner tout de suite sur un troisième levier. C&#x27;est une décision importante à ne pas mal</p>
+<p>lire : ça ne veut <strong>pas</strong> dire que réentraîner le cœur du modèle est impossible. Ça veut dire que</p>
+<p>ces deux implémentations précises, les moins coûteuses disponibles pour chaque idée, ont chacune</p>
+<p>échoué pour une raison désormais identifiée — pas par manque d&#x27;essai, mais par un vrai problème</p>
+<p>technique repéré et expliqué.</p>
+<p>Ce qui reste debout et fonctionne, comme référence positive du projet : la règle qui empêche</p>
+<p>l&#x27;agent d&#x27;abandonner son plan trop vite, la recherche qui pousse l&#x27;agent à explorer le terrain</p>
+<p>plutôt que de tourner en rond, et le réflexe anti-noyade. Aucun de ces trois mécanismes n&#x27;a été</p>
+<p>touché par cette tentative — ni <code>ebwm.pt</code> lui-même, qui reste identique à avant, vérifié à</p>
+<p>l&#x27;octet près.</p>
+        </div>
+
+        <div class="track-panel chapter-prose" data-track-panel="expert" role="tabpanel" id="panel-expert" aria-labelledby="tab-expert">
+          <p class="track-kicker">Piste expert</p>
+
+<h2>Contexte</h2>
+<p>Le Chapitre 18 (attempt #18, <code>CLAUDE.md#Phase 5+</code>) a clos la campagne sur une décision utilisateur</p>
+<p>du 2026-07-28 : après 18 tentatives de correction <em>externe</em> de la notation goal-centroid de</p>
+<p><code>ebwm.pt</code> (têtes entraînées sur latents gelés, modèles hors-ligne, features faites main,</p>
+<p>statistiques closed-form — 6 confirmations indépendantes du même confound luminosité/composition</p>
+<p>de scène), retravailler l&#x27;objectif d&#x27;entraînement <strong>du cœur</strong> de <code>ebwm.pt</code> lui-même — jamais fait</p>
+<p>en 18 tentatives, toujours frozen ou légèrement nudgé (attempt #14 Phase 2). Deux leviers</p>
+<p>concrets, scopés par le Diagnostic 2 de l&#x27;attempt #18, étaient sur la table : (1) élargir la</p>
+<p>couverture d&#x27;action propre de Treechop et/ou repondérer vers le mix d&#x27;actions d&#x27;Obtain</p>
+<p>(motivé par Zhang et al., <a href="https://arxiv.org/abs/2607.22430">arXiv:2607.22430</a>) ; (2) remplacer</p>
+<p>VICReg par SIGReg (Balestriero &amp; LeCun, <a href="https://arxiv.org/abs/2511.08544">arXiv:2511.08544</a> ;</p>
+<p>Arnez &amp; Gomez-Villa, <a href="https://arxiv.org/abs/2607.13612">arXiv:2607.13612</a>). Ce chapitre couvre</p>
+<p>l&#x27;attempt #19 tel qu&#x27;enregistré dans <code>CLAUDE.md#Phase 5+</code>. <em></em>Non encore répercuté dans</p>
+<p><code>docs/10<em>coldstart</em>engineering.md</code><em></em> au moment de l&#x27;écriture — <code>CLAUDE.md</code> est la seule source</p>
+<p>pour cette tentative.</p>
+<h2>Run A — élargir la couverture d&#x27;action de Treechop : NO-GO, diagnostiqué (pas juste échoué)</h2>
+<p><code>scripts/prepare<em>demos.py::discretize</em>actions()</code> étendu pour lire</p>
+<p><code>action$jump/left/right/back</code> + l&#x27;inclinaison de caméra (pitch) — auparavant seuls</p>
+<p>forward/attack/sprint/yaw étaient lus. La couverture d&#x27;indices d&#x27;action propre de Treechop passe</p>
+<p>de 8/17 à 15/17. Fusionné avec les données Obtain exactement comme l&#x27;attempt #14 Phase 2,</p>
+<p>fine-tuné 5 epochs à partir des poids courants de <code>ebwm.pt</code> (LR=3e-5, VICReg intact, seed=0,</p>
+<p>snapshots <code>ebwm<em>v3</em>actioncoverage_epoch{1..5}.pt</code>, <code>ebwm.pt</code> jamais touché, md5 revérifié).</p>
+<table>
+<thead><tr><th>Gate</th><th>Résultat</th></tr></thead>
+<tbody>
+<tr><td>A — séparation (jeu étendu à main tree<em>close n=10 / no</em>tree n=17, l&#x27;échantillon de l&#x27;attempt #18)</td><td><strong>FAIL sur baseline (0,790x) ET les 5 epochs (0,531x-0,775x)</strong>, non-monotone, jamais ≥1,3x</td></tr>
+<tr><td>C — non-régression Treechop (nouveau)</td><td>sous-test de direction invalide par construction (la baseline elle-même échoue, 0,434x — pas une régression causée par le fine-tune) — retiré du verdict, seule la bande de magnitude conservée</td></tr>
+</tbody>
+</table>
+<p>JSD(Treechop, Obtain) bouge à peine : 0,1453 → 0,1585 (légèrement pire) — la couverture brute</p>
+<p>d&#x27;indices s&#x27;est améliorée mais pas la forme distributionnelle.</p>
+<h3>Diagnostic de cause racine (sur demande de l&#x27;utilisateur, avant de décider la suite)</h3>
+<p>Revérifié indépendamment, <strong>deux fois</strong>, que l&#x27;hypothèse « jump masque attack dans l&#x27;ordre de</p>
+<p>priorité if/elif » est <strong>FAUSSE</strong> : les comptages de frames « attack » sont identiques à l&#x27;octet</p>
+<p>près entre l&#x27;ancien et le nouveau jeu de données (265 454 / 265 454). Ce qui a réellement changé :</p>
+<p>4,73 % des frames reclassées, dominées par une vraie reclassification</p>
+<p><code>forward → forward+jump</code> (11 626 frames, un authentique bunny-hop, un relabel correct, pas une</p>
+<p>corruption).</p>
+<div class="callout">
+<p><strong>Explication la mieux étayée (pas prouvée)</strong> : ces indices d&#x27;action longtemps inactifs</p>
+<p>(jump/strafe/pitch) sont passés d&#x27;environ 1,2 % à environ 3,8 % de la masse d&#x27;entraînement</p>
+<p>pondérée en une seule étape (~9x sur l&#x27;indice jump+forward seul) — une injection de gradient</p>
+<p>soudaine sur des embeddings d&#x27;action quasiment jamais entraînés, plausiblement déstabilisant</p>
+<p>les poids partagés du prédicteur, même si les frames des indices déjà bien entraînés n&#x27;ont, eux,</p>
+<p>pas changé.</p>
+</div>
+<p>Un Run A-bis (warmup / table d&#x27;embeddings d&#x27;action gelée / LR plus bas) a été scopé mais pas</p>
+<p>tenté — l&#x27;utilisateur a choisi de passer directement au Run B.</p>
+<h2>Run B — VICReg → SIGReg : NO-GO, plus sévèrement cassé que Run A</h2>
+<p>Le scoping a révélé que le « VICReg » actuel de <code>ebwm.pt</code> n&#x27;est en réalité qu&#x27;un</p>
+<p><code>HingeStdLoss+CovarianceLoss</code> sur un seul tenseur (<code>state</code>) — <code>sim<em>coeff</em>t</code>/<code>idm_coeff</code> étaient</p>
+<p>déjà inertes à 0, aucun mécanisme paired-view/EMA-target n&#x27;existe dans ce pipeline. Implémenté</p>
+<p>comme un <code>SIGRegRegularizer</code> d&#x27;environ 15 lignes appelant le <code>BCS(state, state)</code> déjà vendu dans</p>
+<p>le dépôt (même tenseur deux fois — le terme d&#x27;invariance est neutre à 0 par construction, le rôle</p>
+<p>anti-collapse vient seul du test de gaussianité marginale d&#x27;Epps-Pulley, aucun EMA nécessaire</p>
+<p>selon l&#x27;affirmation propre de LeJEPA « collapse-free without stop-grad »).</p>
+<p>Remplacement complet, pas additif (<code>std<em>coeff=cov</em>coeff=0</code>, <code>sigreg_coeff=1.0</code>), jeu de données</p>
+<p>original (non-<code>_v2</code>), augmentation désactivée pour isoler la seule variable testée, LR=1e-5</p>
+<p>(10x plus prudent que Run A), plafond de 3 epochs avec un <strong>nouveau garde-fou de rang effectif</strong></p>
+<p>(ratio de participation sur la covariance de <code>state</code>), construit spécifiquement parce que</p>
+<p><code>batch_var</code> ne peut pas voir un effondrement <em>dimensionnel</em> (par opposition à isotrope).</p>
+<div class="callout">
+<p><strong>Le nouveau garde-fou a fait exactement le travail pour lequel il a été construit</strong> : l&#x27;epoch 1</p>
+<p>seul a déclenché un arrêt anticipé — rang effectif effondré de 26,69 à 4,50 (-83 %) pendant que</p>
+<p><code>batch_var</code> restait parfaitement sain (1,36, aussi haut que n&#x27;importe quel run VICReg) — un mode</p>
+<p>d&#x27;effondrement réel, invisible à l&#x27;ancienne métrique, capturé avant de gaspiller les epochs 2-3.</p>
+</div>
+<p>Gates offline sur cet unique instantané : Gate A pire que la baseline de Run A (0,367x contre</p>
+<p>0,790x, plus inversé, pas moins), Gate C sévèrement échoué (le score propre de Treechop tombe à</p>
+<p>5,7 % de la baseline — un checkpoint génériquement cassé, pas une lecture nuancée du confound).</p>
+<p>Gate B passe nominalement (r=0,131) mais jugé de faible valeur ici — une lecture d&#x27;indépendance à</p>
+<p>la luminosité sur une représentation effondrée à ~4,5 dimensions effectives ne mesure pas grand-</p>
+<p>chose. <code>ebwm.pt</code> jamais touché (md5 revérifié).</p>
+<p>Explicitement <strong>pas</strong> lu comme une 8ᵉ confirmation du confound — le mode d&#x27;échec ici (effondrement</p>
+<p>dimensionnel d&#x27;une perte anti-collapse à un seul terme, sans pression de covariance) est</p>
+<p>mécaniquement distinct du confound luminosité/composition établi par le reste de la campagne. Un</p>
+<p>Run B-bis atténué (<code>CovarianceLoss</code> partiellement conservée aux côtés de SIGReg, additif plutôt</p>
+<p>que remplacement complet) a été proposé comme option mais pas tenté.</p>
+<h2>Décision</h2>
+<p><em></em>Décision de l&#x27;utilisateur, les deux leviers ayant échoué : pause et consolidation plutôt que</p>
+<p>scoper immédiatement un 3ᵉ levier.<em></em> Les deux fixes concrètement scopés par le Diagnostic 2 de</p>
+<p>l&#x27;attempt #18 sont désormais épuisés tels que spécifiés à l&#x27;origine — ce n&#x27;est pas équivalent à</p>
+<p>« réentraîner l&#x27;objectif central de <code>ebwm.pt</code> est impossible », seulement que ces deux</p>
+<p>implémentations spécifiques, les moins coûteuses disponibles, ont échoué pour deux raisons</p>
+<p>distinctes, désormais diagnostiquées : instabilité par injection de gradient côté données (Run A) ;</p>
+<p>sous-contrainte de la covariance par une perte anti-collapse à un seul terme côté architecture</p>
+<p>(Run B). Les mécanismes non photométriques qui fonctionnaient déjà plus tôt dans la campagne</p>
+<p>(<code>commit_length=4</code>, recherche par couverture <code>FrontierTracker</code>, correctif anti-noyade) restent les</p>
+<p>seuls résultats positifs validés et constituent la référence courante du projet. Aucun test</p>
+<p>MineRL/Java en direct n&#x27;a été lancé pour Run A ou Run B (correctement retenu — aucun des deux n&#x27;a</p>
+<p>passé sa porte offline). <code>checkpoints/ebwm.pt</code> intact tout au long de l&#x27;attempt #19 (md5</p>
+<p><code>ac14e65361fbddeb057963362ea1382d</code>, revérifié après les deux runs) ; `ebwm<em>v3</em>actioncoverage_</p>
+<p>epoch{1..5}.pt<code> et </code>ebwm<em>v3</em>sigreg_epoch1.pt` conservés uniquement comme artefacts de comparaison,</p>
+<p>aucun des deux promu.</p>
+<h2>Références</h2>
+<ul>
+<li>Zhang, Guan, Zhang, Zhang, Li, « On the Identifiability of Controlled World Models »,</li>
+</ul>
+<p><a href="https://arxiv.org/abs/2607.22430">arXiv:2607.22430</a> (2026) — fondement du levier Run A</p>
+<p>(couverture/repondération d&#x27;action).</p>
+<ul>
+<li>Balestriero, LeCun, « LeJEPA: Provable and Scalable Self-Supervised Learning Without the</li>
+</ul>
+<p>Heuristics », <a href="https://arxiv.org/abs/2511.08544">arXiv:2511.08544</a> (2025) — fondement de</p>
+<p>SIGReg (Run B), y compris la revendication « collapse-free without stop-grad/EMA ».</p>
+<ul>
+<li>Arnez, Gomez-Villa, « The SIGReg Objective as Variational Free Energy: A Theoretical</li>
+</ul>
+<p>Active-Inference Account of JEPA World Models », <a href="https://arxiv.org/abs/2607.13612">arXiv:2607.13612</a></p>
+<p>(2026) — critique théorique de VICReg motivant le Run B.</p>
+<p>Les trois références sont vérifiées dans <code>docs/references/index.md</code>.</p>
+        </div>
+      </div>
+
+
+    </div>
+  </article>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>Mine-JEPA — un agent JEPA qui apprend à jouer à Minecraft à partir des pixels, documenté au fil de l'eau.</p>
+    <p class="footer-links">
+      Auteur : <a href="https://x.com/reddwarf03" target="_blank" rel="noopener">@reddwarf03 (X/Twitter)</a> ·
+      <a href="https://github.com/redDwarf03" target="_blank" rel="noopener">redDwarf03 (GitHub)</a> |
+      <a href="https://github.com/redDwarf03/mine-jepa" target="_blank" rel="noopener">Repository GitHub</a>
+    </p>
+  </div>
+</footer>
+
+<script src="../script.js" defer></script>
+</body>
+</html>

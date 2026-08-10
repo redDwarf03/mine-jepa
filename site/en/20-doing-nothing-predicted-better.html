@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Doing nothing predicted better: twenty attempts fixing the driver, when the problem was the engine — Mine-JEPA</title>
+<meta name="description" content="Chapter 20 of the Mine-JEPA learning path: Doing nothing predicted better: twenty attempts fixing the driver, when the problem was the engine.">
+<link rel="stylesheet" href="../style.css">
+<script>document.documentElement.classList.add("js");</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="wrap site-header-inner">
+    <a class="site-brand" href="index.html"><span class="brand-mark" aria-hidden="true">&#9935;</span> Mine-JEPA</a>
+    <div class="header-controls">
+      <span class="last-updated" title="Date de mise à jour">Updated: 2026-08-11</span>
+      <nav class="lang-switch" aria-label="Site language">
+        <a href="../fr/20-ne-rien-faire-predisait-mieux.html" lang="fr" hreflang="fr">FR</a>
+        <a href="20-doing-nothing-predicted-better.html" aria-current="true" lang="en" hreflang="en">EN</a>
+      </nav>
+      <div class="track-pref" data-track-pref>
+        <span class="track-pref-label" id="track-pref-label">Show:</span>
+        <button type="button" data-track-pref-value="beginner" aria-pressed="true" aria-describedby="track-pref-label">Beginner</button>
+        <button type="button" data-track-pref-value="expert" aria-pressed="false" aria-describedby="track-pref-label">Expert</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <nav class="breadcrumb" aria-label="Breadcrumbs">
+    <div class="wrap">
+      <a href="index.html">Learning Path</a>
+      <span aria-hidden="true">/</span>
+      <span>Chapter 20</span>
+    </div>
+  </nav>
+
+  <article class="chapter">
+    <div class="wrap">
+
+      <header class="chapter-header">
+        <p class="chapter-kicker">Chapter 20</p>
+        <h1>Doing nothing predicted better: twenty attempts fixing the driver, when the problem was the engine</h1>
+        <p class="chapter-prereqs">Prerequisites: Chapters 1 to 19.</p>
+      </header>
+
+
+      <div class="tracks" data-tracks>
+        <div class="track-tabs" role="tablist" aria-label="Reading level">
+          <button class="track-tab" role="tab" id="tab-beginner" aria-controls="panel-beginner" aria-selected="true" data-track-tab="beginner">Beginner</button>
+          <button class="track-tab" role="tab" id="tab-expert" aria-controls="panel-expert" aria-selected="false" tabindex="-1" data-track-tab="expert">Expert</button>
+        </div>
+
+        <div class="track-panel is-active chapter-prose" data-track-panel="beginner" role="tabpanel" id="panel-beginner" aria-labelledby="tab-beginner">
+          <p class="track-kicker">Beginner track</p>
+
+<h2>Where we left off</h2>
+<p>Chapter 19 ended on a chosen pause. Two attempts to retrain the core of the main model had both</p>
+<p>failed, each for a reason that was understood rather than guessed. Nineteen attempts, and the best</p>
+<p>result the whole campaign had ever produced was still under 10% — one success in ten runs, at best.</p>
+<p>This chapter is the last of the campaign. It contains its single most important finding, and that</p>
+<p>finding arrived from an unexpected direction: not from another idea about how to search better, but</p>
+<p>from a question nobody had ever thought to ask.</p>
+<h2>A paper about our own architecture</h2>
+<p>A routine re-reading of recent scientific publications turned up a paper studying almost exactly</p>
+<p>this project&#x27;s setup: the same family of world model, planning in Minecraft, in closed loop. It</p>
+<p>described a failure mode with a name: <strong>context collapse</strong>.</p>
+<p>The idea is unsettling once you see it. A world model can be very good at predicting what the next</p>
+<p>moment will look like — and yet produce *almost the same prediction whatever the agent decides to</p>
+<p>do*. In that state, all the usual measurements look healthy. The model predicts well. Nothing seems</p>
+<p>broken. But a planner built on top of it is blind, because planning consists entirely of comparing</p>
+<p>&quot;what happens if I do this&quot; against &quot;what happens if I do that&quot;. If those two imagined futures are</p>
+<p>nearly identical, there is nothing to compare, and the choice is made on noise.</p>
+<p>Nineteen attempts had been spent improving how the agent searches, how it scores what it sees, how</p>
+<p>long it commits to a plan. <em></em>Not one had ever checked whether the world model reacts to the agent&#x27;s</p>
+<p>actions at all.<em></em></p>
+<h2>The measurement</h2>
+<p>The test is simple to describe. Take a real moment from a recorded game. From that single frame,</p>
+<p>ask the model to imagine twelve steps into the future twice: once using the actions the player</p>
+<p>really took, and once pretending the player did nothing at all. Then compare both imagined futures</p>
+<p>against what actually happened.</p>
+<p>If the model understands actions, the version using the real actions should be closer to reality.</p>
+<p>That is the whole point of a world model.</p>
+<p>The result, measured on 400 moments in each of three different settings:</p>
+<p><em></em>Using the real actions predicts the future slightly <em>worse</em> than pretending the agent did</p>
+<p>nothing.<em></em></p>
+<p>Not equal. Worse — and reliably so, not by accident. In the crafting environment, the real action</p>
+<p>beat &quot;do nothing&quot; in only 13% of the moments tested. Pure chance would give 50%.</p>
+<h2>What is broken, precisely</h2>
+<p>It would be easy to conclude that the model simply ignores actions. It does not, and the difference</p>
+<p>matters.</p>
+<p>A second measurement checked this directly: from one frame, ask the model to imagine the next</p>
+<p>moment under each of the seventeen possible actions, and see how far apart those seventeen</p>
+<p>imaginings are. They are genuinely different from one another. The internal machinery that</p>
+<p>represents actions is healthy and well-formed. The model does react.</p>
+<p>But the reaction accounts for only about 4% of what really changes between two consecutive moments</p>
+<p>in the game — and it pushes in a direction that does not match reality. The model has learned to</p>
+<p>respond to actions; it has not learned to respond <em>correctly</em>.</p>
+<p>An analogy: imagine a car whose steering wheel is definitely connected — turn it and the car does</p>
+<p>change direction — but wired so the connection has almost nothing to do with where the road goes.</p>
+<p>The wheel is not broken. It moves the car. It simply does not help you drive.</p>
+<h2>A detail that makes the story hold together</h2>
+<p>One number was not planned for, and it is the most convincing part of the result.</p>
+<p>The three settings tested differ in how much movement they contain. The crafting recordings are</p>
+<p>mostly static — a lot of standing still, menus, small gestures. The tree-chopping recordings are</p>
+<p>the most active. Ranked from most static to most active, the model&#x27;s failure rate follows exactly:</p>
+<p>the more static the footage, the more often &quot;do nothing&quot; wins.</p>
+<p>That is precisely what you would expect if the problem is what we just described. When very little</p>
+<p>moves, &quot;assume nothing changes&quot; is already an excellent guess, and any action-driven adjustment</p>
+<p>that is even slightly miscalibrated does more harm than good. Nobody designed the test to produce</p>
+<p>that pattern; it simply fell out of the data. When a result predicts something you were not looking</p>
+<p>for, that is usually a sign it is real.</p>
+<h2>The honest complication</h2>
+<p>There is a tension in this finding, and it will not be smoothed over.</p>
+<p>The agent chops trees successfully 25 to 50% of the time in the simple tree-chopping environment</p>
+<p>(Chapter 5) — <strong>with this exact defect present</strong>. If a world model that misunderstands actions made</p>
+<p>planning impossible, nothing would ever have worked. Something did work.</p>
+<p>So this finding cannot, on its own, be the complete explanation of why the agent fails from a cold</p>
+<p>start. Any account leaning on it has to explain the successes too, and this chapter does not offer</p>
+<p>one. It would be a hypothesis, and this site has spent nineteen chapters distinguishing hypotheses</p>
+<p>from measurements.</p>
+<p>What the finding does explain is why nineteen attempts to improve the <em>planner</em> changed so little.</p>
+<p>They were all refining how to choose between options that the model could not meaningfully tell</p>
+<p>apart.</p>
+<p>It also makes sense of the campaign&#x27;s one real success. The single change that ever produced a</p>
+<p>non-zero result (Chapter 8) was making the agent stick to its plan for longer instead of</p>
+<p>reconsidering at every instant. If the information available at each instant is mostly noise, then</p>
+<p>deciding less often and committing more is exactly the right response. The project found that by</p>
+<p>trial and error, without knowing why it helped.</p>
+<h2>Why the campaign closes here</h2>
+<p>After this measurement, the decision was taken to close the cold-start campaign rather than open a</p>
+<p>twenty-first attempt.</p>
+<p>The reasoning is not exhaustion. It is that the remaining option is a different kind of work. The</p>
+<p>paper that prompted this chapter also proposes a fix — a way of training that forces the model to</p>
+<p>keep action consequences distinguishable. Half the necessary machinery turns out to already exist</p>
+<p>in this project&#x27;s code, switched off since the beginning. But applying it properly would probably</p>
+<p>also mean changing how much of the past the model can see at once: the published version looks at</p>
+<p>thirty-two moments of history, ours at one. That is rebuilding the world model, not adjusting it.</p>
+<p>And it is worth stating plainly what closing does <strong>not</strong> claim. It does not claim that a JEPA agent</p>
+<p>cannot learn to find its first tree. The paper that started this chapter shows a model of the same</p>
+<p>family planning successfully in Minecraft — mining stone in 19 attempts out of 20. The capability is</p>
+<p>real for this kind of architecture, at a larger scale than this project&#x27;s. What is claimed is much</p>
+<p>narrower and much better supported: <em></em>this particular approach — repairing the planner around a</p>
+<p>small, frozen world model — is finished, and we now know why.<em></em></p>
+<h2>What this project actually achieved</h2>
+<p>It is worth ending on an accurate ledger rather than a mood.</p>
+<p>The agent learned to see without labels, without collapsing (Chapters 1-2). It learned to imagine</p>
+<p>the consequences of its actions well enough to plan (Chapters 3-4). It plays real Minecraft and</p>
+<p>chops real trees (Chapter 5). It crafts, end to end, given wood (Chapter 6). Every one of those was</p>
+<p>verified against a stated numerical bar before being called a success.</p>
+<p>And then twenty documented attempts at a problem that was not solved — including six independent</p>
+<p>confirmations of a single confusing measurement error, a victory that was retracted the day it was</p>
+<p>found, and a root-cause diagnosis at the very end. Most published work shows only the part that</p>
+<p>worked. This site has shown the rest, at the same level of precision, because that is the part that</p>
+<p>teaches something.</p>
+        </div>
+
+        <div class="track-panel chapter-prose" data-track-panel="expert" role="tabpanel" id="panel-expert" aria-labelledby="tab-expert">
+          <p class="track-kicker">Expert track</p>
+
+<h2>Context</h2>
+<p>Chapter 19 (attempt #19) closed on a user-chosen pause: both concretely scoped core-objective</p>
+<p>retraining levers had failed, each with a diagnosed cause. This chapter covers attempt #20 in</p>
+<p><code>docs/10<em>coldstart</em>engineering.md</code> and <code>CLAUDE.md#Phase 5+</code> — <em></em>the first measurement in the</p>
+<p>campaign of whether <code>ebwm.pt</code>&#x27;s rollouts respond to actions at all<em></em>, and the campaign&#x27;s closing</p>
+<p>result.</p>
+<p>Note that attempts #7-#19 were, with the exception of #19 itself, almost entirely <em>scoring-side</em> or</p>
+<p><em>search-side</em> interventions. The dynamics — whether the world model&#x27;s imagined futures actually</p>
+<p>depend on the actions being planned — had never been instrumented.</p>
+<h2>Origin</h2>
+<p>A bibliography refresh (2026-08-10, covering 2026-07-27 onward, querying arXiv <em>and</em> Google Scholar</p>
+<p>rather than arXiv alone) surfaced Gan, Zeng, Cheng, Song, Tang, Wang, &quot;ActSWM: Action-Sensitive</p>
+<p>World Models for Long-Horizon Planning in Open-World Games&quot;</p>
+<p>(<a href="https://arxiv.org/abs/2607.26712">arXiv:2607.26712</a>, 2026) — <em></em>whose baseline is LeWM, this</p>
+<p>project&#x27;s own architecture family, evaluated on closed-loop Minecraft planning<em></em>.</p>
+<p>It names <strong>Context Collapse</strong>: an autoregressive latent predictor that maintains high cosine</p>
+<p>similarity to true future states while producing nearly indistinguishable futures under different</p>
+<p>action sequences. A healthy prediction <code>ratio</code> with a blind planner — this project&#x27;s exact Phase 4/5</p>
+<p>symptom.</p>
+<p>The paper was verified by reading its LaTeXML source directly (equations, Table 3 hyperparameters,</p>
+<p>Table 8 counts), not via a summariser. That check mattered: it caught that the paper reports its</p>
+<p>gains in two different conventions (percentage points in the introduction, relative in the results</p>
+<p>section), corrected an attribution of its SigReg term to LeWM rather than LeJEPA, and surfaced a</p>
+<p>detail no summary mentioned — see &quot;the lever this opens&quot; below.</p>
+<h2>Method</h2>
+<p><code>scripts/diagnose<em>context</em>collapse.py</code> + <code>configs/diagnose<em>context</em>collapse.yaml</code>. Fully offline: no</p>
+<p>MineRL, no Java, <code>ebwm.pt</code> loaded frozen with <code>requires<em>grad</em>(False)</code> and md5-reverified</p>
+<p>(<code>ac14e65361fbddeb057963362ea1382d</code>, unchanged).</p>
+<p>ActSWM&#x27;s Eq. 10, adapted: from one encoded context frame, roll out K=12 steps twice from the same</p>
+<p>context, comparing each against the encoded true future <code>z_{t+k}</code>:</p>
+<ul>
+<li><code>s<em>gt</em>k = cos(ẑ_gt, z)</code> — recorded actions</li>
+<li><code>s<em>zero</em>k = cos(ẑ_zero, z)</code> — all-noop counterfactual (action index 0)</li>
+<li><code>delta<em>k = s</em>gt<em>k − s</em>zero_k</code> — the action gap</li>
+</ul>
+<p>Two deliberate departures from ActSWM, reported separately rather than blended into their number:</p>
+<ol>
+<li>A <strong>random-action arm</strong>. The planner never compares &quot;recorded vs. noop&quot;; it compares many</li>
+</ol>
+<p>non-noop candidates against each other.</p>
+<ol>
+<li>A <strong>planner-matched spread arm</strong>: the std, across 64 candidate sequences, of the exact final-step</li>
+</ol>
+<p>latent distance <code>planner.py::_score</code> ranks on — the offline counterpart of the live</p>
+<p><code>goal<em>score</em>std</code> logged since attempt #2.</p>
+<p><strong>Treechop serves as its own positive control.</strong> This project has no established threshold for</p>
+<p><code>delta_k</code> (never measured before), but the agent demonstrably plans successfully on Treechop</p>
+<p>(Phase 4, 25-50% chop), which makes a Treechop-vs-Obtain comparison interpretable without an</p>
+<p>external bar.</p>
+<p><strong>A near-zero delta is ambiguous</strong> and ActSWM&#x27;s metric alone cannot disambiguate it, so a second</p>
+<p>measurement was added: the L2 spread of the 1-step prediction across all 17 action choices from the</p>
+<p>same frame, divided by the true 1-step latent change <code>‖z<em>{t+1} − z</em>t‖</code>. This separates &quot;the predictor</p>
+<p>ignores the action&quot; (share ≈ 0) from &quot;it responds, but not usefully&quot; (share &gt; 0, delta still ≈ 0).</p>
+<h2>Result</h2>
+<p>n=400 windows/domain (266 for <code>obtain<em>coverage</code> — the only windows surviving the <code>max</em>action=17</code></p>
+<p>filter, so that column is noisier and is not treated as equal evidence).</p>
+<table>
+<thead><tr><th>domain</th><th>real 1-step move</th><th>action spread</th><th>action share</th><th>Δ@k=1 win-rate</th><th>Δ_zero@K</th><th>Δ_rand@K</th></tr></thead>
+<tbody>
+<tr><td>treechop</td><td>16.22</td><td>0.615</td><td>3.8%</td><td>35.5%</td><td>−0.00028</td><td>+0.00012</td></tr>
+<tr><td>obtain_craft</td><td>4.82</td><td>0.520</td><td>10.8%</td><td>13.0%</td><td>−0.00055</td><td>+0.00204</td></tr>
+<tr><td>obtain_coverage</td><td>11.31</td><td>0.703</td><td>6.2%</td><td>28.2%</td><td>−0.00150</td><td>+0.00011</td></tr>
+</tbody>
+</table>
+<p><strong>Not Context Collapse as literally defined.</strong> The action pathway works: the 17 actions genuinely</p>
+<p>move the prediction, and the action embedding table is healthy (near-orthogonal, mean pairwise</p>
+<p>cosine −0.014).</p>
+<p><strong>But the response is a net liability.</strong> <code>delta_zero</code> is negative in every domain, and significantly</p>
+<p>so <strong>at k=1 — the exact regime <code>ebwm.pt</code> was trained on</strong> (<code>train<em>eb</em>jepa.py</code> uses <code>nsteps=1</code>), so</p>
+<p>this cannot be attributed to multi-step rollout drift:</p>
+<ul>
+<li>treechop: −0.000444 ± 0.000178, t=−2.49, p=0.0130, true action wins in <strong>35.5%</strong> of windows</li>
+<li>obtain_craft: −0.000113 ± 0.000026, t=−4.37, p&lt;0.0001, wins in <strong>13.0%</strong></li>
+<li>obtain_coverage: −0.000149 ± 0.000059, t=−2.51, p=0.0126, wins in <strong>28.2%</strong></li>
+</ul>
+<p>The consistent ordering across all three domains is <strong>noop &gt; true action &gt; random action</strong>. The model</p>
+<p>learned something real (the true action beats a random one) but not enough to clear the trivial</p>
+<p>copy-last baseline the noop rollout approximates — consistent with <code>ratio=0.9265</code>, i.e. prediction</p>
+<p>beats copy-last by only ~7%.</p>
+<p><strong>Unplanned internal consistency check</strong>: the win-rate is perfectly monotone in how dynamic the</p>
+<p>domain is (real 1-step move 4.82 → 13.0%, 11.31 → 28.2%, 16.22 → 35.5%). The more static the</p>
+<p>footage, the stronger copy-last is as a baseline, and the more a miscalibrated action perturbation</p>
+<p>costs. This is the expected signature if the action response is a net liability against a strong</p>
+<p>copy baseline; it was not designed for and fell out of the data.</p>
+<p><strong>Negative control</strong>: corr(delta, frame brightness) = −0.048 / +0.031 / −0.225 — the first mechanism</p>
+<p>in this campaign essentially uncorrelated with brightness (prior range 0.117-0.947). Expected by</p>
+<p>construction, since delta is a difference between two rollouts from the <em>same</em> frame, so frame-level</p>
+<p>confounds cancel — but worth stating after six prior mechanisms failed this check.</p>
+<h2>What this establishes, and what it does not</h2>
+<p><strong>Established</strong>: <code>ebwm.pt</code> is, for planning purposes, close to a copy-last predictor carrying an</p>
+<p>action-dependent perturbation that does not track true consequences. This holds on <em></em>Treechop, its</p>
+<p>own training domain<em></em> — so unlike attempt #10&#x27;s score reversal, it is not a domain-shift effect. It</p>
+<p>is a second, independent defect on the <strong>dynamics</strong> side, whereas attempts #7-#19 targeted the</p>
+<p><strong>scoring</strong> side almost exclusively.</p>
+<p><strong>NOT established — a genuine tension, not a footnote</strong>: this cannot by itself be the cause of the</p>
+<p>cold-start wall, because the agent chops trees 25-50% on Treechop <em>with this exact deficit present</em>.</p>
+<p>Any account leaning on this finding has to explain that too. None is offered here; it would be a</p>
+<p>hypothesis, not a measurement.</p>
+<p><strong>NOT established</strong>: that ActSWM&#x27;s fix transfers. Their predictor carries H=32 context and their</p>
+<p>causal story (&quot;long context lets the predictor extrapolate scene progression while ignoring the</p>
+<p>action&quot;) cannot apply unchanged to <code>ACConvPredictor</code>&#x27;s <code>context_length=1</code>.</p>
+<p><strong>What it reframes</strong>: <code>commit_length=4</code> remains the only lever that ever produced a non-zero result</p>
+<p>(9.7% pooled). If per-step action information is at noise level against copy-last, then committing</p>
+<p>to a block of actions instead of re-ranking every tick on a noise-dominated score is exactly the</p>
+<p>right compensation. The campaign found this empirically in attempt #4 without knowing why.</p>
+<h2>The lever this opens — not taken</h2>
+<p>ActSWM&#x27;s <code>L_readout</code> term (Eq. 8) enforces exactly the property measured broken here: that the</p>
+<p>action associated with each local transition remain recoverable. <em></em>Half that machinery already</p>
+<p>exists in this repository, disabled since day one<em></em>: <code>mine<em>jepa/eb</em>jepa/losses.py::InverseDynamicsLoss</code></p>
+<p>is <code>(state<em>t, state</em>t+1) → action</code>, wired into <code>VC<em>IDM</em>Sim<em>Regularizer</code>, but <code>build</em>ac_jepa</code> passes</p>
+<p><code>idm<em>coeff=0.0, idm=None</code> (<code>mine</em>jepa/ebwm/<em></em>init<em></em>.py:146</code>), so it has never been instantiated.</p>
+<p>Missing versus ActSWM: parameter freezing (their <code>idm.stop_grad=true</code> excludes φ₀ from the optimizer</p>
+<p>while still backpropagating through the latent inputs), application to rollout-predicted transitions</p>
+<p>(Eq. 8b), and the hinge term (Eq. 5) entirely.</p>
+<h2>Campaign closed on attempt #20</h2>
+<p>The cold-start campaign is <strong>closed here</strong>, by the user&#x27;s decision (2026-08-10), with attempt #20 as</p>
+<p>its concluding result rather than a 21st attempt. Stated plainly so a later reader does not mistake</p>
+<p>it for exhaustion:</p>
+<ul>
+<li><strong>The campaign was working on the wrong layer.</strong> Attempts #2-#19 tuned search, scoring and</li>
+</ul>
+<p>execution on top of a frozen <code>ebwm.pt</code>. Attempt #20 measured that <code>ebwm.pt</code>&#x27;s own action</p>
+<p>conditioning is a net liability against copy-last, so an MPC planner sitting on it ranks candidate</p>
+<p>action sequences by differences that do not track consequences. That retrospectively explains why</p>
+<p>three score fixes (#7, #11, #17), two search fixes (#5, #6) and two retrains (#19 Run A/B) each</p>
+<p>failed differently: none of them addressed the dynamics.</p>
+<ul>
+<li><strong>The remaining lever is a rebuild, not a patch</strong> — the <code>L_readout</code>/hinge terms above, plausibly</li>
+</ul>
+<p>together with a context length greater than 1. That is a world-model rebuild, not another attempt</p>
+<p>in this campaign&#x27;s idiom.</p>
+<ul>
+<li><strong>The project&#x27;s stated purpose is already met</strong>: Phases 0-4 validated against real gates, the</li>
+</ul>
+<p>agent chops trees in real Minecraft (25-50%), the live craft demo runs at 100% over 6+ episodes.</p>
+<p><strong>NOT claimed by closing here</strong>: not that cold-start chopping is impossible, and not that the</p>
+<p>remaining lever would fail. ActSWM demonstrates a LeWM-family model planning successfully in</p>
+<p>closed-loop Minecraft (mining 19/20 against LeWM&#x27;s 10/20, at matched backbone, planner and action</p>
+<p>library), so the capability is real for this architecture family at a larger scale. The narrower,</p>
+<p>better-supported claim: <em></em>this campaign&#x27;s approach — fixing the planner around a frozen</p>
+<p>664K-parameter world model with <code>context_length=1</code> — is exhausted, and attempt #20 explains why.<em></em></p>
+<p><strong>Standing baseline if work ever resumes</strong>: <code>commit_length=4</code> (9.7% pooled, the campaign&#x27;s best</p>
+<p>result), <code>FrontierTracker</code> coverage search (attempt #12), and the hazard-avoidance drowning fix</p>
+<p>(attempt #13, confirmed at N=20: drowning 60% → 15%, fair-shot episodes 40% → 60%). Left open, not</p>
+<p>resolved: attempt #18&#x27;s deferred 2/6 <code>died<em>during</em>escape</code> signal, a possible regression of the #13</p>
+<p>fix under the depth scan macro.</p>
+<p><code>ebwm.pt</code> and <code>craft<em>wm</em>v4.pt</code> untouched throughout this chapter; no checkpoint written.</p>
+<h2>References</h2>
+<ul>
+<li>Gan, Zeng, Cheng, Song, Tang, Wang, &quot;ActSWM: Action-Sensitive World Models for Long-Horizon</li>
+</ul>
+<p>Planning in Open-World Games&quot;, <a href="https://arxiv.org/abs/2607.26712">arXiv:2607.26712</a> (2026) —</p>
+<p>source of the Context Collapse definition, the Eq. 10 delta protocol adapted here, and the</p>
+<p><code>L_readout</code>/hinge lever discussed above.</p>
+<p>Verified in <code>docs/references/index.md</code>, along with eight further papers added in the same</p>
+<p>bibliography pass.</p>
+        </div>
+      </div>
+
+
+    </div>
+  </article>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>Mine-JEPA — a JEPA agent learning to play Minecraft from pixels, documented along the way.</p>
+    <p class="footer-links">
+      Author / Auteur: <a href="https://x.com/reddwarf03" target="_blank" rel="noopener">@reddwarf03 (X/Twitter)</a> ·
+      <a href="https://github.com/redDwarf03" target="_blank" rel="noopener">redDwarf03 (GitHub)</a> |
+      <a href="https://github.com/redDwarf03/mine-jepa" target="_blank" rel="noopener">GitHub Repository</a>
+    </p>
+  </div>
+</footer>
+
+<script src="../script.js" defer></script>
+</body>
+</html>

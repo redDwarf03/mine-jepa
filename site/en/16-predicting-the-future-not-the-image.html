@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The closest thing to H-JEPA yet predicts the future, not the image — and still loses to a plain average — Mine-JEPA</title>
+<meta name="description" content="Chapter 16 of the Mine-JEPA learning path: The closest thing to H-JEPA yet predicts the future, not the image — and still loses to a plain average.">
+<link rel="stylesheet" href="../style.css">
+<script>document.documentElement.classList.add("js");</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="wrap site-header-inner">
+    <a class="site-brand" href="index.html"><span class="brand-mark" aria-hidden="true">&#9935;</span> Mine-JEPA</a>
+    <div class="header-controls">
+      <span class="last-updated" title="Date de mise à jour">Updated: 2026-08-11</span>
+      <nav class="lang-switch" aria-label="Site language">
+        <a href="../fr/16-predire-l-avenir-pas-l-image.html" lang="fr" hreflang="fr">FR</a>
+        <a href="16-predicting-the-future-not-the-image.html" aria-current="true" lang="en" hreflang="en">EN</a>
+      </nav>
+      <div class="track-pref" data-track-pref>
+        <span class="track-pref-label" id="track-pref-label">Show:</span>
+        <button type="button" data-track-pref-value="beginner" aria-pressed="true" aria-describedby="track-pref-label">Beginner</button>
+        <button type="button" data-track-pref-value="expert" aria-pressed="false" aria-describedby="track-pref-label">Expert</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <nav class="breadcrumb" aria-label="Breadcrumbs">
+    <div class="wrap">
+      <a href="index.html">Learning Path</a>
+      <span aria-hidden="true">/</span>
+      <span>Chapter 16</span>
+    </div>
+  </nav>
+
+  <article class="chapter">
+    <div class="wrap">
+
+      <header class="chapter-header">
+        <p class="chapter-kicker">Chapter 16</p>
+        <h1>The closest thing to H-JEPA yet predicts the future, not the image — and still loses to a plain average</h1>
+        <p class="chapter-prereqs">Prerequisites: Chapters 1 to 15.</p>
+      </header>
+
+
+      <div class="tracks" data-tracks>
+        <div class="track-tabs" role="tablist" aria-label="Reading level">
+          <button class="track-tab" role="tab" id="tab-beginner" aria-controls="panel-beginner" aria-selected="true" data-track-tab="beginner">Beginner</button>
+          <button class="track-tab" role="tab" id="tab-expert" aria-controls="panel-expert" aria-selected="false" tabindex="-1" data-track-tab="expert">Expert</button>
+        </div>
+
+        <div class="track-panel is-active chapter-prose" data-track-panel="beginner" role="tabpanel" id="panel-beginner" aria-labelledby="tab-beginner">
+          <p class="track-kicker">Beginner track</p>
+
+<h2>Where we left off</h2>
+<p>Chapter 15 closed, this time for good, an entire family of attempts: no calculation based on a</p>
+<p>single image — learned, off-the-shelf, or hand-built to resist lighting changes — can cleanly</p>
+<p>separate &quot;this is a forest&quot; from &quot;this is dark&quot;, because in this game forests really are darker</p>
+<p>than meadows. Five different attempts, five confirmations of the same wall. What remained on the</p>
+<p>table, for picking the cold-start investigation back up: the memory of visited places (Chapter 12),</p>
+<p>which has real but modest and fading results, and the heaviest, most ambitious idea on the menu —</p>
+<p>a separate second brain, designed for long-range search. This chapter tells the story of the first</p>
+<p>real attempt in that direction: not yet the full second brain, but a first, cheaper try, designed</p>
+<p>specifically to dodge Chapter 15&#x27;s trap from the outset.</p>
+<h2>A different idea: predict the discovery, not the image</h2>
+<p>Until now, every attempt of this kind asked a small model to look at an image and judge: &quot;does</p>
+<p>this look like a promising scene?&quot;. That is exactly the type of question that always ended up</p>
+<p>caught by brightness. This time the idea changes in nature: instead of judging an image, a small</p>
+<p>model learns to predict, for each possible direction the agent could go, <em></em>how many new cells of</p>
+<p>the explored grid would probably be discovered<em></em> — a bet on how useful it is to explore that way,</p>
+<p>not an aesthetic judgement about what is on screen.</p>
+<p>To place that bet, the small model <strong>never</strong> looks at the colour or texture of an image. It relies</p>
+<p>on only two kinds of clue: a classical calculation of motion between two consecutive frames (is the</p>
+<p>camera moving a lot or a little in a given direction?), and the history of already-visited zones,</p>
+<p>inherited from the memory built in Chapter 12. This is, to date, the attempt closest to the real</p>
+<p>idea behind <strong>JEPA</strong> — the project&#x27;s very name: instead of predicting a future image pixel by</p>
+<p>pixel, you predict a small useful quantity about the future (here, &quot;how much new ground am I going</p>
+<p>to discover&quot;), from compact clues rather than raw pixel colour. It is exactly the kind of</p>
+<p>prediction this project has always aimed to make, applied here to a new question.</p>
+<h2>A real bug found along the way, not just a shortage of data</h2>
+<p>Before anything could even be trained, real examples had to be collected of &quot;in this direction,</p>
+<p>here is how much new ground was actually discovered&quot;. A first collection batch revealed a real</p>
+<p>bug, invisible until then: when several directions are tied (which happens almost all the time</p>
+<p>early in an exploration, when no neighbouring cell has been visited yet), the mechanism</p>
+<p>systematically and unintentionally chose the same default direction — 54 times out of 57 triggers</p>
+<p>in that first batch. So it was not a genuine exploratory choice each time, just a hidden reflex</p>
+<p>always landing on the same spot. Fixed by adding a coin-toss option to break ties (the old</p>
+<p>behaviour stays available and unchanged if you do not enable it), then re-collected: this time all</p>
+<p>12 possible directions are properly represented in the data.</p>
+<h2>Two good signs, before training anything at all</h2>
+<p>Two safety checks were run on this freshly re-collected data, before any training attempt:</p>
+<ol>
+<li><strong>Is there a real difference between directions?</strong> Clearly improved after the bug fix, but based</li>
+</ol>
+<p>on few examples per direction (between 1 and 7) — encouraging, not yet a solid confirmation.</p>
+<ol>
+<li><strong>Does scene brightness still dominate the target we are trying to predict?</strong> This test was run</li>
+</ol>
+<p>twice, on two independent collection batches, and both times the answer is clear: <strong>no</strong>,</p>
+<p>brightness has almost no link with the amount of newly discovered ground. This is the most</p>
+<p>solidly reproducible result in this entire long investigation into the absence of a</p>
+<p>brightness trap — at last, a direction that does not fall into the same hole as the previous</p>
+<p>five.</p>
+<h2>The real test: can this small model predict one specific trial?</h2>
+<p>With those two good signs, a small model was actually trained — a tiny neural network, barely</p>
+<p>1,900 internal settings. But this project has a strict rule, applied at every step: never judge a</p>
+<p>model on its own training data. The honest way to check is to split the data into several piles,</p>
+<p>train on some and test on the rest, several times over with different piles each time, so as not</p>
+<p>to be fooled by a lucky or unlucky split — this is called cross-validation.</p>
+<p>Measured with that rigorous method against the simplest possible benchmark — always guessing the</p>
+<p>average of every value already seen, without even looking at the direction in question — the</p>
+<p>learned model <strong>does worse</strong>, not better. A systematic trial of eight different variants (smaller</p>
+<p>networks, more cautious settings against over-fitting) never once managed to beat that simple</p>
+<p>average. And to be really sure this was not just a tuning problem with a neural network too</p>
+<p>complicated for the task, an even simpler version was tested — a classical linear model, no neural</p>
+<p>network at all, with an adjustable brake against over-fitting. Identical result: the harder you</p>
+<p>apply that brake, the closer the model gets to guessing a nearly constant value — and it never</p>
+<p>surpasses the simple average, even in that most cautious case.</p>
+<h2>Why this is a failure of a different kind from the previous ones</h2>
+<p>It matters to distinguish this result clearly from Chapter 15&#x27;s five failures. There, the problem</p>
+<p>was that a model <strong>was learning something misleading</strong> — a shortcut that gave the illusion of</p>
+<p>working while actually measuring something else (brightness). Here it is different: both safety</p>
+<p>checks show a real, honest aggregate signal, not fooled by brightness. The problem lies elsewhere:</p>
+<p><em></em>guessing precisely the outcome of one particular trial, from only four coarse clues about the</p>
+<p>scene, is a much harder task than spotting a general trend across all the trials<em></em> — and with only</p>
+<p>about a hundred examples in total, that is simply not enough data for a model, however simple, to</p>
+<p>learn to do it reliably. This is not proof that the original idea is bad. It is an honest finding</p>
+<p>that the task probably needs a great deal more data (likely several hundred examples, rather than</p>
+<p>better tuning) before we can say whether it is learnable at all with these clues.</p>
+<p>Following this project&#x27;s honesty rule, that small model was <strong>not</strong> wired into the real game: no</p>
+<p>run was spent testing a model whose cross-validation check clearly says it does not work yet.</p>
+<h2>Where the project stands, after 16 real attempts</h2>
+<p>At this stage of the cold-start investigation, an honest overall stocktake is useful, without</p>
+<p>adding gloss in either direction:</p>
+<ul>
+<li><strong>The &quot;fix the visual judgement&quot; direction is now closed</strong>, with five independent confirmations</li>
+</ul>
+<p>of the same brightness trap — a small learned module, that same module retrained on other data,</p>
+<p>an artificial lighting variation during training, a giant off-the-shelf model, and a hand-built</p>
+<p>colour calculation. None of those five ways of going about it worked, for the same underlying</p>
+<p>reason.</p>
+<ul>
+<li><em></em>The &quot;search and coverage&quot; direction holds the only real positive results of the whole</li>
+</ul>
+<p>campaign<em></em> — executing a good plan for longer (Chapter 8), the memory of visited places</p>
+<p>(Chapter 12) — but with gains that are running out of steam: the anti-drowning rescue holds well</p>
+<p>at scale (Chapter 15) without lifting the chop rate, and this chapter shows that pushing further</p>
+<p>in that direction (predicting exploration rather than counting it afterwards) now runs into a</p>
+<p>data-quantity problem, not an idea problem.</p>
+<ul>
+<li><em></em>One mechanism, named repeatedly since Chapter 11 but never directly repaired, remains the most</li>
+</ul>
+<p>important open thread<em></em>: the chop planner&#x27;s very compass — the one comparing an imagined story</p>
+<p>against a memory of success — was confirmed <strong>inverted</strong> as early as Chapter 11, and every</p>
+<p>attempt since (search, rescue, coverage prediction) has worked around that problem rather than</p>
+<p>tackling it head-on. With the visual direction now closed and the coverage direction showing</p>
+<p>diminishing returns, this never-repaired mechanism becomes the most significant lever left on the</p>
+<p>table.</p>
+<p>As with every chapter on this site since day one: this report dresses nothing up. A real signal was</p>
+<p>found (brightness does not dominate this new model&#x27;s target), a real bug was found and fixed along</p>
+<p>the way, and the final result nonetheless remains an honest failure at this stage — not a disguised</p>
+<p>victory, and not an abandonment either.</p>
+        </div>
+
+        <div class="track-panel chapter-prose" data-track-panel="expert" role="tabpanel" id="panel-expert" aria-labelledby="tab-expert">
+          <p class="track-kicker">Expert track</p>
+
+<h2>Context</h2>
+<p>Chapter 15 closed candidate direction 1 from Chapter 11&#x27;s menu (photometric score correction) with</p>
+<p>a fifth independent confirmation of the brightness shortcut, under a new and stronger constraint</p>
+<p>than before: <em></em>no single-frame photometric feature can, structurally, separate brightness from</p>
+<p>scene composition in this domain.<em></em> This chapter covers attempt #16 in <code>CLAUDE.md#Phase 5+</code> (no</p>
+<p>corresponding <code>docs/10</code> entry to date): the campaign&#x27;s first mechanism built explicitly under the</p>
+<p>&quot;no single-frame photometric scoring&quot; constraint, a first non-photometric, non-visual step towards</p>
+<p>candidate direction 3 (H-JEPA) without paying its full cost.</p>
+<h2>Design: the Coverage-Value Predictor (CVP)</h2>
+<p>An Explorer proposal, externally reviewed and refined: a small MLP predicting <code>Δunique_cells</code> (the</p>
+<p>expected coverage payoff) per candidate heading, from <strong>non-photometric features only</strong> — a</p>
+<p>classical per-quadrant frame-difference optical-flow proxy, plus the local visitation histogram</p>
+<p>already maintained by <code>FrontierTracker</code> (Chapter 12). This is a genuinely JEPA-shaped predictor</p>
+<p>(input + action → future state), but with the <strong>target swapped</strong>: from pixel reconstruction to a</p>
+<p>compact geometric quantity. It feeds the already-validated frontier scan macro rather than</p>
+<p>replacing its handoff to the chop planner.</p>
+<h2>Instrumentation, collection, and a real bug found along the way</h2>
+<p><code>scan.frontier.log<em>transitions</code> (config-gated, default off) added to <code>scripts/play</em>craft.py</code>; two</p>
+<p>batches collected.</p>
+<p><strong>First batch (N=12, 57 rows)</strong> revealed a real, previously unnoticed bug:</p>
+<p><code>FrontierTracker.frontier<em>heading</em>deg()</code> breaks ties toward the smallest heading index, and since</p>
+<p>cells in a still-sparse grid are almost always tied (0 visits each), 54/57 triggers &quot;chose&quot; heading</p>
+<p>0.0° by construction, not by genuine preference. Gate 1 (dynamic range across headings) was</p>
+<p>uncertifiable on that data.</p>
+<p><strong>Fix</strong>: config-gated <code>tie_break=&quot;random&quot;</code> option (seeded), default <code>&quot;first&quot;</code> = old behaviour</p>
+<p>verified unchanged. <strong>Re-collection (N=14, 44 rows)</strong>: all 12 possible headings now represented</p>
+<p>(1-7 rows each).</p>
+<h2>Offline gates on the re-collected data</h2>
+<ul>
+<li><strong>Gate 2 (brightness does not dominate the target): PASSED on BOTH batches independently</strong></li>
+</ul>
+<p>(r ≈ 0.10, opposite signs) — the most reproducible non-confounded result in the campaign&#x27;s</p>
+<p>entire history.</p>
+<ul>
+<li><strong>Gate 1 (dynamic range)</strong>: substantially improved after the bug fix, but resting on small</li>
+</ul>
+<p>per-heading samples (1-7 rows) — assessed as &quot;encouraging, not a rock-solid confirmation&quot;.</p>
+<h2>The actual trained model — NO-GO, thoroughly checked, not just badly tuned</h2>
+<p>Both CSVs combined (~101 rows), a small MLP (~1.9K parameters) trained with mandatory 5-fold</p>
+<p>cross-validation against a trivial &quot;always predict the mean&quot; baseline.</p>
+<p><strong>Default configuration</strong>: model MAE 1.590 against the baseline&#x27;s 1.169 (worse).</p>
+<p><strong>8-way hyperparameter sweep</strong> (smaller nets, heavier regularisation): never beats the baseline,</p>
+<p>best ratio 1.06 (still worse).</p>
+<p><strong>From-scratch linear Ridge regression check</strong>, to rule out an MLP-specific over-fitting artefact:</p>
+<p>as regularisation strength increases, the model&#x27;s error only approaches the baseline as it is</p>
+<p>forced towards a near-constant prediction — it never surpasses it.</p>
+<div class="callout">
+<p><em></em>Diagnosis: predicting one specific noisy trial&#x27;s outcome from 4 coarse scene-level features is</p>
+<p>a much harder task than the aggregate statistics checked by Gates 1-2, and is not learnable at</p>
+<p>N≈100 with this feature set — this is not evidence that the aggregate signal is fake, only that</p>
+<p>per-row prediction needs substantially more data (likely several hundred rows, not better</p>
+<p>tuning) to be learnable, if it is learnable at all with these features.<em></em></p>
+</div>
+<p>In line with the dispatch&#x27;s honesty discipline, the model was <strong>not</strong> wired into <code>play_craft.py</code>,</p>
+<p>no <code>scan.macro: &quot;learned_frontier&quot;</code> was added, and no live episode was spent testing a model whose</p>
+<p>cross-validation gate says it does not work. No checkpoint written</p>
+<p>(<code>checkpoints/coverage<em>predictor.pt</code> does not exist). <code>ebwm.pt</code> and <code>craft</em>wm_v4.pt</code> untouched.</p>
+<h2>Why this negative differs in nature from Chapters 11/12/14/15</h2>
+<p>The previous failures in the &quot;brightness shortcut&quot; family are cases where a model <em></em>learns</p>
+<p>something real but misleading<em></em> — a shortcut producing a good gate score while actually measuring a</p>
+<p>confounding variable (brightness). Here, both offline gates (Gate 2 twice, Gate 1 after the bug</p>
+<p>fix) indicate a real, unconfounded aggregate signal — the problem is not the signal&#x27;s validity, it</p>
+<p>is the <strong>intrinsic difficulty of the per-trial prediction task</strong> combined with an <em></em>insufficient</p>
+<p>sample size<em></em> (~100 rows). This is a failure of statistical power and task granularity, not a</p>
+<p>failure of design principle like the previous five.</p>
+<h2>Where this leaves the campaign — status after 16 numbered attempts</h2>
+<ul>
+<li><strong>Direction #1 (encoder/scoring correction) closed, confirmed 5 times</strong>: attempts #7, #11, #14</li>
+</ul>
+<p>(phase 1 CLIP + phase 2 direct fine-tune), and #15 (ratio chrominance) each independently hit a</p>
+<p>brightness/domain-composition confound. No single-frame photometric feature — learned,</p>
+<p>off-the-shelf, or hand-designed for invariance — repairs it.</p>
+<ul>
+<li><strong>Direction #2 (coverage/execution) holds the campaign&#x27;s only real positive results</strong>:</li>
+</ul>
+<p><code>commit_length=4</code> alone (9.7% pooled), attempt #12&#x27;s frontier search (1/20, later confirmed at</p>
+<p>N=20 with attempt #13&#x27;s hazard fix layered on: drowning 60%→15%, fair-shot episodes 40%→60%, but</p>
+<p>chop rate stayed at 0/20 — diminishing returns from coverage alone, exactly the condition that</p>
+<p>justified trying direction #3). Attempt #16 (CVP) extends this line under the &quot;no photometric</p>
+<p>scoring&quot; constraint and finds a real aggregate signal (Gate 2, twice) but no learnable per-trial</p>
+<p>model at this sample size.</p>
+<ul>
+<li><strong>Direction #3 (H-JEPA proper) not built</strong> — attempt #16 was the cheap, non-photometric first</li>
+</ul>
+<p>probe the standing diagnosis called for; it did not produce a deployable mechanism, but it also</p>
+<p>did not fail for a photometric reason, so the door is not closed the way direction #1 is.</p>
+<p>Cheapest version if resumed: collect substantially more transition rows (several hundred) before</p>
+<p>retraining, per the CVP dispatch&#x27;s own recommendation.</p>
+<ul>
+<li><strong>The mechanism named but never directly repaired</strong>: attempt #10 (Chapter 11) confirmed that</li>
+</ul>
+<p><code>ebwm.pt</code>&#x27;s native goal-centroid scoring — used live by the two-brain chop planner as soon as the</p>
+<p>search finds something — inverts on Obtain&#x27;s spawn distribution. Every attempt from #11 to #16 has</p>
+<p>worked around that problem (search mechanisms, hazard avoidance, coverage prediction) rather than</p>
+<p>fixing it directly. With direction #1 closed and directions #2/#3 both showing diminishing returns</p>
+<p>without touching it, this is now the campaign&#x27;s most decisive unexamined mechanism — not yet</p>
+<p>decided whether, or how, to attack it directly.</p>
+<h2>References</h2>
+<p>This chapter rests on no new bibliographic reference verified in <code>docs/references/index.md</code>. The</p>
+<p>CVP design is described in <code>CLAUDE.md</code> as an internally refined Explorer proposal, in the general</p>
+<p>spirit of a JEPA predictor with a swapped target (predicting a geometric quantity rather than</p>
+<p>pixels) — a principle already motivated for this project by the JEPA architecture itself</p>
+<p>(Chapter 1, LeCun, original JEPA concept) and by the latent-space prediction choice already made</p>
+<p>for <code>mine_jepa/ebwm/</code> (Assran et al., I-JEPA, arXiv:2301.08243; Maes et al., LeWorldModel,</p>
+<p>arXiv:2603.19312), without any of those references specifically describing exploration-coverage</p>
+<p>prediction — so this precise component has no external reference of its own to cite.</p>
+        </div>
+      </div>
+
+
+    </div>
+  </article>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>Mine-JEPA — a JEPA agent learning to play Minecraft from pixels, documented along the way.</p>
+    <p class="footer-links">
+      Author / Auteur: <a href="https://x.com/reddwarf03" target="_blank" rel="noopener">@reddwarf03 (X/Twitter)</a> ·
+      <a href="https://github.com/redDwarf03" target="_blank" rel="noopener">redDwarf03 (GitHub)</a> |
+      <a href="https://github.com/redDwarf03/mine-jepa" target="_blank" rel="noopener">GitHub Repository</a>
+    </p>
+  </div>
+</footer>
+
+<script src="../script.js" defer></script>
+</body>
+</html>
