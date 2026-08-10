@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A fifth confirmation for the brightness shortcut, a false alarm that wasn&#x27;t one, and a 144-point riddle still unanswered — Mine-JEPA</title>
+<meta name="description" content="Chapter 15 of the Mine-JEPA learning path: A fifth confirmation for the brightness shortcut, a false alarm that wasn&#x27;t one, and a 144-point riddle still unanswered.">
+<link rel="stylesheet" href="../style.css">
+<script>document.documentElement.classList.add("js");</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="wrap site-header-inner">
+    <a class="site-brand" href="index.html"><span class="brand-mark" aria-hidden="true">&#9935;</span> Mine-JEPA</a>
+    <div class="header-controls">
+      <span class="last-updated" title="Date de mise à jour">Updated: 2026-08-11</span>
+      <nav class="lang-switch" aria-label="Site language">
+        <a href="../fr/15-cinquieme-confirmation-fausse-alerte.html" lang="fr" hreflang="fr">FR</a>
+        <a href="15-fifth-confirmation-false-alarm.html" aria-current="true" lang="en" hreflang="en">EN</a>
+      </nav>
+      <div class="track-pref" data-track-pref>
+        <span class="track-pref-label" id="track-pref-label">Show:</span>
+        <button type="button" data-track-pref-value="beginner" aria-pressed="true" aria-describedby="track-pref-label">Beginner</button>
+        <button type="button" data-track-pref-value="expert" aria-pressed="false" aria-describedby="track-pref-label">Expert</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <nav class="breadcrumb" aria-label="Breadcrumbs">
+    <div class="wrap">
+      <a href="index.html">Learning Path</a>
+      <span aria-hidden="true">/</span>
+      <span>Chapter 15</span>
+    </div>
+  </nav>
+
+  <article class="chapter">
+    <div class="wrap">
+
+      <header class="chapter-header">
+        <p class="chapter-kicker">Chapter 15</p>
+        <h1>A fifth confirmation for the brightness shortcut, a false alarm that wasn&#x27;t one, and a 144-point riddle still unanswered</h1>
+        <p class="chapter-prereqs">Prerequisites: Chapters 1 to 14.</p>
+      </header>
+
+
+      <div class="tracks" data-tracks>
+        <div class="track-tabs" role="tablist" aria-label="Reading level">
+          <button class="track-tab" role="tab" id="tab-beginner" aria-controls="panel-beginner" aria-selected="true" data-track-tab="beginner">Beginner</button>
+          <button class="track-tab" role="tab" id="tab-expert" aria-controls="panel-expert" aria-selected="false" tabindex="-1" data-track-tab="expert">Expert</button>
+        </div>
+
+        <div class="track-panel is-active chapter-prose" data-track-panel="beginner" role="tabpanel" id="panel-beginner" aria-labelledby="tab-beginner">
+          <p class="track-kicker">Beginner track</p>
+
+<h2>Where we left off</h2>
+<p>Chapter 14 ended on a decision: the heaviest option on Chapter 11&#x27;s menu (building a second,</p>
+<p>slower world model whose job is to &quot;find a forest&quot; — an idea nicknamed <strong>H-JEPA</strong>) was now</p>
+<p>justified by real evidence rather than by a merely plausible argument, because even the most</p>
+<p>direct and most careful retraining of the existing model had failed to cleanly fix the brightness</p>
+<p>shortcut. Before starting that expensive piece of work, this chapter covers three things that</p>
+<p>happened just before and just after that decision: a re-reading that avoided building a useless</p>
+<p>tool, one last cheap test that closed the door for good, and two separate findings from re-running</p>
+<p>a Chapter 13 mechanism at larger scale.</p>
+<h2>A re-reading before building anything</h2>
+<p>One idea, already floated but never tested, was to hand-build a small vision tool that would spot</p>
+<p>tree foliage by its distinctive colouring (the greens and browns typical of a trunk and its</p>
+<p>leaves) instead of using the project&#x27;s broken compass. Before spending time building it, someone</p>
+<p>calmly re-read everything the previous chapters had already established. The reasoning: CLIP, in</p>
+<p>Chapter 14, is a giant model trained specifically to resist lighting changes across hundreds of</p>
+<p>millions of photos — and it still hit the same shortcut. A home-made tool, far simpler, was</p>
+<p>therefore very likely to do nothing but repeat the same lesson a fifth time, at a real cost in</p>
+<p>work, without producing new information. Recommendation: do not build it, and invest instead in</p>
+<p>the only two project mechanisms that have already produced real results without relying on a</p>
+<p>direct visual judgement — the memory of visited places (Chapter 12) and longer execution of a</p>
+<p>good plan (Chapter 8).</p>
+<h2>One last cheap test, all the same</h2>
+<p>A narrower and far less expensive idea was nonetheless tested directly, because it reused a tool</p>
+<p>already built and already validated: the small drowning detector from Chapter 13 works by</p>
+<p>comparing colour <strong>ratios</strong> (blue against red and green) rather than raw values — which is</p>
+<p>precisely what lets it spot a drowning as well by day as by night. Could that same trick, applied</p>
+<p>no longer to the whole screen but to each small patch of the image taken separately, spot tree</p>
+<p>foliage in the same way, independently of how bright the scene is?</p>
+<p>The test reused exactly the same 251 frames already used in every previous diagnostic</p>
+<p>(Chapters 11 and 14), with the same hand-placed labels (&quot;tree close&quot; or &quot;no tree&quot;).</p>
+<h2>The result: half good, and worse than ever on the other half</h2>
+<p>The first half of the test passes: this patch-by-patch calculation does separate frames with a</p>
+<p>nearby tree from frames without one — a genuinely correct directional result, within the expected</p>
+<p>range.</p>
+<p>But the second half — checking that this score is not just a roundabout way of measuring</p>
+<p>brightness — fails almost as badly as the worst result seen so far, CLIP&#x27;s in Chapter 14. On the</p>
+<p>small hand-labelled set, the correlation with brightness is nearly as strong, in the opposite</p>
+<p>direction. And crucially, this time the problem is not confined to the small test set: it shows up</p>
+<p>broadly, across all 251 frames, on the original tree-chopping environment as much as on the</p>
+<p>crafting one.</p>
+<h2>The clearest explanation of the whole investigation</h2>
+<p>The colour-ratio trick works for water because the water&#x27;s tint covers <strong>the entire screen</strong> in</p>
+<p>the same way — exactly the kind of global shift that dividing colours by one another cancels out.</p>
+<p>But the problem here is not a global shift: it is that, in this game as in reality, <em></em>dense</p>
+<p>forests are by nature darker scenes, and open meadows brighter ones<em></em>. That is not an artefact of</p>
+<p>one particular calculation, it is a feature of the world the game imitates. No colour calculation,</p>
+<p>however clever — learned, off-the-shelf, or hand-built to resist lighting changes — can</p>
+<p>disentangle &quot;this is dark&quot; from &quot;this is a forest&quot; when, in the available data, the two are</p>
+<p>almost the same thing.</p>
+<p>This result closes, this time for good, the entire &quot;maybe a cleverer colour calculation would fix</p>
+<p>it&quot; line. Five different ways of attacking it — a small learned module, that same module retrained</p>
+<p>on other examples, an artificial variation of brightness during training, a giant off-the-shelf</p>
+<p>model, and now this patch-by-patch calculation — have all hit the same wall. Fixing the compass</p>
+<p>(option 1 on Chapter 11&#x27;s menu) stays closed, and this time for a stronger reason than before: it</p>
+<p>is not that no attempt has yet found the right setting, it is that this kind of fix has</p>
+<p>structurally no chance of working on this particular problem.</p>
+<h2>Separately: the anti-drowning rescue re-run at scale</h2>
+<p>Chapter 13 left the anti-drowning rescue move with an encouraging verdict, but tested on only 6</p>
+<p>runs. A much larger batch — 20 runs, combining Chapter 12&#x27;s memory of visited places with</p>
+<p>Chapter 13&#x27;s corrected anti-drowning rescue — has now been executed, with a precise goal: does</p>
+<p>that rescue still hold at this scale, and — the question left open until now — does cutting down</p>
+<p>the drownings finally let the agent chop wood?</p>
+<p><strong>Drowning really is fixed at scale</strong>: 3 runs out of 20 end in a drowning (15%), against 12 out</p>
+<p>of 20 (60%) in the very first batch from Chapter 12. Runs that go all the way through without</p>
+<p>being cut short rise from 8 out of 20 (40%) to 12 out of 20 (60%). The rescue therefore holds, not</p>
+<p>just on the 6 runs where it was validated, but at a much larger scale.</p>
+<p><strong>But chopping wood stays at zero</strong>: 0 logs out of 20, 0 planks out of 20 — even though more runs</p>
+<p>now get a genuinely fair chance to look for a tree. This is not a significant step backwards from</p>
+<p>the previous chapter (1 success out of 20) — the difference between 0 and 1 out of 20 tries says</p>
+<p>nothing reliable at that sample size — but it confirms, once more, what was already established:</p>
+<p>surviving longer and knowing how to search and approach effectively are two separate problems.</p>
+<p>Fixing one did not automatically fix the other.</p>
+<h2>A lesson in method: a false alarm is not a real stop</h2>
+<p>The report accompanying this batch of 20 runs originally claimed the test had been interrupted by</p>
+<p>a &quot;serious infrastructure failure&quot; after only 4 episodes. An independent check showed this was</p>
+<p><strong>false</strong>: the program driving these runs launches a separate Minecraft process for each episode,</p>
+<p>one at a time. A passing technical incident on a single episode therefore never stops the program</p>
+<p>orchestrating the whole batch — it simply moves on to the next episode. The raw logs confirm that</p>
+<p>all 20 episodes ran from start to finish, without any intervention. The lesson taken away: an</p>
+<p>error affecting a single episode in this harness is not the same thing as a failure that halts the</p>
+<p>whole batch — you have to verify that the orchestrating program really did continue before</p>
+<p>declaring a full stop.</p>
+<h2>The reward=144 riddle</h2>
+<p>A curious detail was already sitting in the logs of that same batch of tests, without having been</p>
+<p>dug into: one episode had shown, just once, a reward of 144 — a figure far higher than anything</p>
+<p>ever seen elsewhere in this campaign (a normal success is worth a reward of 9). The game program</p>
+<p>was given a new observation tool, switchable at will, which now displays the maximum reached for</p>
+<p><strong>every</strong> inventory item over an episode, not just the wood and planks tracked so far. A new batch</p>
+<p>of 12 runs was launched with that tool enabled, on the same configuration: reward of 0.000 on all</p>
+<p>12 episodes, and the only item ever to appear in an inventory across the whole batch was</p>
+<p><strong>ordinary dirt</strong> (between 1 and 30 units per episode, picked up unintentionally while walking or</p>
+<p>attacking) — an item that earns strictly no reward in this game. The original episode that had</p>
+<p>shown 144 had already ended before this tool existed, so its exact state at that precise moment</p>
+<p>remains unrecoverable. That figure never recurred across these 12 new attempts and remains, for</p>
+<p>now, an isolated and unexplained event — parked as a documented curiosity, with no effect on the</p>
+<p>campaign&#x27;s conclusions, rather than pursued without a much larger sample.</p>
+<h2>What happens next</h2>
+<p>This chapter closes a long line of investigation (score fixes based on colour or brightness) while</p>
+<p>separately delivering one solid piece of good news at scale (the anti-drowning rescue) and one</p>
+<p>unresolved riddle that changes nothing about the main diagnosis. As always in this project: good</p>
+<p>results and disappointing results are reported with the same precision, and nothing is dressed up</p>
+<p>to look better than it is.</p>
+        </div>
+
+        <div class="track-panel chapter-prose" data-track-panel="expert" role="tabpanel" id="panel-expert" aria-labelledby="tab-expert">
+          <p class="track-kicker">Expert track</p>
+
+<h2>Context</h2>
+<p>Chapter 14 concluded that the condition set for committing to candidate direction 3 from</p>
+<p>Chapter 11&#x27;s menu (hierarchical H-JEPA) was met by empirical evidence, not merely by a plausible</p>
+<p>argument: even direct fine-tuning of <code>ebwm.pt</code> with photometric augmentation had produced only a</p>
+<p>mixed result. This chapter covers attempt #15 (<code>CLAUDE.md#Phase 5+</code>; no corresponding entry in</p>
+<p><code>docs/10<em>coldstart</em>engineering.md</code> to date — a documentation gap flagged explicitly in <code>CLAUDE.md</code></p>
+<p>itself): a reassessment of the H-JEPA proposal, a narrow offline test that followed from it, and an</p>
+<p>N=20 confirmation batch combining the mechanisms of Chapters 12-13.</p>
+<h2>Reassessing the H-JEPA proposal, without code</h2>
+<p>An Explorer proposal for literal H-JEPA had been submitted. Before any development, a cold</p>
+<p>reassessment noted that CLIP (Chapter 14) — a 400M-image model built specifically to resist</p>
+<p>photometric variation — had already failed the same dual gate that a hand-built hue/edge heuristic</p>
+<p>would face. Consequently, building that heuristic was judged very likely to produce nothing but a</p>
+<p>5th confirmation, at a real engineering cost, without new information — <em></em>recommendation not to</p>
+<p>build it<em></em>. Complementary recommendation: the campaign&#x27;s only two working mechanisms that do not</p>
+<p>rest on a visual judgement (<code>FrontierTracker</code>, <code>commit_length</code>) are the better next investment,</p>
+<p>rather than grafting more visual content bias onto them.</p>
+<h2>Narrow offline test: chrominance ratios per spatial tile</h2>
+<p>A more targeted and cheaper idea arising from that reassessment was tested directly:</p>
+<p><code>mine_jepa/ebwm/hazard.py</code> uses <strong>lighting-invariant channel ratios</strong> (not raw values) — a choice</p>
+<p>that works for water because the underwater tint is a global, uniform cast across the whole frame.</p>
+<p>Does that same trick work for foliage, computed <strong>per spatial tile</strong> rather than whole-frame?</p>
+<p><code>scripts/diagnose<em>chroma</em>tile_generalization.py</code>, on the same 251-frame set and the same manual</p>
+<p>labelling as every prior diagnostic (attempts #10, #14).</p>
+<p><strong>Result: MIXED, but the brightness gate fails almost as badly as CLIP&#x27;s worst case.</strong></p>
+<ul>
+<li>Direction gate: <strong>PASSED</strong> (separation ratio 1.482, ≥ the 1.3 bar).</li>
+<li>Brightness-independence gate: <strong>FAILED</strong>. r = -0.925 on the hand-labelled set (against -0.947</li>
+</ul>
+<p>for CLIP — essentially tied for the campaign&#x27;s worst, opposite sign); r = -0.585 across all 251</p>
+<p>frames (treechop -0.748, obtain<em>spawn -0.600, obtain</em>coverage -0.671) — a broad effect, not</p>
+<p>confined to the small labelled set.</p>
+<h2>Interpretation, the sharpest of the campaign</h2>
+<div class="callout">
+<p><em></em>Lesson: ratio normalisation removes GLOBAL brightness scaling exactly as designed (why it works</p>
+<p>for water) — but it cannot remove a COMPOSITIONAL confound where the ground-truth labels</p>
+<p>themselves correlate scene type with brightness (dark forests versus bright open fields is this</p>
+<p>domain&#x27;s actual scene composition, not an artefact of any one scoring mechanism). This means the</p>
+<p>brightness confound is not fixable by ANY purely photometric single-frame feature — learned,</p>
+<p>off-the-shelf, or hand-designed-invariant — without additional structure (multi-frame,</p>
+<p>spatial/geometric, or a different modality entirely).<em></em></p>
+</div>
+<p>This definitively closes the &quot;maybe a cleverer feature trick fixes it&quot; line; candidate direction 1</p>
+<p>from Chapter 11&#x27;s menu stays closed, for a stronger reason than before.</p>
+<h2>N=20 confirmation batch: frontier + hazard combined, chop rate measured for the first time on this combination</h2>
+<p><code>configs/play<em>craft</em>commit4_hazard.yaml</code> (Chapter 12&#x27;s frontier search + attempt #13&#x27;s corrected</p>
+<p>anti-drowning rescue, Chapter 13) run at N=20.</p>
+<p><strong>Process note, corrected.</strong> The Tester dispatch&#x27;s report claimed a &quot;hard infrastructure failure&quot;</p>
+<p>halting the batch at episode 4 — <strong>false</strong>, independently verified: <code>play<em>minerl</em>multi.py</code> launches</p>
+<p>one Java/Malmo process per episode, so a transient Malmo state-machine error on a single episode</p>
+<p>does not kill the orchestrator, which simply moves on to the next episode. The batch ran all 20</p>
+<p>episodes end to end (&quot;FINAL RESULTS — 20/20 episodes succeeded&quot;) without any intervention. Lesson:</p>
+<p>a per-episode error in this harness is not the same as a batch-level failure — confirm the</p>
+<p>orchestrator process itself before declaring a hard stop.</p>
+<p><strong>Drowning: 3/20 (15%)</strong>, confirmed via real <code>MineRLAgent0 drowned</code> Malmo messages — down from</p>
+<p>attempt #12&#x27;s original baseline (12/20, 60%). Attempt #13&#x27;s fix holds at N=20, not just at the N=6</p>
+<p>where it was confirmed. Other early terminations (unrelated causes — fall, mob, and so on, outside</p>
+<p>the scope of this fix): 5/20 (25%). Full-length (&quot;fair-shot&quot;) episodes: 12/20 (60%), up from ~8/20</p>
+<p>(40%) in attempt #12&#x27;s original batch.</p>
+<p><strong>Chopping/crafting: 0/20 logs, 0/20 planks</strong> — despite more episodes getting a fair shot, no chops</p>
+<p>this batch (against 1/20 for attempt #12). Not a significant regression at this N (a Fisher test</p>
+<p>would not distinguish 0/20 from 1/20) — this campaign&#x27;s usual small-N variance. Confirms the</p>
+<p>standing diagnosis again: removing the drowning confound increases fair-shot episodes but does not</p>
+<p>by itself convert into chopping — survival and search/approach effectiveness remain separate</p>
+<p>problems.</p>
+<h2>The reward=144.000 anomaly — investigated, not reproduced, unresolved</h2>
+<p><code>play<em>craft.py</code> gained an optional <code>logging.full</em>inventory</code> diagnostic (default off, bit-for-bit</p>
+<p>unchanged when unset) that tracks and prints the maximum value reached for <strong>every</strong> inventory key</p>
+<p>per episode, not just log/planks. A fresh N=12 batch with it enabled (same config) showed:</p>
+<p>reward=0.000 on all 12 episodes, and the ONLY inventory item ever non-zero across the whole batch</p>
+<p>was <code>dirt</code> (1-30 per episode, picked up incidentally while walking/attacking) — <code>dirt</code> is NOT in</p>
+<p>the reward table (<code>RewardForPossessingItem</code> covers only log/planks/stick/crafting_table/</p>
+<p>wooden<em>pickaxe/cobblestone/furnace/stone</em>pickaxe/iron<em>ore/iron</em>ingot/iron_pickaxe), so it earns</p>
+<p>zero reward and is a red herring for the original mystery. The original episode&#x27;s process had</p>
+<p>already exited before this diagnostic existed, so its exact state is unrecoverable — the mechanism</p>
+<p>that produced 144 did not recur across 12 fresh attempts and remains a one-off, uncharacterised</p>
+<p>event. It affects no campaign conclusion (chop rate is what matters, and this is orthogonal to it)</p>
+<p>— parked as a documented curiosity, not pursued absent a much larger sample.</p>
+<h2>Where this leaves the campaign</h2>
+<p><code>ebwm.pt</code> and <code>craft<em>wm</em>v4.pt</code> remain untouched throughout this chapter: the per-tile chrominance</p>
+<p>test is an offline diagnostic with no learned parameter; the N=20 confirmation batch and the</p>
+<p><code>full_inventory</code> diagnostic reuse already-trained/already-wired mechanisms without modifying any</p>
+<p>main checkpoint.</p>
+<h2>References</h2>
+<p>This chapter rests on no new bibliographic reference: the per-tile chrominance test reuses the</p>
+<p>colour heuristic already built and calibrated for attempt #13 (Chapter 13), with no underlying</p>
+<p>published method; the N=20 confirmation batch and the <code>reward=144</code> diagnostic are the project&#x27;s own</p>
+<p>empirical runs and instrumentation, not the application of an external reference.</p>
+        </div>
+      </div>
+
+
+    </div>
+  </article>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>Mine-JEPA — a JEPA agent learning to play Minecraft from pixels, documented along the way.</p>
+    <p class="footer-links">
+      Author / Auteur: <a href="https://x.com/reddwarf03" target="_blank" rel="noopener">@reddwarf03 (X/Twitter)</a> ·
+      <a href="https://github.com/redDwarf03" target="_blank" rel="noopener">redDwarf03 (GitHub)</a> |
+      <a href="https://github.com/redDwarf03/mine-jepa" target="_blank" rel="noopener">GitHub Repository</a>
+    </p>
+  </div>
+</footer>
+
+<script src="../script.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The first real retraining of the model&#x27;s core: two levers, two well-understood failures, one chosen pause — Mine-JEPA</title>
+<meta name="description" content="Chapter 19 of the Mine-JEPA learning path: The first real retraining of the model&#x27;s core: two levers, two well-understood failures, one chosen pause.">
+<link rel="stylesheet" href="../style.css">
+<script>document.documentElement.classList.add("js");</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="wrap site-header-inner">
+    <a class="site-brand" href="index.html"><span class="brand-mark" aria-hidden="true">&#9935;</span> Mine-JEPA</a>
+    <div class="header-controls">
+      <span class="last-updated" title="Date de mise à jour">Updated: 2026-08-11</span>
+      <nav class="lang-switch" aria-label="Site language">
+        <a href="../fr/19-deux-leviers-deux-echecs-compris.html" lang="fr" hreflang="fr">FR</a>
+        <a href="19-two-levers-two-understood-failures.html" aria-current="true" lang="en" hreflang="en">EN</a>
+      </nav>
+      <div class="track-pref" data-track-pref>
+        <span class="track-pref-label" id="track-pref-label">Show:</span>
+        <button type="button" data-track-pref-value="beginner" aria-pressed="true" aria-describedby="track-pref-label">Beginner</button>
+        <button type="button" data-track-pref-value="expert" aria-pressed="false" aria-describedby="track-pref-label">Expert</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <nav class="breadcrumb" aria-label="Breadcrumbs">
+    <div class="wrap">
+      <a href="index.html">Learning Path</a>
+      <span aria-hidden="true">/</span>
+      <span>Chapter 19</span>
+    </div>
+  </nav>
+
+  <article class="chapter">
+    <div class="wrap">
+
+      <header class="chapter-header">
+        <p class="chapter-kicker">Chapter 19</p>
+        <h1>The first real retraining of the model&#x27;s core: two levers, two well-understood failures, one chosen pause</h1>
+        <p class="chapter-prereqs">Prerequisites: Chapters 1 to 18.</p>
+      </header>
+
+
+      <div class="tracks" data-tracks>
+        <div class="track-tabs" role="tablist" aria-label="Reading level">
+          <button class="track-tab" role="tab" id="tab-beginner" aria-controls="panel-beginner" aria-selected="true" data-track-tab="beginner">Beginner</button>
+          <button class="track-tab" role="tab" id="tab-expert" aria-controls="panel-expert" aria-selected="false" tabindex="-1" data-track-tab="expert">Expert</button>
+        </div>
+
+        <div class="track-panel is-active chapter-prose" data-track-panel="beginner" role="tabpanel" id="panel-beginner" aria-labelledby="tab-beginner">
+          <p class="track-kicker">Beginner track</p>
+
+<h2>Where we left off</h2>
+<p>Chapter 18 ended on a real decision, taken on 28 July 2026 by the project&#x27;s owner: after</p>
+<p><strong>eighteen attempts</strong> to repair, from the outside, the way the main model (<code>ebwm.pt</code>) judges &quot;is</p>
+<p>there a tree close by?&quot;, all of them falling into the same brightness trap, it was time to try</p>
+<p>something else — <strong>to touch the very core of that model for the first time</strong>, rather than keep</p>
+<p>stacking crutches around it without ever opening the bonnet. Two precise, quantified ideas were on</p>
+<p>the table, found in the previous chapter: widen the vocabulary of gestures the model has learned to</p>
+<p>recognise, and change the anti-collapse ingredient that stops it &quot;cheating&quot; by learning to confuse</p>
+<p>everything.</p>
+<p>This chapter tells what happened when those two ideas were tried for real. Both failed — but</p>
+<p><strong>each for a precise reason that was understood</strong>, not left vague. And the decision that follows is</p>
+<p>not an abandonment: it is a chosen pause.</p>
+<h2>Lever 1: teaching the model more gestures</h2>
+<p>Recall from Chapter 18: a test had shown that in the runs where the expert chops trees, the model</p>
+<p>has almost never seen certain gestures — jumping, strafing sideways, looking up or down. Out of</p>
+<p>seventeen possible gestures, only eight really appeared in the original training data.</p>
+<p>The fix was concrete: re-read the recorded runs and <strong>recover</strong> those gestures, which had been</p>
+<p>there all along but which the data-preparation program did not yet know how to read correctly. Once</p>
+<p>fixed, almost every gesture appears (fifteen out of seventeen instead of eight). The model was then</p>
+<p>retrained, starting from its current weights — not from scratch — with a very cautious learning</p>
+<p>rate (the equivalent of adjusting in small steps rather than rebuilding everything), across five</p>
+<p>complete passes over the data.</p>
+<p><strong>Result: it did not work.</strong> The test measuring whether the model properly distinguishes &quot;tree</p>
+<p>close&quot; from &quot;no tree&quot; failed both before AND after this retraining, with no gradual improvement</p>
+<p>across the five passes. The gesture vocabulary did widen, but the way the model judges a scene did</p>
+<p>not improve for it.</p>
+<h3>Why? An investigation, not a guess</h3>
+<p>Faced with this failure, the team asked the right question before moving on: <em>why</em> did it not work?</p>
+<p>A first, simple explanation came to mind — perhaps by adding the &quot;jump&quot; label, the program had</p>
+<p>accidentally erased the &quot;attack&quot; label on the same frames (a bit like ticking a new box on a form</p>
+<p>and mistakenly unticking one already filled in). <em></em>That explanation was checked twice, with exact</p>
+<p>counts<em></em> — and it is false: the number of frames labelled &quot;attack&quot; stayed rigorously identical,</p>
+<p>frame for frame, before and after.</p>
+<p>What really changed: about 5 frames in 100 changed label, and the overwhelming majority of that</p>
+<p>change is frames where the expert was moving forward AND jumping at the same time (a &quot;bunny hop&quot;, a</p>
+<p>genuinely real movement technique in Minecraft) — a real gesture finally being seen, not an error.</p>
+<p>The most solid explanation (but <strong>not yet proven</strong>, and the team is honest about that): those rare</p>
+<p>gestures accounted for roughly 1% of the model&#x27;s training attention before the fix, and jumped</p>
+<p>suddenly to around 4% after — up to nine times more on certain gesture combinations. It is a bit as</p>
+<p>if a student who had barely ever practised the piano suddenly received nine times more lessons than</p>
+<p>usual on that instrument: even if their other subjects do not change, the shock of that new learning</p>
+<p>unbalances their general habits. A more cautious follow-up (introducing those gestures more</p>
+<p>gradually) was considered but not attempted — the user preferred to move straight to the second</p>
+<p>lever.</p>
+<h2>Lever 2: changing the anti-collapse ingredient</h2>
+<p>The second lever touched something deeper: the ingredient that stops the model &quot;cheating&quot;. Recall</p>
+<p>from Chapter 2: a JEPA model can learn to represent <em>all</em> images the same way (a collapse) because</p>
+<p>that artificially minimises its error without learning anything useful. This project has used an</p>
+<p>ingredient called VICReg from the start to prevent that. Two recent scientific publications claim</p>
+<p>that a newer ingredient, called <strong>SIGReg</strong>, is more reliable in theory.</p>
+<p>Before writing any code, an examination of the existing code revealed a surprise: the version of</p>
+<p>VICReg actually used in this project had, from the very beginning, only ever been <strong>half</strong> the full</p>
+<p>recipe — just one of the two mechanisms the theory prescribes. That simplified the swap to SIGReg:</p>
+<p>no need to rebuild an entire architecture, just to exchange one ingredient for another in the same</p>
+<p>place.</p>
+<p>The new ingredient was tested with the <strong>most cautious recipe of the whole campaign</strong>: an even</p>
+<p>lower learning rate than Lever 1, a maximum of only three passes over the data, and above all — a</p>
+<p><strong>new safeguard built specifically for this test</strong>, able to detect a kind of collapse the old</p>
+<p>monitoring tool cannot see.</p>
+<h3>A different kind of collapse, caught before it did too much damage</h3>
+<p>Here is what that new danger is, with a simple picture. The project&#x27;s old monitoring tool</p>
+<p>(<code>batch_var</code>, used since Chapter 2) measures whether the model&#x27;s representations have all become</p>
+<p><em>identical</em> — a collapse &quot;in height&quot;, as if an entire class of students gave exactly the same answer</p>
+<p>to every question. But there is a <strong>second kind of collapse</strong>, more insidious: the representations</p>
+<p>do stay different from one another overall (so <code>batch_var</code> sees nothing wrong), but everything</p>
+<p>making them different concentrates onto a handful of details, whereas the model previously had more</p>
+<p>than four thousand different ways to vary. It is as if the whole class kept giving varied answers,</p>
+<p>but those answers now only covered 4 or 5 topics instead of several thousand — an illusory richness.</p>
+<p><strong>That is exactly what happened, from the very first pass over the data</strong>, and the new safeguard</p>
+<p>detected it and stopped training before continuing pointlessly: the effective number of &quot;useful</p>
+<p>directions&quot; in the model&#x27;s representations collapsed from 26.7 to 4.5 — an 83% drop — while the old</p>
+<p>monitoring tool displayed a perfectly healthy figure, as good as any previous good training run.</p>
+<p>Without that new safeguard, nobody would have noticed in time.</p>
+<p>On that single model snapshot saved before the full shipwreck, the central test (&quot;does it properly</p>
+<p>distinguish tree-close from no-tree&quot;) gave a result <strong>even worse</strong> than Lever 1 — and the test on</p>
+<p>the model&#x27;s original task (chopping trees in the simple environment) very nearly collapsed too.</p>
+<p>This new ingredient, as tried here, broke the model more broadly than it repaired it.</p>
+<p>Important: that failure is <strong>not</strong> counted as a seventh confirmation of the famous brightness trap</p>
+<p>from the previous chapters. It is a problem of a different nature — a collapse of the</p>
+<p>representations, not a confusion between colour and distance. The two problems look alike in their</p>
+<p>symptoms (&quot;the model fails the test&quot;) but not in their cause.</p>
+<h2>The decision: a pause, not an abandonment</h2>
+<p>Faced with two levers, two failures, each now well understood (not just &quot;it did not work&quot; but</p>
+<p>&quot;here is why&quot;), the user chose to <strong>pause the campaign</strong> rather than immediately move on to a third</p>
+<p>lever. This is an important decision not to misread: it does <strong>not</strong> mean that retraining the</p>
+<p>model&#x27;s core is impossible. It means that these two precise implementations, the cheapest available</p>
+<p>for each idea, each failed for a reason that has now been identified — not for lack of trying, but</p>
+<p>because of a real technical problem, spotted and explained.</p>
+<p>What still stands and works, as the project&#x27;s positive baseline: the rule preventing the agent from</p>
+<p>abandoning its plan too soon, the search pushing the agent to explore the terrain rather than going</p>
+<p>in circles, and the anti-drowning reflex. None of those three mechanisms was touched by this</p>
+<p>attempt — nor was <code>ebwm.pt</code> itself, which remains identical to before, verified byte for byte.</p>
+        </div>
+
+        <div class="track-panel chapter-prose" data-track-panel="expert" role="tabpanel" id="panel-expert" aria-labelledby="tab-expert">
+          <p class="track-kicker">Expert track</p>
+
+<h2>Context</h2>
+<p>Chapter 18 (attempt #18, <code>CLAUDE.md#Phase 5+</code>) closed on a user decision of 2026-07-28: after 18</p>
+<p>attempts at <em>external</em> correction of <code>ebwm.pt</code>&#x27;s goal-centroid scoring (heads trained on frozen</p>
+<p>latents, off-the-shelf models, hand-made features, closed-form statistics — 6 independent</p>
+<p>confirmations of the same brightness/scene-composition confound), rework the training objective of</p>
+<p><code>ebwm.pt</code>&#x27;s <strong>core</strong> itself — never done in 18 attempts, always frozen or lightly nudged (attempt</p>
+<p>#14 Phase 2). Two concrete levers, scoped by attempt #18&#x27;s Diagnostic 2, were on the table:</p>
+<p>(1) broaden Treechop&#x27;s own action coverage and/or reweight toward Obtain&#x27;s action mix (motivated by</p>
+<p>Zhang et al., <a href="https://arxiv.org/abs/2607.22430">arXiv:2607.22430</a>); (2) replace VICReg with SIGReg</p>
+<p>(Balestriero &amp; LeCun, <a href="https://arxiv.org/abs/2511.08544">arXiv:2511.08544</a>; Arnez &amp; Gomez-Villa,</p>
+<p><a href="https://arxiv.org/abs/2607.13612">arXiv:2607.13612</a>). This chapter covers attempt #19 as recorded</p>
+<p>in <code>CLAUDE.md#Phase 5+</code>. <strong>Not yet reflected in <code>docs/10<em>coldstart</em>engineering.md</code></strong> at the time of</p>
+<p>writing — <code>CLAUDE.md</code> is the only source for this attempt.</p>
+<h2>Run A — broaden Treechop&#x27;s action coverage: NO-GO, diagnosed (not merely failed)</h2>
+<p><code>scripts/prepare<em>demos.py::discretize</em>actions()</code> extended to read <code>action$jump/left/right/back</code> +</p>
+<p>camera pitch — previously only forward/attack/sprint/yaw were read. Treechop&#x27;s own action-index</p>
+<p>coverage rises from 8/17 to 15/17. Fused with Obtain data exactly as in attempt #14 Phase 2,</p>
+<p>fine-tuned 5 epochs from <code>ebwm.pt</code>&#x27;s current weights (LR=3e-5, VICReg intact, seed=0, snapshots</p>
+<p><code>ebwm<em>v3</em>actioncoverage_epoch{1..5}.pt</code>, <code>ebwm.pt</code> never touched, md5 re-verified).</p>
+<table>
+<thead><tr><th>Gate</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>A — separation (extended hand-labelled set tree<em>close n=10 / no</em>tree n=17, attempt #18&#x27;s sample)</td><td><strong>FAIL on baseline (0.790x) AND all 5 epochs (0.531x-0.775x)</strong>, non-monotone, never ≥1.3x</td></tr>
+<tr><td>C — Treechop non-regression (new)</td><td>direction sub-test invalid by construction (the baseline itself fails it, 0.434x — not a fine-tune-caused regression) — removed from the verdict, magnitude band only retained</td></tr>
+</tbody>
+</table>
+<p>JSD(Treechop, Obtain) barely moves: 0.1453 → 0.1585 (slightly worse) — raw index coverage improved</p>
+<p>but distributional shape did not.</p>
+<h3>Root-cause diagnostic (at the user&#x27;s request, before deciding next steps)</h3>
+<p>Independently re-verified, <strong>twice</strong>, that the &quot;jump masks attack in the if/elif priority order&quot;</p>
+<p>hypothesis is <strong>FALSE</strong>: &quot;attack&quot; frame counts are byte-identical between the old and new datasets</p>
+<p>(265,454 / 265,454). What actually changed: 4.73% of frames relabelled, dominated by a genuine</p>
+<p><code>forward → forward+jump</code> reclassification (11,626 frames, an authentic bunny-hop, a correct relabel,</p>
+<p>not corruption).</p>
+<div class="callout">
+<p><strong>Best-supported explanation (not proven)</strong>: those long-idle action indices (jump/strafe/pitch)</p>
+<p>went from roughly 1.2% to roughly 3.8% of the weighted training mass in a single step (~9x on the</p>
+<p>jump+forward index alone) — a sudden gradient injection onto near-untrained action embeddings,</p>
+<p>plausibly destabilising the predictor&#x27;s shared weights, even though the frames of the</p>
+<p>already-well-trained indices did not themselves change.</p>
+</div>
+<p>A Run A-bis (warmup / frozen action-embedding table / lower LR) was scoped but not attempted — the</p>
+<p>user chose to go straight to Run B.</p>
+<h2>Run B — VICReg → SIGReg: NO-GO, more severely broken than Run A</h2>
+<p>Scoping revealed that <code>ebwm.pt</code>&#x27;s current &quot;VICReg&quot; is in reality only a</p>
+<p><code>HingeStdLoss+CovarianceLoss</code> on a single tensor (<code>state</code>) — <code>sim<em>coeff</em>t</code>/<code>idm_coeff</code> were already</p>
+<p>inert at 0, and no paired-view/EMA-target mechanism exists in this pipeline. Implemented as a</p>
+<p>~15-line <code>SIGRegRegularizer</code> calling the already-vendored <code>BCS(state, state)</code> (the same tensor</p>
+<p>twice — the invariance term is neutral at 0 by construction, the anti-collapse role coming from the</p>
+<p>Epps-Pulley marginal-gaussianity test alone, no EMA needed per LeJEPA&#x27;s own &quot;collapse-free without</p>
+<p>stop-grad&quot; claim).</p>
+<p>Full replacement, not additive (<code>std<em>coeff=cov</em>coeff=0</code>, <code>sigreg<em>coeff=1.0</code>), original (non-<code></em>v2</code>)</p>
+<p>dataset, augmentation disabled to isolate the single variable under test, LR=1e-5 (10x more</p>
+<p>cautious than Run A), 3-epoch cap with a <strong>new effective-rank gate</strong> (participation ratio on</p>
+<p><code>state</code>&#x27;s covariance), built specifically because <code>batch_var</code> cannot see <em>dimensional</em> (as opposed</p>
+<p>to isotropic) collapse.</p>
+<div class="callout">
+<p><strong>The new gate did exactly the job it was built for</strong>: epoch 1 alone triggered early stop —</p>
+<p>effective rank collapsed from 26.69 to 4.50 (-83%) while <code>batch_var</code> stayed perfectly healthy</p>
+<p>(1.36, as high as any VICReg run) — a real collapse mode, invisible to the old metric, caught</p>
+<p>before wasting epochs 2-3.</p>
+</div>
+<p>Offline gates on that single snapshot: Gate A worse than Run A&#x27;s baseline (0.367x against 0.790x,</p>
+<p>more inverted, not less), Gate C severely failed (Treechop&#x27;s own score falls to 5.7% of baseline — a</p>
+<p>generically broken checkpoint, not a nuanced confound reading). Gate B passes nominally (r=0.131)</p>
+<p>but is judged low-value here — a brightness-independence reading on a representation collapsed to</p>
+<p>~4.5 effective dimensions is not measuring much. <code>ebwm.pt</code> never touched (md5 re-verified).</p>
+<p>Explicitly <strong>not</strong> read as an 8th confirmation of the confound — the failure mode here (dimensional</p>
+<p>collapse from a single-term anti-collapse loss with no covariance pressure) is mechanically distinct</p>
+<p>from the brightness/composition confound established by the rest of the campaign. A mitigated Run</p>
+<p>B-bis (<code>CovarianceLoss</code> partially retained alongside SIGReg, additive rather than full replacement)</p>
+<p>was proposed as an option but not attempted.</p>
+<h2>Decision</h2>
+<p><em></em>User&#x27;s decision, both levers having failed: pause and consolidate rather than immediately scope a</p>
+<p>3rd lever.<em></em> Both of attempt #18 Diagnostic 2&#x27;s concretely scoped fixes are now exhausted as</p>
+<p>originally specified — this is not equivalent to &quot;retraining <code>ebwm.pt</code>&#x27;s core objective is</p>
+<p>impossible&quot;, only that these two specific, cheapest-available implementations each failed for two</p>
+<p>distinct, now-diagnosed reasons: data-side gradient-injection instability (Run A); architecture-side</p>
+<p>covariance under-constraint from a single-term anti-collapse loss (Run B). The non-photometric</p>
+<p>mechanisms that already worked earlier in the campaign (<code>commit_length=4</code>, <code>FrontierTracker</code></p>
+<p>coverage search, the anti-drowning fix) remain the only validated positive results and constitute</p>
+<p>the project&#x27;s current baseline. No live MineRL/Java test was run for either Run A or Run B</p>
+<p>(correctly withheld — neither passed its offline gate). <code>checkpoints/ebwm.pt</code> untouched throughout</p>
+<p>attempt #19 (md5 <code>ac14e65361fbddeb057963362ea1382d</code>, re-verified after both runs);</p>
+<p><code>ebwm<em>v3</em>actioncoverage<em>epoch{1..5}.pt</code> and <code>ebwm</em>v3<em>sigreg</em>epoch1.pt</code> kept as comparison artefacts</p>
+<p>only, neither promoted.</p>
+<h2>References</h2>
+<ul>
+<li>Zhang, Guan, Zhang, Zhang, Li, &quot;On the Identifiability of Controlled World Models&quot;,</li>
+</ul>
+<p><a href="https://arxiv.org/abs/2607.22430">arXiv:2607.22430</a> (2026) — foundation of the Run A lever</p>
+<p>(action coverage/reweighting).</p>
+<ul>
+<li>Balestriero, LeCun, &quot;LeJEPA: Provable and Scalable Self-Supervised Learning Without the</li>
+</ul>
+<p>Heuristics&quot;, <a href="https://arxiv.org/abs/2511.08544">arXiv:2511.08544</a> (2025) — foundation of SIGReg</p>
+<p>(Run B), including the &quot;collapse-free without stop-grad/EMA&quot; claim.</p>
+<ul>
+<li>Arnez, Gomez-Villa, &quot;The SIGReg Objective as Variational Free Energy: A Theoretical</li>
+</ul>
+<p>Active-Inference Account of JEPA World Models&quot;,</p>
+<p><a href="https://arxiv.org/abs/2607.13612">arXiv:2607.13612</a> (2026) — the theoretical critique of VICReg</p>
+<p>motivating Run B.</p>
+<p>All three references are verified in <code>docs/references/index.md</code>.</p>
+        </div>
+      </div>
+
+
+    </div>
+  </article>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>Mine-JEPA — a JEPA agent learning to play Minecraft from pixels, documented along the way.</p>
+    <p class="footer-links">
+      Author / Auteur: <a href="https://x.com/reddwarf03" target="_blank" rel="noopener">@reddwarf03 (X/Twitter)</a> ·
+      <a href="https://github.com/redDwarf03" target="_blank" rel="noopener">redDwarf03 (GitHub)</a> |
+      <a href="https://github.com/redDwarf03/mine-jepa" target="_blank" rel="noopener">GitHub Repository</a>
+    </p>
+  </div>
+</footer>
+
+<script src="../script.js" defer></script>
+</body>
+</html>

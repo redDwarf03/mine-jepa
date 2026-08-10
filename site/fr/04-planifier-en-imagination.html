@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Essayer 512 avenirs dans sa tête avant d'appuyer sur un bouton — Mine-JEPA</title>
-<meta name="description" content="Chapitre 4 du parcours Mine-JEPA : la planification par MPC à tir aléatoire — comment l'agent imagine 512 séquences d'actions en espace latent, les compare à un objectif, et n'exécute que la meilleure première action, à horizon glissant.">
+<title>Essayer 512 avenirs dans sa tête avant d&#x27;appuyer sur un bouton — Mine-JEPA</title>
+<meta name="description" content="Chapitre 4 du parcours Mine-JEPA : Essayer 512 avenirs dans sa tête avant d&#x27;appuyer sur un bouton.">
 <link rel="stylesheet" href="../style.css">
 <script>document.documentElement.classList.add("js");</script>
 </head>
@@ -15,8 +15,8 @@
   <div class="wrap site-header-inner">
     <a class="site-brand" href="index.html"><span class="brand-mark" aria-hidden="true">&#9935;</span> Mine-JEPA</a>
     <div class="header-controls">
-      <span class="last-updated" title="Date de mise à jour">Mis à jour le : 2026-07-21</span>
-                                                                  <nav class="lang-switch" aria-label="Langue du site">
+      <span class="last-updated" title="Date de mise à jour">Mis à jour le: 2026-08-11</span>
+            <nav class="lang-switch" aria-label="Langue du site">
         <a href="04-planifier-en-imagination.html" aria-current="true" lang="fr" hreflang="fr">FR</a>
         <a href="../en/04-planning-in-imagination.html" lang="en" hreflang="en">EN</a>
       </nav>
@@ -44,15 +44,10 @@
 
       <header class="chapter-header">
         <p class="chapter-kicker">Chapitre 4</p>
-        <h1>Essayer 512 avenirs dans sa tête avant d'appuyer sur un bouton</h1>
-        <p class="chapter-prereqs">
-          Prérequis :
-          <a href="01-c-est-quoi-jepa.html">Qu'est-ce que JEPA, et pourquoi apprendre à un programme à jouer à Minecraft avec ça ?</a>,
-          <a href="02-le-piege-du-collapse.html">Le raccourci que le modèle essaie toujours de trouver (et comment on l'en empêche)</a>
-          et
-          <a href="03-le-modele-du-monde.html">Apprendre au modèle à imaginer la suite</a>
-        </p>
+        <h1>Essayer 512 avenirs dans sa tête avant d&#x27;appuyer sur un bouton</h1>
+        <p class="chapter-prereqs">Prérequis : Chapitres 1 à 3.</p>
       </header>
+
 
       <div class="tracks" data-tracks>
         <div class="track-tabs" role="tablist" aria-label="Niveau de lecture">
@@ -63,165 +58,113 @@
         <div class="track-panel is-active chapter-prose" data-track-panel="beginner" role="tabpanel" id="panel-beginner" aria-labelledby="tab-beginner">
           <p class="track-kicker">Piste débutant</p>
 
-          <h2>Il manque encore une pièce</h2>
-          <p>
-            Récapitulons où on en est. Le Chapitre 1 a donné au modèle un encodeur qui sait résumer
-            une image en une courte liste de nombres (un <strong>embedding</strong>) sans tricher
-            (Chapitre 2). Le Chapitre 3 lui a donné un <strong>world model</strong> (modèle du
-            monde) : une fonction qui sait imaginer « si je fais cette action, à quoi ressemblera
-            l'embedding suivant ? », et qui bat clairement la solution paresseuse consistant à
-            recopier l'état actuel.
-          </p>
-          <p>
-            Mais résumer des images et imaginer leur suite, ce n'est toujours pas <em>jouer</em>.
-            Il manque une dernière pièce : <strong>comment choisir quelle touche appuyer,
-            maintenant, à cet instant précis ?</strong> C'est le sujet de ce chapitre — la Phase 3
-            du projet, testée sur Crafter (le petit jeu d'entraînement avant le vrai Minecraft).
-          </p>
-
-          <h2>D'abord, il faut savoir où on veut aller</h2>
-          <p>
-            Avant de pouvoir choisir une action, il faut définir un <strong>objectif</strong> — et
-            cet objectif, lui aussi, est un embedding. Le projet construit ce qu'il appelle le
-            <strong>goal embedding</strong> (l'embedding objectif) de façon très simple : il prend
-            toutes les images du jeu où le personnage a un bon niveau de nourriture (la faim est un
-            bon indicateur de survie), les passe dans l'encodeur, et fait la moyenne de tous ces
-            vecteurs. Ce point moyen — le <strong>centroïde</strong> — devient « à quoi ressemble un
-            bon état ». L'agent n'a jamais reçu l'étiquette « ça, c'est un bon état » pendant son
-            entraînement — cet objectif est construit <em>après coup</em>, à partir de données déjà
-            collectées.
-          </p>
-
-          <h2>L'idée : essayer plein d'avenirs imaginaires, choisir le meilleur</h2>
-          <p>
-            Voici la partie amusante. Imagine un livre « dont tu es le héros », où à chaque page tu
-            peux choisir entre plusieurs actions, et chaque choix mène à une suite différente de
-            l'histoire. Plutôt que de choisir une action au hasard puis de voir ce qui se passe,
-            imagine que tu puisses, en une fraction de seconde, <strong>feuilleter 512 histoires
-            imaginaires différentes</strong> — chacune une suite de 12 choix d'affilée — sans jamais
-            tourner une seule vraie page du livre. Tu regardes laquelle de ces 512 fins imaginaires
-            ressemble le plus à ce que tu veux (l'objectif), et <em>alors seulement</em> tu fais
-            réellement le premier choix de la meilleure histoire imaginée. Puis tu répètes tout le
-            processus depuis ta nouvelle situation réelle.
-          </p>
-          <p>
-            C'est exactement l'algorithme qu'utilise Mine-JEPA, appelé <strong>MPC par tir
-            aléatoire</strong> (« random-shooting Model Predictive Control ») :
-          </p>
-          <ol>
-            <li>Encoder l'état actuel en embedding.</li>
-            <li>Tirer au hasard 512 séquences différentes de 12 actions chacune.</li>
-            <li>
-              Pour chaque séquence, dérouler le world model pas à pas — 12 fois — pour imaginer où
-              elle mène.
-            </li>
-            <li>
-              Comparer chacune des 512 destinations imaginées à l'objectif ; garder la séquence dont
-              la destination imaginée s'en rapproche le plus.
-            </li>
-            <li>N'exécuter réellement que la <em>première</em> action de cette meilleure séquence.</li>
-            <li>Recommencer tout le processus depuis le nouvel état réel.</li>
-          </ol>
-
-          <h2>Pourquoi recommencer à chaque étape plutôt que suivre le plan entier ?</h2>
-          <p>
-            Bonne question, et la réponse est honnête : le world model se trompe de plus en plus au
-            fil des étapes imaginées — les petites erreurs s'accumulent. Si l'agent suivait
-            aveuglément un plan de 12 actions imaginé une seule fois, il finirait par dériver loin de
-            la réalité. En re-planifiant à chaque étape à partir de ce qui s'est <em>vraiment</em>
-            passé, l'agent corrige continuellement sa trajectoire. C'est ce qu'on appelle un
-            <strong>horizon glissant</strong> (« receding horizon ») : on ne regarde loin devant que
-            pour décider quoi faire <em>maintenant</em>.
-          </p>
-
-          <h2>Pourquoi 512 histoires suffisent (et pas des milliards)</h2>
-          <p>
-            Avec 17 actions possibles et 12 étapes, le nombre total de séquences possibles est
-            astronomique — environ 600 milliards. On n'en essaie que 512. Ça marche parce que
-            beaucoup d'actions ont un effet à court terme très similaire (avancer vers la gauche ou
-            vers la droite ne mène pas à des mondes complètement différents après une seule étape),
-            donc 512 tirages aléatoires couvrent déjà bien les directions qui comptent. Et comme
-            tout ce calcul se fait en embeddings — de petits vecteurs de nombres — plutôt qu'en
-            vraies images, l'ordinateur peut imaginer les 512 × 12 étapes en quelques millisecondes.
-          </p>
-
-          <h2>Ce qui s'est vraiment passé</h2>
-          <p>
-            Le projet a mesuré ce planificateur deux fois, à des moments différents, avec des
-            chiffres qui se ressemblent sans être identiques (ce qui arrive quand on refait une
-            mesure sur un nouveau lot d'épisodes plutôt que d'essayer de faire coller artificiellement
-            les deux résultats).
-          </p>
-          <p>
-            Une évaluation sur 50 épisodes a donné, pour l'agent JEPA-MPC contre un agent qui joue au
-            hasard : récompense moyenne ~2,1 contre ~1,5, ~3,0 contre ~2,4 « achievements »
-            (objectifs du jeu accomplis) par épisode, et un taux de succès (au moins un achievement)
-            proche de 100% contre 98% pour l'agent aléatoire.
-          </p>
-          <p>
-            Le gate officiel de la Phase 3, rapporté dans le journal du projet, donne :
-            <strong>100% de taux de succès</strong>, <strong>2,56 achievements par épisode contre
-            2,38</strong> pour l'agent aléatoire (+7,5%), et une récompense <strong>+14%</strong>. Le
-            premier épisode de l'agent obtient 3 achievements différents : se réveiller, ramasser du
-            bois, et poser une table — ce qui demande de trouver un arbre, de l'approcher, de le
-            frapper, puis de poser un objet. Rien de tout ça n'était codé à la main.
-          </p>
-
-          <h2>Pourquoi ça marche — et ce que ça ne résout pas</h2>
-          <p>
-            L'intuition : le world model a appris que « si je fais X, l'embedding bouge dans telle
-            direction ». Quand l'objectif est « un état avec beaucoup de nourriture », le
-            planificateur enchaîne naturellement des actions qui rapprochent l'embedding de cet
-            objectif — trouver une plante, s'en approcher, la manger — sans qu'on lui ait jamais dit
-            comment faire ça étape par étape.
-          </p>
-          <p>
-            Ce n'est pas parfait pour autant. Le world model se trompe sur de longs horizons, et
-            l'objectif n'est qu'un point moyen (le centroïde) : il dit <em>à quoi ressemble</em> un
-            bon état, pas <em>comment y arriver</em>. Deux états très différents visuellement
-            peuvent parfois être « proches » dans l'espace des embeddings sans que ça veuille
-            vraiment dire la même chose — un flou qu'on retrouvera plus loin dans l'histoire du
-            projet.
-          </p>
-          <p>
-            Mais même imparfait, ce world model guide mieux qu'un joueur qui appuie au hasard. Et la
-            prochaine étape logique — celle du chapitre suivant — est de rebrancher exactement ce
-            même pipeline (encodeur, world model, planificateur) sur le vrai Minecraft.
-          </p>
+<h2>Il manque encore une pièce</h2>
+<p>Récapitulons où on en est. Le Chapitre 1 a donné au modèle un encodeur qui sait résumer une</p>
+<p>image en une courte liste de nombres (un <strong>embedding</strong>) sans tricher (Chapitre 2). Le Chapitre 3</p>
+<p>lui a donné un <strong>world model</strong> (modèle du monde) : une fonction qui sait imaginer « si je fais</p>
+<p>cette action, à quoi ressemblera l&#x27;embedding suivant ? », et qui bat clairement la solution</p>
+<p>paresseuse consistant à recopier l&#x27;état actuel.</p>
+<p>Mais résumer des images et imaginer leur suite, ce n&#x27;est toujours pas <em>jouer</em>. Il manque une</p>
+<p>dernière pièce : <strong>comment choisir quelle touche appuyer, maintenant, à cet instant précis ?</strong></p>
+<p>C&#x27;est le sujet de ce chapitre — la Phase 3 du projet, testée sur Crafter (le petit jeu</p>
+<p>d&#x27;entraînement avant le vrai Minecraft).</p>
+<h2>D&#x27;abord, il faut savoir où on veut aller</h2>
+<p>Avant de pouvoir choisir une action, il faut définir un <strong>objectif</strong> — et cet objectif, lui</p>
+<p>aussi, est un embedding. Le projet construit ce qu&#x27;il appelle le <strong>goal embedding</strong> (l&#x27;embedding</p>
+<p>objectif) de façon très simple : il prend toutes les images du jeu où le personnage a un bon</p>
+<p>niveau de nourriture (la faim est un bon indicateur de survie), les passe dans l&#x27;encodeur, et</p>
+<p>fait la moyenne de tous ces vecteurs. Ce point moyen — le <strong>centroïde</strong> — devient « à quoi</p>
+<p>ressemble un bon état ». L&#x27;agent n&#x27;a jamais reçu l&#x27;étiquette « ça, c&#x27;est un bon état » pendant</p>
+<p>son entraînement — cet objectif est construit <em>après coup</em>, à partir de données déjà collectées.</p>
+<h2>L&#x27;idée : essayer plein d&#x27;avenirs imaginaires, choisir le meilleur</h2>
+<p>Voici la partie amusante. Imagine un livre « dont tu es le héros », où à chaque page tu peux</p>
+<p>choisir entre plusieurs actions, et chaque choix mène à une suite différente de l&#x27;histoire.</p>
+<p>Plutôt que de choisir une action au hasard puis de voir ce qui se passe, imagine que tu puisses,</p>
+<p>en une fraction de seconde, <strong>feuilleter 512 histoires imaginaires différentes</strong> — chacune une</p>
+<p>suite de 12 choix d&#x27;affilée — sans jamais tourner une seule vraie page du livre. Tu regardes</p>
+<p>laquelle de ces 512 fins imaginaires ressemble le plus à ce que tu veux (l&#x27;objectif), et *alors</p>
+<p>seulement* tu fais réellement le premier choix de la meilleure histoire imaginée. Puis tu répètes</p>
+<p>tout le processus depuis ta nouvelle situation réelle.</p>
+<p>C&#x27;est exactement l&#x27;algorithme qu&#x27;utilise Mine-JEPA, appelé <strong>MPC par tir aléatoire</strong> (« random-</p>
+<p>shooting Model Predictive Control ») :</p>
+<ol>
+<li>Encoder l&#x27;état actuel en embedding.</li>
+<li>Tirer au hasard 512 séquences différentes de 12 actions chacune.</li>
+<li>Pour chaque séquence, dérouler le world model pas à pas — 12 fois — pour imaginer où elle mène.</li>
+<li>Comparer chacune des 512 destinations imaginées à l&#x27;objectif ; garder la séquence dont la</li>
+</ol>
+<p>destination imaginée s&#x27;en rapproche le plus.</p>
+<ol>
+<li>N&#x27;exécuter réellement que la <em>première</em> action de cette meilleure séquence.</li>
+<li>Recommencer tout le processus depuis le nouvel état réel.</li>
+</ol>
+<h2>Pourquoi recommencer à chaque étape plutôt que suivre le plan entier ?</h2>
+<p>Bonne question, et la réponse est honnête : le world model se trompe de plus en plus au fil des</p>
+<p>étapes imaginées — les petites erreurs s&#x27;accumulent. Si l&#x27;agent suivait aveuglément un plan de 12</p>
+<p>actions imaginé une seule fois, il finirait par dériver loin de la réalité. En re-planifiant à</p>
+<p>chaque étape à partir de ce qui s&#x27;est <em>vraiment</em> passé, l&#x27;agent corrige continuellement sa</p>
+<p>trajectoire. C&#x27;est ce qu&#x27;on appelle un <strong>horizon glissant</strong> (« receding horizon ») : on ne</p>
+<p>regarde loin devant que pour décider quoi faire <em>maintenant</em>.</p>
+<h2>Pourquoi 512 histoires suffisent (et pas des milliards)</h2>
+<p>Avec 17 actions possibles et 12 étapes, le nombre total de séquences possibles est astronomique —</p>
+<p>environ 600 milliards. On n&#x27;en essaie que 512. Ça marche parce que beaucoup d&#x27;actions ont un</p>
+<p>effet à court terme très similaire (avancer vers la gauche ou vers la droite ne mène pas à des</p>
+<p>mondes complètement différents après une seule étape), donc 512 tirages aléatoires couvrent déjà</p>
+<p>bien les directions qui comptent. Et comme tout ce calcul se fait en embeddings — de petits</p>
+<p>vecteurs de nombres — plutôt qu&#x27;en vraies images, l&#x27;ordinateur peut imaginer les 512 × 12 étapes</p>
+<p>en quelques millisecondes.</p>
+<h2>Ce qui s&#x27;est vraiment passé</h2>
+<p>Le projet a mesuré ce planificateur deux fois, à des moments différents, avec des chiffres qui se</p>
+<p>ressemblent sans être identiques (ce qui arrive quand on refait une mesure sur un nouveau lot</p>
+<p>d&#x27;épisodes plutôt que d&#x27;essayer de faire coller artificiellement les deux résultats).</p>
+<p>Une évaluation sur 50 épisodes a donné, pour l&#x27;agent JEPA-MPC contre un agent qui joue au hasard :</p>
+<p>récompense moyenne ~2,1 contre ~1,5, ~3,0 contre ~2,4 « achievements » (objectifs du jeu</p>
+<p>accomplis) par épisode, et un taux de succès (au moins un achievement) proche de 100% contre 98%</p>
+<p>pour l&#x27;agent aléatoire.</p>
+<p>Le gate officiel de la Phase 3, rapporté dans le journal du projet, donne : <em></em>100% de taux de</p>
+<p>succès<strong>, </strong>2,56 achievements par épisode contre 2,38<em></em> pour l&#x27;agent aléatoire (+7,5%), et une</p>
+<p>récompense <strong>+14%</strong>. Le premier épisode de l&#x27;agent obtient 3 achievements différents : se</p>
+<p>réveiller, ramasser du bois, et poser une table — ce qui demande de trouver un arbre, de</p>
+<p>l&#x27;approcher, de le frapper, puis de poser un objet. Rien de tout ça n&#x27;était codé à la main.</p>
+<h2>Pourquoi ça marche — et ce que ça ne résout pas</h2>
+<p>L&#x27;intuition : le world model a appris que « si je fais X, l&#x27;embedding bouge dans telle direction ».</p>
+<p>Quand l&#x27;objectif est « un état avec beaucoup de nourriture », le planificateur enchaîne</p>
+<p>naturellement des actions qui rapprochent l&#x27;embedding de cet objectif — trouver une plante, s&#x27;en</p>
+<p>approcher, la manger — sans qu&#x27;on lui ait jamais dit comment faire ça étape par étape.</p>
+<p>Ce n&#x27;est pas parfait pour autant. Le world model se trompe sur de longs horizons, et l&#x27;objectif</p>
+<p>n&#x27;est qu&#x27;un point moyen (le centroïde) : il dit <em>à quoi ressemble</em> un bon état, pas *comment y</p>
+<p>arriver*. Deux états très différents visuellement peuvent parfois être « proches » dans l&#x27;espace</p>
+<p>des embeddings sans que ça veuille vraiment dire la même chose — un flou qu&#x27;on retrouvera plus</p>
+<p>loin dans l&#x27;histoire du projet.</p>
+<p>Mais même imparfait, ce world model guide mieux qu&#x27;un joueur qui appuie au hasard. Et la</p>
+<p>prochaine étape logique — celle du chapitre suivant — est de rebrancher exactement ce même</p>
+<p>pipeline (encodeur, world model, planificateur) sur le vrai Minecraft.</p>
         </div>
 
         <div class="track-panel chapter-prose" data-track-panel="expert" role="tabpanel" id="panel-expert" aria-labelledby="tab-expert">
           <p class="track-kicker">Piste expert</p>
 
-          <h2>Le problème et sa formalisation</h2>
-          <p>
-            À l'issue des Chapitres 1-3, on dispose de <code>f_θ : x → s ∈ R^D</code> (encodeur,
-            figé depuis la Phase 1) et <code>g : (s_t, a_t) → ŝ_{t+1}</code> (world model, Phase 2).
-            Il manque une politique. Mine-JEPA choisit de <strong>ne pas apprendre de politique
-            paramétrique</strong> (pas de policy gradient, pas de fonction de valeur) — la
-            planification se fait directement par recherche dans l'espace latent, à chaque pas de
-            temps, en réutilisant les modules déjà entraînés sans gradient additionnel.
-          </p>
-
-          <h2>Construction du goal embedding</h2>
-          <pre><code>good_frames = frames[food >= 7]          # ~16 000 frames sur 32 000
+<h2>Le problème et sa formalisation</h2>
+<p>À l&#x27;issue des Chapitres 1-3, on dispose de <code>f_θ : x → s ∈ R^D</code> (encodeur, figé depuis la Phase 1)</p>
+<p>et <code>g : (s<em>t, a</em>t) → ŝ_{t+1}</code> (world model, Phase 2). Il manque une politique. Mine-JEPA choisit</p>
+<p>de <strong>ne pas apprendre de politique paramétrique</strong> (pas de policy gradient, pas de fonction de</p>
+<p>valeur) — la planification se fait directement par recherche dans l&#x27;espace latent, à chaque pas</p>
+<p>de temps, en réutilisant les modules déjà entraînés sans gradient additionnel.</p>
+<h2>Construction du goal embedding</h2>
+<pre><code>good_frames = frames[food &gt;= 7]          # ~16 000 frames sur 32 000
 goal = encoder(good_frames).mean(dim=0)  # [D] — centroïde</code></pre>
-          <p>
-            Le goal est un centroïde post-hoc dans l'espace latent, construit à partir d'un
-            sous-ensemble du dataset de collecte filtré sur un proxy de survie (food ≥ 7), sans
-            aucune étiquette de tâche fournie pendant l'entraînement de l'encodeur ou du world
-            model.
-          </p>
-
-          <h2>Random-shooting MPC</h2>
-          <pre><code>Pour chaque pas de temps :
-  1. Encoder l'état courant  →  s_t
-  2. Tirer N=512 séquences d'actions aléatoires de longueur H=12
+<p>Le goal est un centroïde post-hoc dans l&#x27;espace latent, construit à partir d&#x27;un sous-ensemble du</p>
+<p>dataset de collecte filtré sur un proxy de survie (food ≥ 7), sans aucune étiquette de tâche</p>
+<p>fournie pendant l&#x27;entraînement de l&#x27;encodeur ou du world model.</p>
+<h2>Random-shooting MPC</h2>
+<pre><code>Pour chaque pas de temps :
+  1. Encoder l&#x27;état courant  →  s_t
+  2. Tirer N=512 séquences d&#x27;actions aléatoires de longueur H=12
   3. Pour chaque séquence : dérouler le world model sur H pas → ŝ_{t+H}
   4. Scorer : score_i = -MSE(ŝ_{t+H,i}, s_goal)
   5. Exécuter la première action de la séquence au meilleur score
   6. Répéter (horizon glissant)</code></pre>
-          <pre><code>class LatentMPCPlanner:
+<pre><code>class LatentMPCPlanner:
     @torch.no_grad()
     def plan(self, s_current, s_goal):
         s = s_current.expand(self.n_candidates, -1).clone()          # [N, D]
@@ -231,152 +174,97 @@ goal = encoder(good_frames).mean(dim=0)  # [D] — centroïde</code></pre>
             s = self.predictor(s, actions[:, h])                      # [N, D]
         scores = -(s - s_goal).pow(2).mean(dim=1)                     # [N]
         return actions[scores.argmax(), 0].item()</code></pre>
-          <p>
-            L'intégralité du planificateur tient en une dizaine de lignes — un corollaire direct du
-            fait que tout le calcul lourd (compréhension de scène, dynamique) a déjà été poussé dans
-            l'encodeur et le predictor lors des phases précédentes ; le planificateur lui-même n'est
-            qu'une recherche.
-          </p>
-
-          <h2>Justification du budget de calcul</h2>
-          <p>
-            Espace de séquences : <code>17^12 ≈ 6×10^11</code>. Le budget de candidats (N=512) n'en
-            couvre qu'une fraction infime, mais suffit parce que de nombreuses actions ont des effets
-            à court terme similaires (redondance directionnelle de l'espace d'action de Crafter) —
-            l'échantillonnage i.i.d. couvre les grandes directions utiles sans avoir besoin d'une
-            recherche exhaustive. Le rollout batché de 512×12 pas s'exécute en &lt; 5 ms sur GPU, car
-            chaque pas n'est qu'un forward pass du predictor (~140K paramètres) sur un batch de 512 —
-            tout se passe en espace latent, sans jamais retoucher le moteur de rendu ni
-            l'environnement réel.
-          </p>
-
-          <h2>Horizon glissant</h2>
-          <p>
-            Re-planifier à chaque pas à partir de l'état <em>réellement</em> observé, plutôt que
-            d'exécuter le plan de 12 pas en aveugle, corrige l'erreur composée accumulée par le world
-            model sur des rollouts longs (cf. Chapitre 03, section sur l'accumulation d'erreur
-            k-step). C'est un choix structurel : la robustesse vient de la fréquence de
-            re-planification, pas de la précision du world model seul.
-          </p>
-
-          <h2>Résultats mesurés — deux évaluations distinctes</h2>
-          <p><code>docs/05_planning.md</code> rapporte une évaluation sur 50 épisodes Crafter :</p>
-          <div class="table-scroll">
-            <table>
-              <thead>
-                <tr><th>Métrique</th><th>Agent JEPA-MPC</th><th>Baseline aléatoire</th></tr>
-              </thead>
-              <tbody>
-                <tr><td>Récompense moyenne</td><td>~2,1</td><td>~1,5</td></tr>
-                <tr><td>Achievements/épisode</td><td>~3,0</td><td>~2,4</td></tr>
-                <tr><td>Taux de succès (&ge;1 achievement)</td><td>~100%</td><td>~98%</td></tr>
-                <tr><td>FPS</td><td>~150</td><td>&mdash;</td></tr>
-              </tbody>
-            </table>
-          </div>
-          <p>
-            <code>CLAUDE.md</code> (le gate officiel de la Phase 3) rapporte des chiffres distincts
-            sur ce qui semble être un lot d'épisodes différent : <strong>100% de taux de succès</strong>,
-            <strong>2,56 achievements/épisode contre 2,38</strong> pour la baseline aléatoire
-            (+7,5%), et <strong>récompense +14%</strong>. Les deux mesures viennent de la même Phase
-            3 et pointent dans la même direction (amélioration nette sur les trois métriques, succès
-            quasi-total), mais ne coïncident pas chiffre pour chiffre — cohérent avec le fait qu'il
-            s'agit de deux runs d'évaluation distincts plutôt que d'une même mesure rapportée deux
-            fois. Les deux sont rapportées ici telles quelles plutôt que forcées à s'accorder. Le
-            premier épisode enchaîne 3 achievements (<code>wake_up</code>, <code>collect_wood</code>,
-            <code>place_table</code>) — une séquence qui suppose de localiser un arbre, s'en
-            approcher, le frapper, puis poser un objet, sans logique de tâche codée à la main.
-          </p>
-
-          <h2>Pourquoi ça marche</h2>
-          <p>
-            Le predictor conditionné par l'action a appris la fonction de transition
-            <code>ŝ_{t+1} = g(s_t, a_t)</code>. Quand l'objectif est un centroïde de « bons » états,
-            le score <code>-MSE(ŝ_{t+H}, s_goal)</code> favorise naturellement les séquences
-            d'actions qui font converger la trajectoire latente vers cette région — sans qu'aucune
-            récompense de tâche explicite n'ait jamais été injectée dans l'entraînement de l'encodeur
-            ou du predictor. Le comportement orienté-but émerge entièrement de la combinaison (world
-            model + recherche), pas d'un objectif d'apprentissage par renforcement.
-          </p>
-
-          <h2>Limites identifiées et pistes du projet</h2>
-          <p>
-            <strong>Limite principale</strong> : le goal embedding est un centroïde — il encode
-            <em>à quoi ressemble</em> le but, pas <em>comment l'atteindre</em>. Deux états
-            visuellement distincts peuvent être proches dans l'espace latent sans être équivalents
-            fonctionnellement (ambiguïté géométrique de l'espace latent) ; ceci préfigure un
-            problème plus large — la géométrie latente sur laquelle repose la planification n'est
-            pas garantie par la seule qualité de prédiction — qui refera surface dans une phase
-            ultérieure du projet, sur un jeu de données différent.
-          </p>
-          <p>
-            <strong>Extension future notée dans le plan de la Phase 3</strong> : le CEM
-            (Cross-Entropy Method) — affiner itérativement la distribution d'échantillonnage des
-            actions sur plusieurs itérations, plutôt qu'un tir unique de 512 séquences i.i.d. — déjà
-            implémenté pour actions continues dans <code>mine_jepa/eb_jepa/planning.py</code> au
-            moment de la Phase 3, mais pas encore branché sur le planificateur discret de Crafter.
-            Une version discrète de cette idée reviendra dans une phase ultérieure du projet.
-          </p>
-
-          <h2>Le pipeline complet à ce stade</h2>
-          <pre><code>Frames 64&times;64  &rarr;  [Encodeur Phase 1]  &rarr;  s_t  [D=128]
-                                            &#9474;
+<p>L&#x27;intégralité du planificateur tient en une dizaine de lignes — un corollaire direct du fait que</p>
+<p>tout le calcul lourd (compréhension de scène, dynamique) a déjà été poussé dans l&#x27;encodeur et le</p>
+<p>predictor lors des phases précédentes ; le planificateur lui-même n&#x27;est qu&#x27;une recherche.</p>
+<h2>Justification du budget de calcul</h2>
+<p>Espace de séquences : <code>17^12 ≈ 6×10^11</code>. Le budget de candidats (N=512) n&#x27;en couvre qu&#x27;une</p>
+<p>fraction infime, mais suffit parce que de nombreuses actions ont des effets à court terme</p>
+<p>similaires (redondance directionnelle de l&#x27;espace d&#x27;action de Crafter) — l&#x27;échantillonnage</p>
+<p>i.i.d. couvre les grandes directions utiles sans avoir besoin d&#x27;une recherche exhaustive. Le</p>
+<p>rollout batché de 512×12 pas s&#x27;exécute en &lt; 5 ms sur GPU, car chaque pas n&#x27;est qu&#x27;un forward pass</p>
+<p>du predictor (~140K paramètres) sur un batch de 512 — tout se passe en espace latent, sans jamais</p>
+<p>retoucher le moteur de rendu ni l&#x27;environnement réel.</p>
+<h2>Horizon glissant</h2>
+<p>Re-planifier à chaque pas à partir de l&#x27;état <em>réellement</em> observé, plutôt que d&#x27;exécuter le plan</p>
+<p>de 12 pas en aveugle, corrige l&#x27;erreur composée accumulée par le world model sur des rollouts</p>
+<p>longs (cf. Chapitre 03, section sur l&#x27;accumulation d&#x27;erreur k-step). C&#x27;est un choix structurel :</p>
+<p>la robustesse vient de la fréquence de re-planification, pas de la précision du world model seul.</p>
+<h2>Résultats mesurés — deux évaluations distinctes</h2>
+<p><code>docs/05_planning.md</code> rapporte une évaluation sur 50 épisodes Crafter :</p>
+<table>
+<thead><tr><th>Métrique</th><th>Agent JEPA-MPC</th><th>Baseline aléatoire</th></tr></thead>
+<tbody>
+<tr><td>Récompense moyenne</td><td>~2,1</td><td>~1,5</td></tr>
+<tr><td>Achievements/épisode</td><td>~3,0</td><td>~2,4</td></tr>
+<tr><td>Taux de succès (≥1 achievement)</td><td>~100%</td><td>~98%</td></tr>
+<tr><td>FPS</td><td>~150</td><td>—</td></tr>
+</tbody>
+</table>
+<p><code>CLAUDE.md</code> (le gate officiel de la Phase 3) rapporte des chiffres distincts sur ce qui semble</p>
+<p>être un lot d&#x27;épisodes différent : <strong>100% de taux de succès</strong>, <em></em>2,56 achievements/épisode contre</p>
+<p>2,38<strong> pour la baseline aléatoire (+7,5%), et </strong>récompense +14%<em></em>. Les deux mesures viennent de</p>
+<p>la même Phase 3 et pointent dans la même direction (amélioration nette sur les trois métriques,</p>
+<p>succès quasi-total), mais ne coïncident pas chiffre pour chiffre — cohérent avec le fait qu&#x27;il</p>
+<p>s&#x27;agit de deux runs d&#x27;évaluation distincts plutôt que d&#x27;une même mesure rapportée deux fois. Les</p>
+<p>deux sont rapportées ici telles quelles plutôt que forcées à s&#x27;accorder. Le premier épisode</p>
+<p>enchaîne 3 achievements (<code>wake<em>up</code>, <code>collect</em>wood</code>, <code>place_table</code>) — une séquence qui suppose de</p>
+<p>localiser un arbre, s&#x27;en approcher, le frapper, puis poser un objet, sans logique de tâche</p>
+<p>codée à la main.</p>
+<h2>Pourquoi ça marche</h2>
+<p>Le predictor conditionné par l&#x27;action a appris la fonction de transition <code>ŝ<em>{t+1} = g(s</em>t, a_t)</code>.</p>
+<p>Quand l&#x27;objectif est un centroïde de « bons » états, le score <code>-MSE(ŝ<em>{t+H}, s</em>goal)</code> favorise</p>
+<p>naturellement les séquences d&#x27;actions qui font converger la trajectoire latente vers cette région</p>
+<p>— sans qu&#x27;aucune récompense de tâche explicite n&#x27;ait jamais été injectée dans l&#x27;entraînement de</p>
+<p>l&#x27;encodeur ou du predictor. Le comportement orienté-but émerge entièrement de la combinaison</p>
+<p>(world model + recherche), pas d&#x27;un objectif d&#x27;apprentissage par renforcement.</p>
+<h2>Limites identifiées et pistes du projet</h2>
+<p><strong>Limite principale</strong> : le goal embedding est un centroïde — il encode <em>à quoi ressemble</em> le but,</p>
+<p>pas <em>comment l&#x27;atteindre</em>. Deux états visuellement distincts peuvent être proches dans l&#x27;espace</p>
+<p>latent sans être équivalents fonctionnellement (ambiguïté géométrique de l&#x27;espace latent) ; ceci</p>
+<p>préfigure un problème plus large — la géométrie latente sur laquelle repose la planification n&#x27;est</p>
+<p>pas garantie par la seule qualité de prédiction — qui refera surface dans une phase ultérieure du</p>
+<p>projet, sur un jeu de données différent.</p>
+<p><strong>Extension future notée dans le plan de la Phase 3</strong> : le CEM (Cross-Entropy Method) — affiner</p>
+<p>itérativement la distribution d&#x27;échantillonnage des actions sur plusieurs itérations, plutôt</p>
+<p>qu&#x27;un tir unique de 512 séquences i.i.d. — déjà implémenté pour actions continues dans</p>
+<p><code>mine<em>jepa/eb</em>jepa/planning.py</code> au moment de la Phase 3, mais pas encore branché sur le</p>
+<p>planificateur discret de Crafter. Une version discrète de cette idée reviendra dans une phase</p>
+<p>ultérieure du projet.</p>
+<h2>Le pipeline complet à ce stade</h2>
+<pre><code>Frames 64×64  →  [Encodeur Phase 1]  →  s_t  [D=128]
+                                            │
                                       s_t + a_t
-                                            &#9474;
-                                  [World Model Phase 2]  &rarr;  &#375;_{t+1}
-                                            &#9474;
+                                            │
+                                  [World Model Phase 2]  →  ŝ_{t+1}
+                                            │
                               512 séquences imaginées
-                                            &#9474;
+                                            │
                                 [Score vs s_goal]
-                                            &#9474;
+                                            │
                                        best_action
-                                            &#9474;
+                                            │
                                 Crafter.step(action)
-                                            &#9474;
-                                  obs_{t+1}  &larr;&#9472; (boucle)</code></pre>
-          <p>
-            Tout se passe en espace latent, à l'exception des deux extrémités : l'entrée pixel et
-            l'action finale.
-          </p>
-
-          <h2>Références (vérifiées, tirées de docs/references/index.md)</h2>
-          <ul>
-            <li>
-              Maes, Le Lidec, Scieur, LeCun, Balestriero, LeWorldModel, arXiv:2603.19312 (2026) — la
-              convention <code>ratio = val_pred/val_copy</code> du Chapitre 03, socle sur lequel
-              repose la fiabilité du rollout latent exploité ici par le planificateur.
-            </li>
-            <li>
-              Meta FAIR, eb_jepa (github.com/facebookresearch/eb_jepa) — la logique de planification
-              (<code>mine_jepa/eb_jepa/planning.py</code>) réutilisée pour l'extension CEM mentionnée
-              en fin de chapitre.
-            </li>
-          </ul>
+                                            │
+                                  obs_{t+1}  ←─ (boucle)</code></pre>
+<p>Tout se passe en espace latent, à l&#x27;exception des deux extrémités : l&#x27;entrée pixel et l&#x27;action</p>
+<p>finale.</p>
+<h2>Références (vérifiées, tirées de docs/references/index.md)</h2>
+<ul>
+<li>Maes, Le Lidec, Scieur, LeCun, Balestriero, LeWorldModel, arXiv:2603.19312 (2026) — la</li>
+</ul>
+<p>convention <code>ratio = val<em>pred/val</em>copy</code> du Chapitre 03, socle sur lequel repose la fiabilité du</p>
+<p>rollout latent exploité ici par le planificateur.</p>
+<ul>
+<li>Meta FAIR, eb<em>jepa (github.com/facebookresearch/eb</em>jepa) — la logique de planification</li>
+</ul>
+<p>(<code>mine<em>jepa/eb</em>jepa/planning.py</code>) réutilisée pour l&#x27;extension CEM mentionnée en fin de chapitre.</p>
         </div>
       </div>
 
-      <div class="achievement" role="note" aria-label="Résultat de ce chapitre">
-        <span class="achievement-icon" aria-hidden="true">&#127942;</span>
-        <div>
-          <p class="achievement-title">Succès &mdash; premier agent qui planifie au lieu de réagir</p>
-          <p>
-            <strong>100% de taux de réussite</strong>, <strong>2,56 achievements/épisode contre
-            2,38</strong> pour un agent aléatoire (+7,5%), récompense <strong>+14%</strong> :
-            l'encodeur, le world model et 512 futurs imaginés en parallèle suffisent à faire
-            émerger un comportement orienté-but, sans aucune règle de jeu codée à la main.
-          </p>
-        </div>
-      </div>
 
     </div>
   </article>
-
-  <nav class="chapter-nav" aria-label="Navigation entre chapitres">
-    <div class="wrap chapter-nav-inner">
-      <a class="chapter-nav-link" href="index.html">&larr; Retour au parcours</a>
-      <a class="chapter-nav-link" href="05-le-vrai-minecraft.html">Chapitre suivant : Le grand saut vers le vrai Minecraft &rarr;</a>
-    </div>
-  </nav>
 
 </main>
 

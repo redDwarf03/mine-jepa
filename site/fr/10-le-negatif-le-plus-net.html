@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>La piste apprise a été testée : elle non plus ne suffit pas — mais elle élimine deux explications — Mine-JEPA</title>
-<meta name="description" content="Chapitre 10 du parcours Mine-JEPA : la Proposition B (politique apprise par clonage comportemental, proposant des candidats au planificateur) est construite, passe un gate anti-collapse discriminant, puis testée en direct — 0/8 bûches, mais deux explications concrètes éliminées (verrouillage comportemental, spawn invivable) : le résultat négatif le plus net de la campagne, qui déplace le diagnostic vers l'évaluation du monde imaginé lui-même.">
+<meta name="description" content="Chapitre 10 du parcours Mine-JEPA : La piste apprise a été testée : elle non plus ne suffit pas — mais elle élimine deux explications.">
 <link rel="stylesheet" href="../style.css">
 <script>document.documentElement.classList.add("js");</script>
 </head>
@@ -15,8 +15,8 @@
   <div class="wrap site-header-inner">
     <a class="site-brand" href="index.html"><span class="brand-mark" aria-hidden="true">&#9935;</span> Mine-JEPA</a>
     <div class="header-controls">
-      <span class="last-updated" title="Date de mise à jour">Mis à jour le : 2026-07-21</span>
-                                                                  <nav class="lang-switch" aria-label="Langue du site">
+      <span class="last-updated" title="Date de mise à jour">Mis à jour le: 2026-08-11</span>
+            <nav class="lang-switch" aria-label="Langue du site">
         <a href="10-le-negatif-le-plus-net.html" aria-current="true" lang="fr" hreflang="fr">FR</a>
         <a href="../en/10-the-cleanest-negative.html" lang="en" hreflang="en">EN</a>
       </nav>
@@ -45,36 +45,9 @@
       <header class="chapter-header">
         <p class="chapter-kicker">Chapitre 10</p>
         <h1>La piste apprise a été testée : elle non plus ne suffit pas — mais elle élimine deux explications</h1>
-        <p class="chapter-prereqs">
-          Prérequis :
-          <a href="01-c-est-quoi-jepa.html">Qu'est-ce que JEPA, et pourquoi apprendre à un programme à jouer à Minecraft avec ça ?</a>,
-          <a href="02-le-piege-du-collapse.html">Le raccourci que le modèle essaie toujours de trouver (et comment on l'en empêche)</a>,
-          <a href="03-le-modele-du-monde.html">Apprendre au modèle à imaginer la suite</a>,
-          <a href="04-planifier-en-imagination.html">Essayer 512 avenirs dans sa tête avant d'appuyer sur un bouton</a>,
-          <a href="05-le-vrai-minecraft.html">Le grand saut vers le vrai Minecraft : quatre échecs, puis un agent qui coupe des arbres</a>,
-          <a href="06-apprendre-a-fabriquer.html">Apprendre à fabriquer : la règle est comprise, le premier arbre reste hors de portée</a>,
-          <a href="07-la-curiosite-en-panne.html">La curiosité en panne, puis deux rustines qui marchent à moitié</a>,
-          <a href="08-le-mur-est-comportemental.html">Le mur est comportemental : une vraie première réussite, puis quatre preuves qu'affiner le signal ne suffit pas — et une cinquième qui confirme le diagnostic</a>
-          et
-          <a href="09-les-prochaines-pistes.html">Après les pistes A et C : la politique apprise a été promue, puis testée (suite au Chapitre 10)</a>
-        </p>
+        <p class="chapter-prereqs">Prérequis : Chapitres 1 à 9 — dont la politique apprise par clonage comportemental (Proposition B), promue priorité 1 au Chapitre 9.</p>
       </header>
 
-      <figure class="chapter-media">
-        <img
-          src="../assets/agent_play_craft_commit4_actor.gif"
-          width="64"
-          height="64"
-          alt="Vue à la première personne : l'agent regarde d'abord le ciel à travers la canopée d'une forêt et passe près d'un tronc d'arbre au sol sans le couper, puis s'enfonce dans un passage de terre et de pierre qui devient un couloir souterrain rocheux, avant de terminer contre une paroi de pierre avec un mince filet de ciel visible au-dessus.">
-        <figcaption>
-          Un des 8 épisodes réels de ce lot — pas un exemple choisi pour flatter le résultat :
-          comme aucun des 8 n'a réussi, il n'y a pas d'épisode « meilleur succès » à privilégier,
-          donc c'est le dernier épisode resté sur le disque qui sert d'illustration. L'agent part
-          d'une forêt, s'approche d'un tronc sans le couper, puis dérive vers un passage
-          souterrain de terre et de pierre. Le craft en lui-même resterait invisible dans cette
-          vue de toute façon (Chapitre 6) — ici, il n'y a même pas de bûche à montrer.
-        </figcaption>
-      </figure>
 
       <div class="tracks" data-tracks>
         <div class="track-tabs" role="tablist" aria-label="Niveau de lecture">
@@ -85,285 +58,177 @@
         <div class="track-panel is-active chapter-prose" data-track-panel="beginner" role="tabpanel" id="panel-beginner" aria-labelledby="tab-beginner">
           <p class="track-kicker">Piste débutant</p>
 
-          <h2>Là où on en était</h2>
-          <p>
-            Le Chapitre 9 se terminait sur une promotion : après que deux idées bon marché (des
-            gestes tout faits dans le menu, une manœuvre de croisière) aient échoué sans faire
-            avancer le score, la piste qui restait — entraîner une petite fonction qui
-            <em>apprend</em> les bons gestes plutôt que de les écrire à la main — devenait la
-            priorité numéro un. Ce chapitre raconte ce qui s'est passé quand cette piste a enfin
-            été construite et testée pour de vrai.
-          </p>
-
-          <h2>Ce qui a été construit</h2>
-          <p>
-            L'idée : au lieu de proposer au planificateur (Chapitre 4) des histoires tirées au
-            hasard, ou un petit menu figé de gestes écrits à la main (Chapitre 8), on entraîne
-            une fonction qui a <em>regardé</em> des milliers d'images des parties d'experts
-            (celles déjà utilisées ailleurs dans le projet) et des épisodes de couverture
-            aléatoire du Chapitre 7 (ceux qui montrent, eux, de vraies situations « perdu, en
-            train de chercher »). Cette fonction apprend à prédire : à partir de ce que l'agent
-            voit maintenant, quelle action un joueur choisirait probablement ensuite.
-          </p>
-          <p>
-            Point important, déjà annoncé au Chapitre 9 : cette fonction ne décide jamais de
-            l'action finale. Elle se contente de glisser ses meilleures suggestions dans le tas
-            de 512 histoires imaginées que le planificateur continue de juger et de corriger à
-            chaque tour — exactement le même principe que les méthodes de jeu très reconnues
-            évoquées au chapitre précédent (celles qui ont battu des champions humains aux échecs
-            et au Go) : une intuition apprise propose des coups, une recherche explicite les
-            vérifie.
-          </p>
-
-          <h2>Une vérification refusée : l'honnêteté du projet à l'œuvre</h2>
-          <p>
-            Avant de faire confiance à cette fonction, il fallait vérifier qu'elle n'avait pas
-            fait ce que ce projet redoute depuis le tout premier chapitre : s'effondrer sur une
-            seule réponse toujours identique, quelle que soit l'image montrée (le piège du
-            « collapse », Chapitre 2 — ici appliqué à une politique d'action plutôt qu'à une
-            représentation visuelle).
-          </p>
-          <p>
-            Deux versions ont été entraînées pour tester ça. La version prévue (parties
-            d'experts + épisodes de couverture mélangés) a passé le test : ses prédictions
-            restent variées, et elle devient nettement plus hésitante — elle propose un éventail
-            d'actions plus large — sur les images qui ressemblent à « perdu, en train de
-            chercher » que sur celles qui ressemblent à une scène d'expert bien en face d'un
-            arbre. Une deuxième version, entraînée uniquement sur les parties d'experts (sans les
-            épisodes de couverture), a en revanche <strong>échoué</strong> au test : elle avait
-            appris à presque toujours répondre « attaque », exactement la faiblesse que le
-            Chapitre 9 redoutait à l'avance. Le programme d'entraînement a <strong>refusé
-            d'enregistrer</strong> cette version défaillante — la même discipline que dans tout
-            le reste du projet : un outil qui échoue à son propre test n'est jamais gardé sous
-            prétexte qu'il a quand même tourné.
-          </p>
-
-          <h2>Le test en direct : toujours zéro</h2>
-          <p>
-            Sur 8 épisodes, avec cette fonction en place : <strong>0 bûche coupée, récompense
-            nulle.</strong> Comme pour les tentatives précédentes à cette taille d'échantillon,
-            ce chiffre seul ne prouve rien de définitif — mais il ne montre non plus aucun signe
-            positif à se raccrocher.
-          </p>
-
-          <h2>Ce que ce résultat élimine réellement</h2>
-          <p>
-            Le zéro en lui-même n'est pas la partie la plus intéressante. Deux choses précises
-            ont pu être vérifiées, et éliminées, grâce à ce test :
-          </p>
-          <ul>
-            <li>
-              <strong>Pas de verrouillage sur un seul geste.</strong> Contrairement au Chapitre
-              8, où l'agent se figeait sur une seule action jusqu'à 100% du temps dans plusieurs
-              épisodes, ici la répartition des actions reste variée sur les 8 épisodes (l'action
-              la plus fréquente occupe entre 16% et 54% du temps, jamais plus). La fonction
-              apprise fait bien ce pour quoi elle a été construite : proposer un menu de gestes
-              divers, pas un menu étroit sur lequel l'agent se fige.
-            </li>
-            <li>
-              <strong>Pas de point de départ impossible à gagner.</strong> Un nouvel outil de
-              diagnostic (annoncé comme plan au Chapitre 9, construit depuis) confirme que, dans
-              les 8 épisodes, quelque chose de pertinent était visiblement présent à un moment ou
-              un autre — largement au-dessus du seuil minimal calibré. Ce lot ne peut donc pas
-              être expliqué par « le point de départ rendait le succès impossible dès le début »,
-              contrairement à certains épisodes des chapitres précédents.
-            </li>
-          </ul>
-
-          <h2>Le nouveau suspect</h2>
-          <p>
-            Une source de propositions vraiment variée, entraînée correctement, testée sur des
-            points de départ confirmés jouables — et toujours zéro succès. C'est le résultat
-            négatif le plus net de toute cette enquête, pas juste un zéro de plus : la piste B
-            était la réponse la plus « logique » au diagnostic du Chapitre 8 (« le problème,
-            c'est la génération des gestes candidats »), et elle n'a pas fait bouger le résultat.
-          </p>
-          <p>
-            Ça pousse le diagnostic un cran plus loin, vers une nouvelle hypothèse — pas encore
-            confirmée, seulement posée : peut-être que le problème n'est pas la diversité des
-            gestes proposés, mais la façon dont le monde imaginé lui-même <strong>juge</strong>
-            ces propositions dans une situation qu'il connaît mal. Le modèle qui note les
-            histoires imaginées a surtout appris sur les parties d'experts, où un arbre est
-            presque toujours garanti dans le champ de vision. Face à un vrai point de départ
-            aléatoire — sans cette garantie, avec un angle de caméra quelconque — peut-être qu'il
-            évalue mal même de bonnes propositions, un peu comme un joueur d'échecs entraîné
-            presque uniquement sur des ouvertures classiques qui se retrouve à mal juger une
-            position rare et inhabituelle, même si sa façon de réfléchir reste, par ailleurs,
-            saine.
-          </p>
-
-          <h2>La suite</h2>
-          <p>
-            Avant de dépenser davantage de temps d'entraînement sur une nouvelle réparation, la
-            prochaine étape est plus simple : regarder attentivement les images enregistrées de
-            ces 8 épisodes — voir concrètement ce que l'agent fait sur un point de départ
-            confirmé jouable qui échoue quand même à se transformer en bûche coupée. Un regard
-            qualitatif avant un nouveau chantier coûteux, exactement la même discipline que le
-            reste du projet.
-          </p>
+<h2>Là où on en était</h2>
+<p>Le Chapitre 9 se terminait sur une promotion : après que deux idées bon marché (des gestes tout</p>
+<p>faits dans le menu, une manœuvre de croisière) aient échoué sans faire avancer le score, la piste</p>
+<p>qui restait — entraîner une petite fonction qui <em>apprend</em> les bons gestes plutôt que de les écrire</p>
+<p>à la main — devenait la priorité numéro un. Ce chapitre raconte ce qui s&#x27;est passé quand cette</p>
+<p>piste a enfin été construite et testée pour de vrai.</p>
+<h2>Ce qui a été construit</h2>
+<p>L&#x27;idée : au lieu de proposer au planificateur (Chapitre 4) des histoires tirées au hasard, ou un</p>
+<p>petit menu figé de gestes écrits à la main (Chapitre 8), on entraîne une fonction qui a <em>regardé</em></p>
+<p>des milliers d&#x27;images des parties d&#x27;experts (celles déjà utilisées ailleurs dans le projet) et des</p>
+<p>épisodes de couverture aléatoire du Chapitre 7 (ceux qui montrent, eux, de vraies situations</p>
+<p>« perdu, en train de chercher »). Cette fonction apprend à prédire : à partir de ce que l&#x27;agent voit</p>
+<p>maintenant, quelle action un joueur choisirait probablement ensuite.</p>
+<p>Point important, déjà annoncé au Chapitre 9 : cette fonction ne décide jamais de l&#x27;action finale.</p>
+<p>Elle se contente de glisser ses meilleures suggestions dans le tas de 512 histoires imaginées que</p>
+<p>le planificateur continue de juger et de corriger à chaque tour — exactement le même principe que</p>
+<p>les méthodes de jeu très reconnues évoquées au chapitre précédent (celles qui ont battu des</p>
+<p>champions humains aux échecs et au Go) : une intuition apprise propose des coups, une recherche</p>
+<p>explicite les vérifie.</p>
+<h2>Une vérification refusée : l&#x27;honnêteté du projet à l&#x27;œuvre</h2>
+<p>Avant de faire confiance à cette fonction, il fallait vérifier qu&#x27;elle n&#x27;avait pas fait ce que ce</p>
+<p>projet redoute depuis le tout premier chapitre : s&#x27;effondrer sur une seule réponse toujours</p>
+<p>identique, quelle que soit l&#x27;image montrée (le piège du « collapse », Chapitre 2 — ici appliqué à</p>
+<p>une politique d&#x27;action plutôt qu&#x27;à une représentation visuelle).</p>
+<p>Deux versions ont été entraînées pour tester ça. La version prévue (parties d&#x27;experts + épisodes de</p>
+<p>couverture mélangés) a passé le test : ses prédictions restent variées, et elle devient nettement</p>
+<p>plus hésitante — elle propose un éventail d&#x27;actions plus large — sur les images qui ressemblent à</p>
+<p>« perdu, en train de chercher » que sur celles qui ressemblent à une scène d&#x27;expert bien en face</p>
+<p>d&#x27;un arbre. Une deuxième version, entraînée uniquement sur les parties d&#x27;experts (sans les épisodes</p>
+<p>de couverture), a en revanche <strong>échoué</strong> au test : elle avait appris à presque toujours répondre</p>
+<p>« attaque », exactement la faiblesse que le Chapitre 9 redoutait à l&#x27;avance. Le programme</p>
+<p>d&#x27;entraînement a <strong>refusé d&#x27;enregistrer</strong> cette version défaillante — la même discipline que dans</p>
+<p>tout le reste du projet : un outil qui échoue à son propre test n&#x27;est jamais gardé sous prétexte</p>
+<p>qu&#x27;il a quand même tourné.</p>
+<h2>Le test en direct : toujours zéro</h2>
+<p>Sur 8 épisodes, avec cette fonction en place : <strong>0 bûche coupée, récompense nulle.</strong> Comme pour les</p>
+<p>tentatives précédentes à cette taille d&#x27;échantillon, ce chiffre seul ne prouve rien de définitif —</p>
+<p>mais il ne montre non plus aucun signe positif à se raccrocher.</p>
+<h2>Ce que ce résultat élimine réellement</h2>
+<p>Le zéro en lui-même n&#x27;est pas la partie la plus intéressante. Deux choses précises ont pu être</p>
+<p>vérifiées, et éliminées, grâce à ce test :</p>
+<ul>
+<li><strong>Pas de verrouillage sur un seul geste.</strong> Contrairement au Chapitre 8, où l&#x27;agent se figeait sur</li>
+</ul>
+<p>une seule action jusqu&#x27;à 100% du temps dans plusieurs épisodes, ici la répartition des actions</p>
+<p>reste variée sur les 8 épisodes (l&#x27;action la plus fréquente occupe entre 16% et 54% du temps,</p>
+<p>jamais plus). La fonction apprise fait bien ce pour quoi elle a été construite : proposer un menu</p>
+<p>de gestes divers, pas un menu étroit sur lequel l&#x27;agent se fige.</p>
+<ul>
+<li><strong>Pas de point de départ impossible à gagner.</strong> Un nouvel outil de diagnostic (annoncé comme</li>
+</ul>
+<p>plan au Chapitre 9, construit depuis) confirme que, dans les 8 épisodes, quelque chose de</p>
+<p>pertinent était visiblement présent à un moment ou un autre — largement au-dessus du seuil</p>
+<p>minimal calibré. Ce lot ne peut donc pas être expliqué par « le point de départ rendait le</p>
+<p>succès impossible dès le début », contrairement à certains épisodes des chapitres précédents.</p>
+<h2>Le nouveau suspect</h2>
+<p>Une source de propositions vraiment variée, entraînée correctement, testée sur des points de</p>
+<p>départ confirmés jouables — et toujours zéro succès. C&#x27;est le résultat négatif le plus net de</p>
+<p>toute cette enquête, pas juste un zéro de plus : la piste B était la réponse la plus « logique » au</p>
+<p>diagnostic du Chapitre 8 (« le problème, c&#x27;est la génération des gestes candidats »), et elle n&#x27;a</p>
+<p>pas fait bouger le résultat.</p>
+<p>Ça pousse le diagnostic un cran plus loin, vers une nouvelle hypothèse — pas encore confirmée,</p>
+<p>seulement posée : peut-être que le problème n&#x27;est pas la diversité des gestes proposés, mais la</p>
+<p>façon dont le monde imaginé lui-même <strong>juge</strong> ces propositions dans une situation qu&#x27;il connaît</p>
+<p>mal. Le modèle qui note les histoires imaginées a surtout appris sur les parties d&#x27;experts, où un</p>
+<p>arbre est presque toujours garanti dans le champ de vision. Face à un vrai point de départ</p>
+<p>aléatoire — sans cette garantie, avec un angle de caméra quelconque — peut-être qu&#x27;il évalue mal</p>
+<p>même de bonnes propositions, un peu comme un joueur d&#x27;échecs entraîné presque uniquement sur des</p>
+<p>ouvertures classiques qui se retrouve à mal juger une position rare et inhabituelle, même si sa</p>
+<p>façon de réfléchir reste, par ailleurs, saine.</p>
+<h2>La suite</h2>
+<p>Avant de dépenser davantage de temps d&#x27;entraînement sur une nouvelle réparation, la prochaine étape</p>
+<p>est plus simple : regarder attentivement les images enregistrées de ces 8 épisodes — voir</p>
+<p>concrètement ce que l&#x27;agent fait sur un point de départ confirmé jouable qui échoue quand même à se</p>
+<p>transformer en bûche coupée. Un regard qualitatif avant un nouveau chantier coûteux, exactement la</p>
+<p>même discipline que le reste du projet.</p>
         </div>
 
         <div class="track-panel chapter-prose" data-track-panel="expert" role="tabpanel" id="panel-expert" aria-labelledby="tab-expert">
           <p class="track-kicker">Piste expert</p>
 
-          <h2>Contexte</h2>
-          <p>
-            Le Chapitre 9 a promu la Proposition B (a priori de politique latente entraîné par
-            clonage comportemental) au rang de priorité 1, après que les Propositions A+C
-            (Chapitre 8, attempt #8) aient confirmé sans résoudre le diagnostic « mur
-            comportemental ». Ce chapitre couvre l'attempt #9 de <code>CLAUDE.md</code> (Phase
-            5+) : Proposition B construite, vérifiée, et évaluée en direct.
-          </p>
-
-          <h2>Ce qui a été construit</h2>
-          <p>
-            <code>mine_jepa/ebwm/actor.py::BCActor</code> : un petit MLP classifieur sur les
-            latents figés de <code>ebwm.pt</code>, entraîné par
-            <code>scripts/train_actor_bc.py</code> avec un gate anti-collapse obligatoire (refuse
-            l'enregistrement en cas d'effondrement). Entraînement sur les démos Treechop + les
-            épisodes de couverture de l'attempt #3, pour mélanger du comportement de recherche
-            authentique aux démonstrations d'experts (le piège identifié au Chapitre 9 : un actor
-            entraîné uniquement sur Treechop apprendrait « toujours attaquer l'arbre visible »).
-          </p>
-          <p>
-            Câblage dans <code>_sample_actions()</code> via <code>planner.actor_prior</code>
-            (config-gated), vérifié bit-for-bit identique à l'ancien échantillonneur quand
-            désactivé — <strong>confirmé par un run réel à seed fixe, pas seulement affirmé par
-            analogie</strong> avec les autres changements config-gated du projet. Une
-            vérification d'atteignabilité indépendante montre que les candidats de l'actor
-            gagnent effectivement l'argmax du planificateur sur 6 tirages sur 40 (contre un taux
-            de base de 25% à tirage uniforme) — présent dans le flux exécuté, pas du code mort
-            silencieux, sans pour autant dominer.
-          </p>
-
-          <h2>Le gate anti-collapse : discriminant, avec un vrai échec refusé</h2>
-          <ul>
-            <li>
-              <strong>Actor avec couverture</strong> (celui utilisé pour l'évaluation) :
-              <code>val_acc</code> 0,483, entropie moyenne 1,296 nats (sur un maximum de 2,833
-              nats) → <strong>PASS</strong>.
-            </li>
-            <li>
-              <strong>Ablation Treechop-seul</strong> : <code>val_acc</code> 0,587, entropie
-              1,102, <code>top_action_frac</code> 0,964 → <strong>FAIL, checkpoint correctement
-              refusé</strong>.
-            </li>
-          </ul>
-          <p>
-            Ce contraste confirme que les données de couverture étaient réellement porteuses pour
-            le gate, pas décoratives : sans elles, l'actor se serait effondré vers une politique
-            dégénérée (dominée à 96,4% par une seule action).
-          </p>
-
-          <h2>Résultat en direct</h2>
-          <p>
-            N=8, seed 0, <code>configs/play_craft_commit4_actor.yaml</code>, notation
-            goal-centroid uniquement (aucun signal de distance non plat disponible à ce stade —
-            voir plus bas). <strong>0/8 bûches, récompense nulle.</strong> Fisher exact
-            unilatéral contre le taux de base pooled <code>commit_length=4</code> seul (3/31 ≈
-            9,7%) : <strong>p ≈ 0,21</strong> — non significatif à ce N.
-          </p>
-
-          <h2>Ce que ce résultat élimine, précisément</h2>
-          <ol>
-            <li>
-              <strong>Pas de verrouillage.</strong> Concentration d'action sur les 8 épisodes :
-              pic entre 16% et 54%, dans toute la plage — rien qui approche le 83-100% de
-              verrouillage quasi total observé à l'attempt #8 sur trois épisodes sur huit. Le
-              mécanisme actor-prior fait ce pour quoi il a été conçu : proposer un menu de
-              candidats varié et non dégénéré.
-            </li>
-            <li>
-              <strong>Pas de spawn invivable.</strong> Le diagnostic de viabilité du spawn
-              (construit en suivi de l'attempt #8, <code>spawn_diag</code> dans
-              <code>scripts/play_craft.py</code>) confirme que les 8 spawns étaient mesurablement
-              viables : <code>max_chop_std</code> entre 0,017 et 0,047, confortablement
-              au-dessus du seuil calibré de 0,005. Ce lot ne peut donc pas être expliqué par
-              « le point de départ rendait tout succès impossible », contrairement à certains
-              épisodes antérieurs.
-            </li>
-          </ol>
-
-          <h2>Diagnostic affiné : un nouveau suspect, pas encore confirmé</h2>
-          <p>
-            <strong>C'est le résultat négatif le plus net de la campagne, pas un zéro de
-            plus.</strong> Une source de propositions authentiquement diverse, non effondrée,
-            entraînée sur des démonstrations d'experts et de la recherche authentique, testée sur
-            des spawns démontrablement viables — et toujours zéro succès. La Proposition B était
-            la réponse « correcte » au diagnostic du Chapitre 8 (« le mur est comportemental,
-            réparer la génération d'action ») et elle n'a pas fait bouger le résultat.
-          </p>
-          <p>
-            Ceci pousse le diagnostic standing un cran plus loin : le goulot d'étranglement n'est
-            peut-être pas la <em>diversité</em> de ce qui est proposé, mais
-            <strong>l'évaluation</strong> par le monde imaginé de ces propositions sous la
-            distribution visuelle de cold-start de <code>MineRLObtainIronPickaxeDense-v0</code>
-            (spawn aléatoire, pose de caméra arbitraire, aucune garantie de forêt) — une
-            distribution sur laquelle <code>ebwm.pt</code> n'a jamais été entraîné à noter
-            correctement, contrairement à celle, garantie-forêt, de Treechop. <strong>Pas encore
-            testé directement ; signalé comme hypothèse suivante, pas encore comme fait
-            établi.</strong>
-          </p>
-
-          <h2>Rappel : deux pistes complémentaires du Chapitre 9 déjà closes avant ce test</h2>
-          <ul>
-            <li>
-              <strong>Réparation photométrique de la métrique de distance entraînée (attempt
-              #7)</strong> : implémentée (<code>augmentation.color_jitter</code> dans
-              <code>scripts/train_value_projector.py</code>). Le gate offline de séparation
-              tient toujours (8,7× contre 7,9× à l'attempt #7). Mais la cible réelle — la
-              confusion avec la luminosité — <strong>empire au lieu de s'améliorer</strong> sur
-              une mesure isolée plus propre : corrélation <code>r=0,117</code> (attempt #7, sans
-              augmentation) → <code>r=0,498</code> (avec augmentation). <strong>NO-GO — la
-              confusion est vraisemblablement ancrée dans l'espace latent figé de
-              <code>ebwm.pt</code> lui-même</strong> (Treechop, majoritairement diurne), pas
-              introduite par l'entraînement du projecteur ; perturber seulement les entrées du
-              projecteur ne peut pas défaire un raccourci que l'encodeur amont a déjà pris.
-              <code>checkpoints/value_projector_colorjitter.pt</code> gardé pour comparaison,
-              <strong>non utilisé</strong> dans l'évaluation ci-dessus — d'où la notation
-              goal-centroid seule pour l'attempt #9.
-            </li>
-            <li>
-              <strong>Diagnostic de viabilité du spawn</strong> : construit et déjà utilisé
-              ci-dessus (voir « ce que ce résultat élimine »), pas seulement planifié.
-            </li>
-          </ul>
-
-          <h2>Prochaine étape</h2>
-          <p>
-            Avant tout nouveau chantier d'entraînement : inspection qualitative du GIF
-            (<code>assets/agent_play_craft_commit4_actor.gif</code>) et des vignettes de spawn
-            (<code>assets/spawn_thumbs/</code>) — comprendre visuellement ce que l'agent fait sur
-            un spawn confirmé viable qui ne se convertit toujours pas en coupe, avant de décider
-            quel correctif tester ensuite.
-          </p>
+<h2>Contexte</h2>
+<p>Le Chapitre 9 a promu la Proposition B (a priori de politique latente entraîné par clonage</p>
+<p>comportemental) au rang de priorité 1, après que les Propositions A+C (Chapitre 8, attempt #8)</p>
+<p>aient confirmé sans résoudre le diagnostic « mur comportemental ». Ce chapitre couvre l&#x27;attempt #9</p>
+<p>de <code>CLAUDE.md</code> (Phase 5+) : Proposition B construite, vérifiée, et évaluée en direct.</p>
+<h2>Ce qui a été construit</h2>
+<p><code>mine_jepa/ebwm/actor.py::BCActor</code> : un petit MLP classifieur sur les latents figés de <code>ebwm.pt</code>,</p>
+<p>entraîné par <code>scripts/train<em>actor</em>bc.py</code> avec un gate anti-collapse obligatoire (refuse</p>
+<p>l&#x27;enregistrement en cas d&#x27;effondrement). Entraînement sur les démos Treechop + les épisodes de</p>
+<p>couverture de l&#x27;attempt #3, pour mélanger du comportement de recherche authentique aux démonstrations</p>
+<p>d&#x27;experts (le piège identifié au Chapitre 9 : un actor entraîné uniquement sur Treechop apprendrait</p>
+<p>« toujours attaquer l&#x27;arbre visible »).</p>
+<p>Câblage dans <code><em>sample</em>actions()</code> via <code>planner.actor_prior</code> (config-gated), vérifié bit-for-bit</p>
+<p>identique à l&#x27;ancien échantillonneur quand désactivé — <em></em>confirmé par un run réel à seed fixe, pas</p>
+<p>seulement affirmé par analogie<em></em> avec les autres changements config-gated du projet. Une</p>
+<p>vérification d&#x27;atteignabilité indépendante montre que les candidats de l&#x27;actor gagnent</p>
+<p>effectivement l&#x27;argmax du planificateur sur 6 tirages sur 40 (contre un taux de base de 25% à</p>
+<p>tirage uniforme) — présent dans le flux exécuté, pas du code mort silencieux, sans pour autant</p>
+<p>dominer.</p>
+<h2>Le gate anti-collapse : discriminant, avec un vrai échec refusé</h2>
+<ul>
+<li><strong>Actor avec couverture</strong> (celui utilisé pour l&#x27;évaluation) : <code>val_acc</code> 0,483, entropie moyenne</li>
+</ul>
+<p>1,296 nats (sur un maximum de 2,833 nats) → <strong>PASS</strong>.</p>
+<ul>
+<li><strong>Ablation Treechop-seul</strong> : <code>val<em>acc</code> 0,587, entropie 1,102, <code>top</em>action_frac</code> 0,964 → <em></em>FAIL,</li>
+</ul>
+<p>checkpoint correctement refusé<em></em>.</p>
+<p>Ce contraste confirme que les données de couverture étaient réellement porteuses pour le gate, pas</p>
+<p>décoratives : sans elles, l&#x27;actor se serait effondré vers une politique dégénérée (dominée à 96,4%</p>
+<p>par une seule action).</p>
+<h2>Résultat en direct</h2>
+<p>N=8, seed 0, <code>configs/play<em>craft</em>commit4_actor.yaml</code>, notation goal-centroid uniquement (aucun</p>
+<p>signal de distance non plat disponible à ce stade — voir plus bas). <strong>0/8 bûches, récompense nulle.</strong></p>
+<p>Fisher exact unilatéral contre le taux de base pooled <code>commit_length=4</code> seul (3/31 ≈ 9,7%) : <em></em>p ≈</p>
+<p>0,21<em></em> — non significatif à ce N.</p>
+<h2>Ce que ce résultat élimine, précisément</h2>
+<ol>
+<li><strong>Pas de verrouillage.</strong> Concentration d&#x27;action sur les 8 épisodes : pic entre 16% et 54%, dans</li>
+</ol>
+<p>toute la plage — rien qui approche le 83-100% de verrouillage quasi total observé à l&#x27;attempt #8</p>
+<p>sur trois épisodes sur huit. Le mécanisme actor-prior fait ce pour quoi il a été conçu : proposer</p>
+<p>un menu de candidats varié et non dégénéré.</p>
+<ol>
+<li><strong>Pas de spawn invivable.</strong> Le diagnostic de viabilité du spawn (construit en suivi de l&#x27;attempt</li>
+</ol>
+<p>#8, <code>spawn<em>diag</code> dans <code>scripts/play</em>craft.py</code>) confirme que les 8 spawns étaient mesurablement</p>
+<p>viables : <code>max<em>chop</em>std</code> entre 0,017 et 0,047, confortablement au-dessus du seuil calibré de</p>
+<p>0,005. Ce lot ne peut donc pas être expliqué par « le point de départ rendait tout succès</p>
+<p>impossible », contrairement à certains épisodes antérieurs.</p>
+<h2>Diagnostic affiné : un nouveau suspect, pas encore confirmé</h2>
+<p><strong>C&#x27;est le résultat négatif le plus net de la campagne, pas un zéro de plus.</strong> Une source de</p>
+<p>propositions authentiquement diverse, non effondrée, entraînée sur des démonstrations d&#x27;experts et</p>
+<p>de la recherche authentique, testée sur des spawns démontrablement viables — et toujours zéro</p>
+<p>succès. La Proposition B était la réponse « correcte » au diagnostic du Chapitre 8 (« le mur est</p>
+<p>comportemental, réparer la génération d&#x27;action ») et elle n&#x27;a pas fait bouger le résultat.</p>
+<p>Ceci pousse le diagnostic standing un cran plus loin : le goulot d&#x27;étranglement n&#x27;est peut-être pas</p>
+<p>la <em>diversité</em> de ce qui est proposé, mais <strong>l&#x27;évaluation</strong> par le monde imaginé de ces propositions</p>
+<p>sous la distribution visuelle de cold-start de <code>MineRLObtainIronPickaxeDense-v0</code> (spawn aléatoire,</p>
+<p>pose de caméra arbitraire, aucune garantie de forêt) — une distribution sur laquelle <code>ebwm.pt</code> n&#x27;a</p>
+<p>jamais été entraîné à noter correctement, contrairement à celle, garantie-forêt, de Treechop. <em></em>Pas</p>
+<p>encore testé directement ; signalé comme hypothèse suivante, pas encore comme fait établi.<em></em></p>
+<h2>Rappel : deux pistes complémentaires du Chapitre 9 déjà closes avant ce test</h2>
+<ul>
+<li><strong>Réparation photométrique de la métrique de distance entraînée (attempt #7)</strong> : implémentée</li>
+</ul>
+<p>(<code>augmentation.color<em>jitter</code> dans <code>scripts/train</em>value_projector.py</code>). Le gate offline de</p>
+<p>séparation tient toujours (8,7× contre 7,9× à l&#x27;attempt #7). Mais la cible réelle — la confusion</p>
+<p>avec la luminosité — <strong>empire au lieu de s&#x27;améliorer</strong> sur une mesure isolée plus propre :</p>
+<p>corrélation <code>r=0,117</code> (attempt #7, sans augmentation) → <code>r=0,498</code> (avec augmentation).</p>
+<p><em></em>NO-GO — la confusion est vraisemblablement ancrée dans l&#x27;espace latent figé de <code>ebwm.pt</code></p>
+<p>lui-même<em></em> (Treechop, majoritairement diurne), pas introduite par l&#x27;entraînement du projecteur ;</p>
+<p>perturber seulement les entrées du projecteur ne peut pas défaire un raccourci que l&#x27;encodeur</p>
+<p>amont a déjà pris. <code>checkpoints/value<em>projector</em>colorjitter.pt</code> gardé pour comparaison, <em></em>non</p>
+<p>utilisé<em></em> dans l&#x27;évaluation ci-dessus — d&#x27;où la notation goal-centroid seule pour l&#x27;attempt #9.</p>
+<ul>
+<li><strong>Diagnostic de viabilité du spawn</strong> : construit et déjà utilisé ci-dessus (voir « ce que ce</li>
+</ul>
+<p>résultat élimine »), pas seulement planifié.</p>
+<h2>Prochaine étape</h2>
+<p>Avant tout nouveau chantier d&#x27;entraînement : inspection qualitative du GIF</p>
+<p>(<code>assets/agent<em>play</em>craft<em>commit4</em>actor.gif</code>) et des vignettes de spawn</p>
+<p>(<code>assets/spawn_thumbs/</code>) — comprendre visuellement ce que l&#x27;agent fait sur un spawn confirmé</p>
+<p>viable qui ne se convertit toujours pas en coupe, avant de décider quel correctif tester ensuite.</p>
         </div>
       </div>
 
-      <div class="achievement" role="note" aria-label="Résultat de ce chapitre">
-        <span class="achievement-icon" aria-hidden="true">&#127942;</span>
-        <div>
-          <p class="achievement-title">Achievement : le négatif le plus net de la campagne — deux explications de plus éliminées</p>
-          <p>
-            Une source de gestes candidats entraînée, mesurablement variée et non effondrée,
-            testée sur 8 points de départ confirmés jouables — et toujours 0 bûche, récompense
-            nulle. Le zéro ne prouve rien à lui seul, mais ce lot élimine concrètement deux
-            explications concurrentes (le verrouillage comportemental du Chapitre 8, un spawn
-            invivable) et déplace le diagnostic vers une nouvelle hypothèse, pas encore
-            confirmée : peut-être que le monde imaginé lui-même juge mal des situations qu'il a
-            rarement vues à l'entraînement.
-          </p>
-        </div>
-      </div>
 
     </div>
   </article>
-
-  <nav class="chapter-nav" aria-label="Navigation entre chapitres">
-    <div class="wrap chapter-nav-inner">
-      <a class="chapter-nav-link" href="index.html">&larr; Retour au parcours</a>
-    </div>
-  </nav>
 
 </main>
 

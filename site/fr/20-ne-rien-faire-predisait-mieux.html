@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ne rien faire prédisait mieux : vingt tentatives à réparer le pilote, quand le problème était le moteur — Mine-JEPA</title>
+<meta name="description" content="Chapitre 20 du parcours Mine-JEPA : Ne rien faire prédisait mieux : vingt tentatives à réparer le pilote, quand le problème était le moteur.">
+<link rel="stylesheet" href="../style.css">
+<script>document.documentElement.classList.add("js");</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Aller au contenu</a>
+
+<header class="site-header">
+  <div class="wrap site-header-inner">
+    <a class="site-brand" href="index.html"><span class="brand-mark" aria-hidden="true">&#9935;</span> Mine-JEPA</a>
+    <div class="header-controls">
+      <span class="last-updated" title="Date de mise à jour">Mis à jour le: 2026-08-11</span>
+            <nav class="lang-switch" aria-label="Langue du site">
+        <a href="20-ne-rien-faire-predisait-mieux.html" aria-current="true" lang="fr" hreflang="fr">FR</a>
+        <a href="../en/20-doing-nothing-predicted-better.html" lang="en" hreflang="en">EN</a>
+      </nav>
+      <div class="track-pref" data-track-pref>
+        <span class="track-pref-label" id="track-pref-label">Afficher :</span>
+        <button type="button" data-track-pref-value="beginner" aria-pressed="true" aria-describedby="track-pref-label">Débutant</button>
+        <button type="button" data-track-pref-value="expert" aria-pressed="false" aria-describedby="track-pref-label">Expert</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <nav class="breadcrumb" aria-label="Fil d'Ariane">
+    <div class="wrap">
+      <a href="index.html">Parcours d'apprentissage</a>
+      <span aria-hidden="true">/</span>
+      <span>Chapitre 20</span>
+    </div>
+  </nav>
+
+  <article class="chapter">
+    <div class="wrap">
+
+      <header class="chapter-header">
+        <p class="chapter-kicker">Chapitre 20</p>
+        <h1>Ne rien faire prédisait mieux : vingt tentatives à réparer le pilote, quand le problème était le moteur</h1>
+        <p class="chapter-prereqs">Prérequis : Chapitres 1 à 19.</p>
+      </header>
+
+
+      <div class="tracks" data-tracks>
+        <div class="track-tabs" role="tablist" aria-label="Niveau de lecture">
+          <button class="track-tab" role="tab" id="tab-beginner" aria-controls="panel-beginner" aria-selected="true" data-track-tab="beginner">Débutant</button>
+          <button class="track-tab" role="tab" id="tab-expert" aria-controls="panel-expert" aria-selected="false" tabindex="-1" data-track-tab="expert">Expert</button>
+        </div>
+
+        <div class="track-panel is-active chapter-prose" data-track-panel="beginner" role="tabpanel" id="panel-beginner" aria-labelledby="tab-beginner">
+          <p class="track-kicker">Piste débutant</p>
+
+<h2>Là où on s&#x27;était arrêtés</h2>
+<p>Le Chapitre 19 s&#x27;est achevé sur une pause choisie. Deux tentatives de réentraîner le cœur du modèle principal avaient toutes deux échoué, chacune pour une raison bien comprise plutôt que devinée. Dix-neuf tentatives au total, et le meilleur résultat obtenu sur l&#x27;ensemble de la campagne restait sous la barre des 10 % — un succès sur dix essais, au mieux.</p>
+<p>Ce chapitre est le dernier de la campagne. Il contient sa découverte la plus importante, et cette découverte est venue d&#x27;une direction inattendue : non pas d&#x27;une nouvelle idée sur la façon de mieux chercher, mais d&#x27;une question que personne n&#x27;avait encore pensée à poser.</p>
+<h2>Un article scientifique sur notre propre architecture</h2>
+<p>Une relecture de routine des publications scientifiques récentes a permis de découvrir un article étudiant presque exactement la même configuration que ce projet : la même famille de modèle du monde, planifiant dans Minecraft, en boucle fermée. L&#x27;article décrivait un mode de défaillance portant un nom précis : l&#x27;<strong>effondrement de contexte</strong> (<em>context collapse</em>).</p>
+<p>L&#x27;idée est troublante dès qu&#x27;on la saisit. Un modèle du monde peut être très doué pour prédire à quoi ressemblera l&#x27;instant suivant — et pourtant produire <em>presque la même prédiction, peu importe ce que l&#x27;agent décide de faire</em>. Dans cet état, toutes les mesures habituelles semblent saines. Le modèle prédit bien. Rien ne paraît cassé. Mais un planificateur construit par-dessus est aveugle, car planifier consiste entièrement à comparer « que se passe-t-il si je fais ceci ? » avec « que se passe-t-il si je fais cela ? ». Si ces deux futurs imaginés sont presque identiques, il n&#x27;y a rien à comparer, et le choix se fait au hasard du bruit.</p>
+<p>Dix-neuf tentatives avaient été consacrées à améliorer la façon dont l&#x27;agent cherche, la façon dont il évalue ce qu&#x27;il voit, la durée pendant laquelle il s&#x27;en tient à un plan. <strong>Aucune n&#x27;avait jamais vérifié si le modèle du monde réagissait seulement aux actions de l&#x27;agent.</strong></p>
+<h2>La mesure</h2>
+<p>Le test est simple à décrire. Prenez un moment réel d&#x27;une partie enregistrée. À partir de cette seule image, demandez au modèle d&#x27;imaginer douze pas dans le futur à deux reprises : une fois en utilisant les actions réellement effectuées par le joueur, et une fois en faisant comme si le joueur n&#x27;avait absolument rien fait. Ensuite, comparez ces deux futurs imaginés avec ce qui s&#x27;est réellement passé.</p>
+<p>Si le modèle comprend les actions, la version utilisant les vraies actions devrait être plus proche de la réalité. C&#x27;est tout l&#x27;intérêt d&#x27;un modèle du monde.</p>
+<p>Voici le résultat, mesuré sur 400 moments dans chacun de trois environnements différents :</p>
+<p><strong>Utiliser les vraies actions prédit le futur légèrement <em>moins bien</em> que de faire comme si l&#x27;agent n&#x27;avait rien fait.</strong></p>
+<p>Pas à égalité. Moins bien — et de manière fiable, pas par hasard. Dans l&#x27;environnement de fabrication (<em>crafting</em>), la vraie action ne bat l&#x27;option « ne rien faire » que dans 13 % des moments testés. Le simple hasard donnerait 50 %.</p>
+<h2>Ce qui est cassé, précisément</h2>
+<p>Il serait facile d&#x27;en conclure que le modèle ignore simplement les actions. Ce n&#x27;est pas le cas, et la nuance est capitale.</p>
+<p>Une seconde mesure l&#x27;a vérifié directement : à partir d&#x27;une image, on demande au modèle d&#x27;imaginer l&#x27;instant suivant pour chacune des dix-sept actions possibles, puis on mesure à quel point ces dix-sept imaginaires diffèrent les uns des autres. Ils sont bel et bien différents. La mécanique interne qui représente les actions fonctionne et est bien formée. Le modèle réagit.</p>
+<p>Mais cette réaction n&#x27;explique qu&#x27;environ 4 % de ce qui change réellement entre deux moments consécutifs du jeu — et elle pousse dans une direction qui ne correspond pas à la réalité. Le modèle a appris à réagir aux actions ; il n&#x27;a pas appris à réagir <em>correctement</em>.</p>
+<p>Une analogie : imaginez une voiture dont le volant est bien connecté — tournez-le et la voiture change de direction — mais câblé de telle sorte que son mouvement n&#x27;a presque aucun rapport avec le tracé de la route. Le volant n&#x27;est pas cassé. Il fait tourner la voiture. Il ne vous aide simplement pas à conduire.</p>
+<h2>Un détail qui rend l&#x27;histoire cohérente</h2>
+<p>Un chiffre n&#x27;avait pas été anticipé, et c&#x27;est la partie la plus convaincante du résultat.</p>
+<p>Les trois environnements testés diffèrent par la quantité de mouvement qu&#x27;ils contiennent. Les enregistrements de fabrication sont principalement statiques — beaucoup d&#x27;immobilité, de menus, de petits gestes. Les enregistrements de coupe d&#x27;arbres sont les plus animés. Classés du plus statique au plus dynamique, le taux d&#x27;échec du modèle suit exactement le même ordre : plus la séquence est statique, plus l&#x27;option « ne rien faire » gagne souvent.</p>
+<p>C&#x27;est exactement ce à quoi on s&#x27;attend si le problème est bien celui décrit. Quand très peu de choses bougent, « supposer que rien ne change » est déjà une excellente prédiction, et toute modification guidée par les actions qui est ne serait-ce que légèrement mal ajustée fait plus de mal que de bien. Personne n&#x27;avait conçu le test pour produire ce schéma ; il a émergé naturellement des données. Quand un résultat prédit une régularité qu&#x27;on ne cherchait pas, c&#x27;est généralement le signe qu&#x27;il est réel.</p>
+<h2>La complication honnête</h2>
+<p>Il y a une tension dans cette découverte, et elle ne sera pas dissimulée.</p>
+<p>L&#x27;agent réussit à couper des arbres 25 à 50 % du temps dans l&#x27;environnement simple de coupe d&#x27;arbres (Chapitre 5) — <strong>alors même que ce défaut exact est présent</strong>. Si un modèle du monde qui comprend mal les actions rendait toute planification impossible, rien n&#x27;aurait jamais dû fonctionner. Or, quelque chose a fonctionné.</p>
+<p>Cette découverte ne peut donc pas, à elle seule, constituer l&#x27;explication complète de l&#x27;échec de l&#x27;agent lors d&#x27;un départ à froid. Tout récit s&#x27;appuyant sur elle doit aussi expliquer les succès obtenus, et ce chapitre n&#x27;en fournit pas la clé. Ce ne serait qu&#x27;une hypothèse, et ce site a passé dix-neuf chapitres à distinguer les hypothèses des mesures vérifiées.</p>
+<p>Ce que cette découverte explique, en revanche, c&#x27;est pourquoi dix-neuf tentatives pour améliorer le <em>planificateur</em> ont si peu changé les choses. Elles affinaient toutes la façon de choisir entre des options que le modèle était incapable de différencier de manière signifiante.</p>
+<p>Cela donne également tout son sens au seul vrai succès de la campagne. Le seul changement qui ait produit un résultat non nul (Chapitre 8) consistait à forcer l&#x27;agent à s&#x27;en tenir à son plan plus longtemps au lieu de réévaluer ses choix à chaque instant. Si l&#x27;information disponible à chaque instant est principalement du bruit, décider moins souvent et s&#x27;engager davantage est exactement la bonne réaction. Le projet l&#x27;avait découvert par essais et erreurs, sans savoir pourquoi cela aidait.</p>
+<h2>Pourquoi la campagne s&#x27;arrête ici</h2>
+<p>Après cette mesure, la décision a été prise de clore la campagne de départ à froid plutôt que de lancer une vingtième tentative.</p>
+<p>La raison n&#x27;est pas l&#x27;épuisement. C&#x27;est que la seule option restante relève d&#x27;un travail d&#x27;une autre nature. L&#x27;article qui a inspiré ce chapitre propose également un correctif — une méthode d&#x27;entraînement qui force le modèle à maintenir les conséquences des actions bien distinguables. La moitié du code nécessaire existe déjà dans le dépôt, désactivée depuis le premier jour. Mais l&#x27;appliquer correctement signifierait aussi changer la quantité de passé que le modèle peut observer à la fois : la version publiée regarde trente-deux moments d&#x27;historique, la nôtre un seul. Cela revient à reconstruire le modèle du monde, pas à l&#x27;ajuster.</p>
+<p>Et il convient de préciser clairement ce que cette clôture ne prétend <strong>pas</strong>. Elle ne prétend pas qu&#x27;un agent JEPA est incapable d&#x27;apprendre à trouver son premier arbre. L&#x27;article à l&#x27;origine de ce chapitre montre un modèle de la même famille planifiant avec succès dans Minecraft — en récoltant de la pierre 19 fois sur 20. La capacité est réelle pour cette famille d&#x27;architectures, à une échelle supérieure à celle de ce projet. Ce qui est affirmé est beaucoup plus restreint et bien mieux étayé : <strong>cette approche précise — réparer le planificateur autour d&#x27;un petit modèle du monde gelé — est arrivée au bout de ses possibilités, et nous savons maintenant pourquoi.</strong></p>
+<h2>Ce que ce projet a réellement accompli</h2>
+<p>Il est juste de conclure sur un bilan exact plutôt que sur une impression.</p>
+<p>L&#x27;agent a appris à voir sans étiquettes, sans s&#x27;effondrer (Chapitres 1-2). Il a appris à imaginer les conséquences de ses actions suffisamment bien pour planifier (Chapitres 3-4). Il joue au vrai Minecraft et coupe de vrais arbres (Chapitre 5). Il fabrique des objets de bout en bout dès qu&#x27;on lui donne du bois (Chapitre 6). Chacune de ces étapes a été vérifiée par rapport à un seuil chiffré avant d&#x27;être qualifiée de succès.</p>
+<p>Et puis, vingt tentatives documentées sur un problème qui n&#x27;a pas été résolu — dont six confirmations indépendantes d&#x27;une même erreur de mesure déroutante, une victoire rétractée le jour même de sa découverte, et un diagnostic de la cause racine tout à la fin. La plupart des travaux publiés ne montrent que ce qui a fonctionné. Ce site a montré le reste, avec le même niveau de précision, parce que c&#x27;est cette partie-là qui enseigne quelque chose.</p>
+        </div>
+
+        <div class="track-panel chapter-prose" data-track-panel="expert" role="tabpanel" id="panel-expert" aria-labelledby="tab-expert">
+          <p class="track-kicker">Piste expert</p>
+
+<h2>Contexte</h2>
+<p>Le Chapitre 19 (tentative #19) s&#x27;est conclu sur une pause décidée par l&#x27;utilisateur : deux leviers de réentraînement du cœur du modèle avaient échoué, chacun avec une cause diagnostiquée. Ce chapitre couvre la tentative #20 documentée dans <code>docs/10<em>coldstart</em>engineering.md</code> et <code>CLAUDE.md#Phase 5+</code> — <strong>la première mesure de toute la campagne cherchant à savoir si les projections d&#x27;<code>ebwm.pt</code> réagissent réellement aux actions</strong>, constituant le résultat de clôture de la campagne.</p>
+<p>À noter que les tentatives #7 à #19 étaient, à l&#x27;exception de la #19 elle-même, presque exclusivement des interventions sur le <em>score</em> ou sur la <em>recherche</em>. La dynamique — le fait que les futurs imaginés par le modèle du monde dépendent ou non des actions planifiées — n&#x27;avait jamais été instrumentée.</p>
+<h2>Origine</h2>
+<p>Une veille bibliographique (10 août 2026, couvrant du 27 juillet 2026 à aujourd&#x27;hui, interrogeant arXiv <em>et</em> Google Scholar plutôt qu&#x27;arXiv seul) a fait ressortir l&#x27;article de Gan, Zeng, Cheng, Song, Tang, Wang, &quot;ActSWM: Action-Sensitive World Models for Long-Horizon Planning in Open-World Games&quot; (<a href="https://arxiv.org/abs/2607.26712">arXiv:2607.26712</a>, 2026) — <strong>dont la ligne de base est LeWM, la famille d&#x27;architectures exacte de ce projet, évaluée sur de la planification Minecraft en boucle fermée</strong>.</p>
+<p>L&#x27;article nomme l&#x27;<strong>effondrement de contexte</strong> (<em>Context Collapse</em>) : un prédicteur latent autorégressif qui maintient une cosinus-similitude élevée avec les états futurs réels tout en produisant des futurs presque indistincts sous différentes séquences d&#x27;actions. Un <code>ratio</code> de prédiction sain avec un planificateur aveugle — le symptôme exact des Phases 4/5 de ce projet.</p>
+<p>L&#x27;article a été vérifié en lisant directement sa source LaTeXML (équations, hyperparamètres du Tableau 3, décomptes du Tableau 8), sans passer par un résumé automatique. Cette vérification s&#x27;est avérée cruciale : elle a permis de déceler que l&#x27;article rapporte ses gains selon deux conventions différentes (points de pourcentage dans l&#x27;introduction, valeurs relatives dans les résultats), de corriger une attribution erronée du terme SigReg à LeWM au lieu de LeJEPA, et d&#x27;isoler un détail omis par les synthèses — voir la section « Le levier ouvert » ci-dessous.</p>
+<h2>Méthode</h2>
+<p><code>scripts/diagnose<em>context</em>collapse.py</code> + <code>configs/diagnose<em>context</em>collapse.yaml</code>. Entièrement hors-ligne : sans MineRL, sans Java, avec <code>ebwm.pt</code> chargé gelé en <code>requires<em>grad</em>(False)</code> et md5 revérifié (<code>ac14e65361fbddeb057963362ea1382d</code>, inchangé).</p>
+<p>Adaptation de l&#x27;Éq. 10 d&#x27;ActSWM : à partir d&#x27;une image de contexte encodée, dérouler K=12 pas à deux reprises depuis le même contexte, en comparant chaque déroulement au futur réel encodé $z_{t+k}$ :</p>
+<ul>
+<li>$s<em>{\text{gt}, k} = \cos(\hat{z}</em>{\text{gt}}, z)$ — actions réelles enregistrées</li>
+<li>$s<em>{\text{zero}, k} = \cos(\hat{z}</em>{\text{zero}}, z)$ — contre-factuel sans action (index d&#x27;action 0)</li>
+<li>$\Delta<em>k = s</em>{\text{gt}, k} - s_{\text{zero}, k}$ — l&#x27;écart d&#x27;action (<em>action gap</em>)</li>
+</ul>
+<p>Deux divergences délibérées par rapport à ActSWM, rapportées séparément plutôt que fondues dans leur chiffre :</p>
+<ol>
+<li>Un <strong>bras d&#x27;action aléatoire</strong>. Le planificateur ne compare jamais « enregistré vs sans action » ; il compare plusieurs candidats non nuls entre eux.</li>
+<li>Un <strong>bras de dispersion aligné sur le planificateur</strong> : l&#x27;écart-type, sur 64 séquences candidates, de la distance latente au dernier pas sur laquelle <code>planner.py::<em>score</code> classe les plans — le pendant hors-ligne du <code>goal</em>score_std</code> enregistré depuis la tentative #2.</li>
+</ol>
+<p><strong>Treechop sert de contrôle positif interne.</strong> Ce projet n&#x27;a pas de seuil préétabli pour $\Delta_k$ (jamais mesuré auparavant), mais l&#x27;agent planifie avec succès prouvé sur Treechop (Phase 4, 25-50 % de coupe), ce qui rend la comparaison Treechop-vs-Obtain interprétable sans barre externe.</p>
+<p><strong>Un delta proche de zéro est ambigu</strong> et la métrique d&#x27;ActSWM seule ne permet pas de lever l&#x27;ambiguïté. Une seconde mesure a donc été ajoutée : la dispersion L2 de la prédiction à 1 pas à travers les 17 choix d&#x27;actions possibles depuis la même image, divisée par le changement latent réel à 1 pas $\|z<em>{t+1} - z</em>t\|$. Cela sépare « le prédicteur ignore l&#x27;action » ($\text{share} \approx 0$) de « il réagit, mais pas de manière utile » ($\text{share} &gt; 0$, avec $\Delta$ toujours $\approx 0$).</p>
+<h2>Résultat</h2>
+<p>n=400 fenêtres/domaine (266 pour <code>obtain<em>coverage</code> — seules fenêtres survivant au filtre <code>max</em>action=17</code>, ce qui rend cette colonne plus bruitée et non traitée comme une preuve équivalente).</p>
+<table>
+<thead><tr><th>domaine</th><th>déplacement réel 1-pas</th><th>dispersion actions</th><th>part des actions</th><th>taux victoire Δ@k=1</th><th>Δ_zero@K</th><th>Δ_rand@K</th></tr></thead>
+<tbody>
+<tr><td>treechop</td><td>16.22</td><td>0.615</td><td>3.8%</td><td>35.5%</td><td>−0.00028</td><td>+0.00012</td></tr>
+<tr><td>obtain_craft</td><td>4.82</td><td>0.520</td><td>10.8%</td><td>13.0%</td><td>−0.00055</td><td>+0.00204</td></tr>
+<tr><td>obtain_coverage</td><td>11.31</td><td>0.703</td><td>6.2%</td><td>28.2%</td><td>−0.00150</td><td>+0.00011</td></tr>
+</tbody>
+</table>
+<p><strong>Pas un effondrement de contexte au sens littéral.</strong> La voie d&#x27;action fonctionne : les 17 actions déplacent réellement la prédiction, et la table d&#x27;embeddings d&#x27;actions est saine (quasi-orthogonale, cosinus moyen par paire à -0.014).</p>
+<p><strong>Mais la réponse constitue un passif net.</strong> <code>delta<em>zero</code> est négatif dans tous les domaines, et de façon significative <strong>à k=1 — le régime exact sur lequel <code>ebwm.pt</code> a été entraîné</strong> (<code>train</em>eb_jepa.py</code> utilise <code>nsteps=1</code>), ce qui exclut un dérivé de déroulement multi-pas :</p>
+<ul>
+<li>treechop : −0.000444 ± 0.000178, t=−2.49, p=0.0130, l&#x27;action réelle gagne dans <strong>35.5 %</strong> des fenêtres</li>
+<li>obtain_craft : −0.000113 ± 0.000026, t=−4.37, p&lt;0.0001, gagne dans <strong>13.0 %</strong></li>
+<li>obtain_coverage : −0.000149 ± 0.000059, t=−2.51, p=0.0126, gagne dans <strong>28.2 %</strong></li>
+</ul>
+<p>L&#x27;ordre constant sur les trois domaines est <strong>sans action &gt; vraie action &gt; action aléatoire</strong>. Le modèle a appris quelque chose de réel (la vraie action bat une action aléatoire) mais pas suffisamment pour dépasser la ligne de base triviale de copie du dernier état que le déroulement sans action approxime — en cohérence avec <code>ratio=0.9265</code> (la prédiction ne bat la copie que de ~7 %).</p>
+<p><strong>Contrôle de cohérence interne non planifié</strong> : le taux de victoire est parfaitement monotone par rapport à la dynamique du domaine (déplacement réel à 1 pas 4.82 → 13.0 %, 11.31 → 28.2 %, 16.22 → 35.5 %). Plus la séquence est statique, plus la copie du dernier état est forte comme ligne de base, et plus une perturbation d&#x27;action mal ajustée coûte cher. C&#x27;est la signature attendue si la réponse à l&#x27;action est un passif net face à une ligne de base forte ; elle n&#x27;a pas été conçue pour cela et a émergé directement des données.</p>
+<p><strong>Contrôle négatif</strong> : corr(delta, luminosité image) = −0.048 / +0.031 / −0.225 — le premier mécanisme de cette campagne à être essentiellement non corrélé avec la luminosité (plage précédente : 0.117 - 0.947). Attendu par construction, puisque delta est une différence entre deux déroulements à partir de la <em>même</em> image (les facteurs d&#x27;imagerie s&#x27;annulent) — mais précieux à signaler après six échecs de mécanismes antérieurs sur ce test.</p>
+<h2>Ce que cela établit, et ce que cela n&#x27;établit pas</h2>
+<p><strong>Établi</strong> : <code>ebwm.pt</code> est, du point de vue de la planification, proche d&#x27;un prédicteur de copie du dernier état portant une perturbation dépendante de l&#x27;action qui ne suit pas les conséquences réelles. Cela se vérifie sur <strong>Treechop, son propre domaine d&#x27;entraînement</strong> — contrairement à l&#x27;inversion de score de la tentative #10, ce n&#x27;est donc pas un effet de décalage de domaine (<em>domain shift</em>). Il s&#x27;agit d&#x27;un second défaut indépendant sur la <strong>dynamique</strong>, alors que les tentatives #7 à #19 ciblaient quasi-exclusivement le <strong>score</strong>.</p>
+<p><strong>NON établi — une tension réelle, pas une note de bas de page</strong> : ceci ne peut pas être à soi seul la cause du mur du départ à froid, car l&#x27;agent coupe des arbres à 25-50 % sur Treechop <em>avec ce déficit exact présent</em>. Tout récit s&#x27;appuyant sur cette découverte doit aussi expliquer cela. Aucun n&#x27;est proposé ici ; ce serait une hypothèse, pas une mesure.</p>
+<p><strong>NON établi</strong> : le fait que le correctif d&#x27;ActSWM se transfére directement. Leur prédicteur utilise un contexte H=32 et leur explication causale (« un contexte long permet au prédicteur d&#x27;extrapoler l&#x27;évolution de la scène tout en ignorant l&#x27;action ») ne s&#x27;applique pas telle quelle à <code>ACConvPredictor</code> avec <code>context_length=1</code>.</p>
+<p><strong>Ce que cela réencadre</strong> : <code>commit_length=4</code> reste le seul levier ayant produit un résultat non nul (9.7 % combiné). Si l&#x27;information d&#x27;action par pas se situe au niveau du bruit face à la copie, s&#x27;engager sur un bloc d&#x27;actions plutôt que de reclasser à chaque instant sur un score dominé par le bruit est exactement la bonne compensation. La campagne l&#x27;avait découvert empiriquement à la tentative #4 sans en connaître la raison.</p>
+<h2>Le levier ouvert — non emprunté</h2>
+<p>Le terme $L<em>{\text{readout}}$ d&#x27;ActSWM (Éq. 8) impose exactement la propriété mesurée comme défaillante ici : que l&#x27;action associée à chaque transition locale reste recouvrable. <strong>La moitié de cette mécanique existe déjà dans ce dépôt, désactivée depuis le premier jour</strong> : <code>mine</em>jepa/eb<em>jepa/losses.py::InverseDynamicsLoss</code> fait <code>(state</em>t, state<em>t+1) → action</code>, câblé dans <code>VC</em>IDM<em>Sim</em>Regularizer</code>, mais <code>build<em>ac</em>jepa</code> passe <code>idm<em>coeff=0.0, idm=None</code> (<code>mine</em>jepa/ebwm/<em></em>init<em></em>.py:146</code>), de sorte qu&#x27;il n&#x27;a jamais été instancié.</p>
+<p>Par rapport à ActSWM, il manque : le gel des paramètres (leur <code>idm.stop<em>grad=true</code> exclut $\phi</em>0$ de l&#x27;optimiseur tout en rétropropageant à travers les entrées latentes), l&#x27;application aux transitions prédites par déroulement (Éq. 8b), et le terme charnière (<em>hinge</em>, Éq. 5) dans son ensemble.</p>
+<h2>Clôture de la campagne à la tentative #20</h2>
+<p>La campagne de départ à froid est <strong>close ici</strong>, sur décision de l&#x27;utilisateur (10 août 2026), avec la tentative #20 comme résultat de conclusion plutôt qu&#x27;une 21e tentative. Exprimé clairement pour qu&#x27;un lecteur ultérieur ne confonde pas cela avec de l&#x27;épuisement :</p>
+<ul>
+<li><strong>La campagne travaillait sur la mauvaise couche.</strong> Les tentatives #2 à #19 ont ajusté la recherche, le score et l&#x27;exécution au-dessus d&#x27;un <code>ebwm.pt</code> gelé. La tentative #20 a mesuré que le conditionnement par les actions d&#x27;<code>ebwm.pt</code> est un passif net face à la copie, de sorte qu&#x27;un planificateur MPC s&#x27;appuyant dessus classe les séquences d&#x27;actions selon des différences qui ne reflètent pas leurs conséquences. Cela explique rétrospectivement pourquoi trois correctifs de score (#7, #11, #17), deux correctifs de recherche (#5, #6) et deux réentraînements (#19 Run A/B) ont chacun échoué différemment : aucun ne traitait de la dynamique.</li>
+<li><strong>Le levier restant est une reconstruction, pas un rustine</strong> — les termes $L_{\text{readout}}$/charnière ci-dessus, vraisemblablement accompagnés d&#x27;une longueur de contexte supérieure à 1. C&#x27;est une reconstruction du modèle du monde, pas une autre tentative dans le registre de cette campagne.</li>
+<li><strong>L&#x27;objectif annoncé du projet est déjà atteint</strong> : Phases 0-4 validées face à de vrais critères, l&#x27;agent coupe des arbres dans le vrai Minecraft (25-50 %), la démo de fabrication en direct tourne à 100 % sur plus de 6 épisodes.</li>
+</ul>
+<p><strong>Ce qui N&#x27;EST PAS prétendu par la clôture ici</strong> : pas que la coupe d&#x27;arbres à partir d&#x27;un départ à froid soit impossible, ni que le levier restant échouerait. ActSWM démontre qu&#x27;un modèle de la famille LeWM planifie avec succès dans Minecraft en boucle fermée (récolte de pierre 19/20 contre 10/20 pour LeWM, à backbone, planificateur et bibliothèque d&#x27;actions identiques), donc la capacité est réelle pour cette famille d&#x27;architectures à plus grande échelle. L&#x27;affirmation plus étroite et mieux étayée : <strong>l&#x27;approche de cette campagne — réparer le planificateur autour d&#x27;un modèle du monde gelé de 664K paramètres avec <code>context_length=1</code> — est épuisée, et la tentative #20 explique pourquoi.</strong></p>
+<p><strong>Ligne de base de référence si les travaux reprennent un jour</strong> : <code>commit<em>length=4</code> (9.7 % combiné, meilleur résultat de la campagne), recherche de couverture <code>FrontierTracker</code> (tentative #12), et correctif de noyade par évitement des dangers (tentative #13, confirmé à N=20 : noyades 60 % → 15 %, épisodes avec vraie chance 40 % → 60 %). Laissés ouverts, non résolus : le signal différé <code>died</em>during_escape</code> 2/6 de la tentative #18, et une possible régression du fix #13 sous la macro de balayage en profondeur.</p>
+<p><code>ebwm.pt</code> et <code>craft<em>wm</em>v4.pt</code> sont restés intacts tout au long de ce chapitre ; aucun checkpoint n&#x27;a été réécrit.</p>
+<h2>Références</h2>
+<ul>
+<li>Gan, Zeng, Cheng, Song, Tang, Wang, &quot;ActSWM: Action-Sensitive World Models for Long-Horizon Planning in Open-World Games&quot;, <a href="https://arxiv.org/abs/2607.26712">arXiv:2607.26712</a> (2026) — source de la définition de l&#x27;effondrement de contexte, du protocole delta Éq. 10 adapté ici, et du levier $L_{\text{readout}}$/charnière discuté ci-dessus.</li>
+</ul>
+<p>Vérifié dans <code>docs/references/index.md</code>, aux côtés de huit autres articles ajoutés lors de la même passe bibliographique.</p>
+        </div>
+      </div>
+
+
+    </div>
+  </article>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>Mine-JEPA — un agent JEPA qui apprend à jouer à Minecraft à partir des pixels, documenté au fil de l'eau.</p>
+    <p class="footer-links">
+      Auteur : <a href="https://x.com/reddwarf03" target="_blank" rel="noopener">@reddwarf03 (X/Twitter)</a> ·
+      <a href="https://github.com/redDwarf03" target="_blank" rel="noopener">redDwarf03 (GitHub)</a> |
+      <a href="https://github.com/redDwarf03/mine-jepa" target="_blank" rel="noopener">Repository GitHub</a>
+    </p>
+  </div>
+</footer>
+
+<script src="../script.js" defer></script>
+</body>
+</html>

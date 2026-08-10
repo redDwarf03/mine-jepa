@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Qu'est-ce que JEPA, et pourquoi apprendre à un programme à jouer à Minecraft avec ça ? — Mine-JEPA</title>
-<meta name="description" content="Chapitre 1 du parcours Mine-JEPA : ce qu'est JEPA (Joint-Embedding Predictive Architecture), et pourquoi le projet est construit autour de cette idée plutôt qu'autour de la prédiction de pixels ou d'un grand modèle vidéo préentraîné.">
+<title>Qu&#x27;est-ce que JEPA, et pourquoi apprendre à un programme à jouer à Minecraft avec ça ? — Mine-JEPA</title>
+<meta name="description" content="Chapitre 1 du parcours Mine-JEPA : Qu&#x27;est-ce que JEPA, et pourquoi apprendre à un programme à jouer à Minecraft avec ça ?.">
 <link rel="stylesheet" href="../style.css">
 <script>document.documentElement.classList.add("js");</script>
 </head>
@@ -15,8 +15,8 @@
   <div class="wrap site-header-inner">
     <a class="site-brand" href="index.html"><span class="brand-mark" aria-hidden="true">&#9935;</span> Mine-JEPA</a>
     <div class="header-controls">
-      <span class="last-updated" title="Date de mise à jour">Mis à jour le : 2026-07-21</span>
-                                                                  <nav class="lang-switch" aria-label="Langue du site">
+      <span class="last-updated" title="Date de mise à jour">Mis à jour le: 2026-08-11</span>
+            <nav class="lang-switch" aria-label="Langue du site">
         <a href="01-c-est-quoi-jepa.html" aria-current="true" lang="fr" hreflang="fr">FR</a>
         <a href="../en/01-what-is-jepa.html" lang="en" hreflang="en">EN</a>
       </nav>
@@ -44,9 +44,10 @@
 
       <header class="chapter-header">
         <p class="chapter-kicker">Chapitre 1</p>
-        <h1>Qu'est-ce que JEPA, et pourquoi apprendre à un programme à jouer à Minecraft avec ça ?</h1>
-        <p class="chapter-prereqs">Aucun prérequis — c'est le point de départ du parcours.</p>
+        <h1>Qu&#x27;est-ce que JEPA, et pourquoi apprendre à un programme à jouer à Minecraft avec ça ?</h1>
+        <p class="chapter-prereqs">Aucun prérequis — c&#x27;est le point de départ du parcours.</p>
       </header>
+
 
       <div class="tracks" data-tracks>
         <div class="track-tabs" role="tablist" aria-label="Niveau de lecture">
@@ -57,264 +58,186 @@
         <div class="track-panel is-active chapter-prose" data-track-panel="beginner" role="tabpanel" id="panel-beginner" aria-labelledby="tab-beginner">
           <p class="track-kicker">Piste débutant</p>
 
-          <h2>Le projet, en une phrase</h2>
-          <p>
-            Mine-JEPA, c'est une tentative d'apprendre à un programme à jouer à Minecraft
-            simplement en regardant des images à l'écran — pas de règles écrites à l'avance, pas
-            de solution toute faite, pas de "si tu vois un arbre, appuie sur ce bouton". Juste des
-            images brutes et une manette. Ce chapitre parle de l'idée qui rend ça possible : une
-            architecture appelée <strong>JEPA</strong>.
-          </p>
-
-          <h2>Pourquoi ne pas simplement prédire le pixel suivant ?</h2>
-          <p>
-            L'idée la plus évidente serait celle-ci : montrer au programme des milliers d'images
-            de Minecraft, et lui apprendre à deviner à quoi ressemblera l'image suivante, pixel
-            par pixel. S'il devient bon à ça, il doit forcément comprendre le jeu, non ?
-          </p>
-          <p>
-            Il y a un problème. Imagine que tu doives prédire, pixel par pixel, une vidéo de
-            quelqu'un qui marche dans une forêt. Il faudrait deviner la couleur exacte de chaque
-            feuille, la texture précise du chemin de terre, la nuance exacte du ciel. Tout ça,
-            c'est surtout du bruit visuel — ça ne change rien à <em>la décision à prendre
-            ensuite</em>. Un modèle obligé de s'obséder sur chaque pixel passe le plus clair de
-            son effort sur le mauvais problème, un peu comme un élève à qui on demanderait
-            d'apprendre un manuel par cœur, mot pour mot, au lieu de comprendre ce qu'il raconte.
-          </p>
-          <p>
-            Réfléchis à la façon dont <em>toi</em> tu joues réellement à un jeu. Tu ne penses pas
-            "le pixel en position (340, 220) est marron". Tu penses "il y a un arbre devant moi,
-            si je le frappe, il va se casser et me donner du bois". C'est une information
-            beaucoup plus petite, et beaucoup plus utile, que l'image complète.
-          </p>
-
-          <h2>L'idée centrale : compresser d'abord, prédire ensuite</h2>
-          <p>
-            JEPA veut dire <strong>Joint-Embedding Predictive Architecture</strong> (« architecture
-            prédictive à plongements joints »). Elle a été proposée par Yann LeCun (un chercheur en
-            IA bien connu chez Meta) en 2022, dans le cadre d'une vision plus large de la façon
-            dont des machines pourraient apprendre à comprendre le monde. L'idée tient en un
-            mouvement clé : au lieu de prédire le futur en <em>pixels</em>, on le prédit dans un
-            <strong>résumé compressé</strong> de l'image — ce qu'on appelle un
-            <strong>embedding</strong> (ou « plongement », ou « représentation latente »). Vois un
-            embedding comme une courte liste de nombres qui capture "ce qui compte" dans une
-            scène, un peu comme un résumé d'une phrase capture l'intrigue d'un livre sans en
-            répéter chaque mot.
-          </p>
-          <p>Voici la forme que ça prend :</p>
-          <ol>
-            <li>
-              Un <strong>encodeur</strong> (l'« encoder ») regarde l'image actuelle et la
-              compresse en un vecteur compact — "voici ce que je comprends actuellement de la
-              situation".
-            </li>
-            <li>
-              Un <strong>prédicteur</strong> (le « predictor ») prend ce vecteur, ainsi que
-              l'action que l'agent est sur le point de faire (avancer, frapper avec l'outil,
-              etc.), et prédit à quoi ressemblera le <em>prochain</em> vecteur compact.
-            </li>
-            <li>
-              Un second encodeur regarde l'image suivante <em>réelle</em>, et produit le vrai
-              vecteur compact correspondant.
-            </li>
-            <li>
-              Le modèle est entraîné pour que sa prédiction se rapproche le plus possible de ce
-              vrai vecteur.
-            </li>
-          </ol>
-          <p>
-            Remarque importante : à aucun moment dans cette boucle le modèle n'essaie de
-            redessiner l'image. Il compare "le résumé compressé de ma supposition" au "résumé
-            compressé de ce qui s'est vraiment passé". C'est toute l'astuce.
-          </p>
-
-          <h2>Une image concrète pour s'en souvenir</h2>
-          <p>
-            Imagine que tu joues aux échecs par SMS avec un ami, et qu'au lieu de décrire chaque
-            détail du plateau, vous vous mettez d'accord pour dire simplement des choses comme
-            "cavalier prend pion, échec". Vous ne perdez pas de mots à décrire le grain du bois
-            des pièces. Vous ne gardez que l'information qui change ce qui va se passer ensuite.
-            JEPA essaie exactement ça : faire inventer à un réseau de neurones sa propre version
-            de ce langage abrégé — automatiquement, juste en regardant des images — puis utiliser
-            cet abrégé pour prédire "que se passe-t-il si je fais ceci".
-          </p>
-
-          <h2>Ce que ça apporte au projet</h2>
-          <p>
-            Une fois qu'un modèle sait prédire "à quoi ressemblera mon résumé compact du monde si
-            je prends cette action", il peut commencer à <em>imaginer</em> — essayer une action
-            dans sa tête, vérifier si le résultat imaginé se rapproche de ce qu'il veut, et
-            seulement ensuite appuyer réellement sur le bouton. C'est le germe de la
-            planification, et c'est pour ça que Mine-JEPA est construit autour de JEPA plutôt que,
-            par exemple, autour d'un modèle qui essaierait de générer des images complètes du
-            futur.
-          </p>
-
-          <h2>Pourquoi ne pas utiliser un énorme modèle d'IA déjà prêt à l'emploi ?</h2>
-          <p>
-            On pourrait se demander : les très gros modèles d'IA (ceux derrière les chatbots ou
-            les générateurs d'images) ne comprennent-ils pas déjà la vidéo ? En quelque sorte —
-            mais les plus gros sont énormes (des centaines de millions à des milliards de
-            paramètres), conçus pour décrire ou générer de la vidéo, pas pour réagir en temps
-            réel, et n'ont jamais été entraînés spécifiquement sur Minecraft. Ce projet utilise
-            volontairement un modèle JEPA <strong>petit</strong> — assez petit pour s'entraîner
-            sur une seule carte graphique grand public — construit et entraîné <em>directement
-            sur le jeu qu'il doit comprendre</em>. Il ne t'écrira pas un poème sur Minecraft, mais
-            il peut réagir à une image en une fraction de seconde, ce qui est exactement ce
-            qu'exige le fait de jouer à un jeu en temps réel.
-          </p>
+<h2>Le projet, en une phrase</h2>
+<p>Mine-JEPA, c&#x27;est une tentative d&#x27;apprendre à un programme à jouer à Minecraft simplement en</p>
+<p>regardant des images à l&#x27;écran — pas de règles écrites à l&#x27;avance, pas de solution toute faite,</p>
+<p>pas de &quot;si tu vois un arbre, appuie sur ce bouton&quot;. Juste des images brutes et une manette. Ce</p>
+<p>chapitre parle de l&#x27;idée qui rend ça possible : une architecture appelée <strong>JEPA</strong>.</p>
+<h2>Pourquoi ne pas simplement prédire le pixel suivant ?</h2>
+<p>L&#x27;idée la plus évidente serait celle-ci : montrer au programme des milliers d&#x27;images de</p>
+<p>Minecraft, et lui apprendre à deviner à quoi ressemblera l&#x27;image suivante, pixel par pixel. S&#x27;il</p>
+<p>devient bon à ça, il doit forcément comprendre le jeu, non ?</p>
+<p>Il y a un problème. Imagine que tu doives prédire, pixel par pixel, une vidéo de quelqu&#x27;un qui</p>
+<p>marche dans une forêt. Il faudrait deviner la couleur exacte de chaque feuille, la texture précise</p>
+<p>du chemin de terre, la nuance exacte du ciel. Tout ça, c&#x27;est surtout du bruit visuel — ça ne</p>
+<p>change rien à <em>la décision à prendre ensuite</em>. Un modèle obligé de s&#x27;obséder sur chaque pixel</p>
+<p>passe le plus clair de son effort sur le mauvais problème, un peu comme un élève à qui on</p>
+<p>demanderait d&#x27;apprendre un manuel par cœur, mot pour mot, au lieu de comprendre ce qu&#x27;il raconte.</p>
+<p>Réfléchis à la façon dont <em>toi</em> tu joues réellement à un jeu. Tu ne penses pas &quot;le pixel en</p>
+<p>position (340, 220) est marron&quot;. Tu penses &quot;il y a un arbre devant moi, si je le frappe, il va se</p>
+<p>casser et me donner du bois&quot;. C&#x27;est une information beaucoup plus petite, et beaucoup plus utile,</p>
+<p>que l&#x27;image complète.</p>
+<h2>L&#x27;idée centrale : compresser d&#x27;abord, prédire ensuite</h2>
+<p>JEPA veut dire <strong>Joint-Embedding Predictive Architecture</strong> (« architecture prédictive à</p>
+<p>plongements joints »). Elle a été proposée par Yann LeCun (un chercheur en IA bien connu chez</p>
+<p>Meta) en 2022, dans le cadre d&#x27;une vision plus large de la façon dont des machines pourraient</p>
+<p>apprendre à comprendre le monde. L&#x27;idée tient en un mouvement clé : au lieu de prédire le futur en</p>
+<p><em>pixels</em>, on le prédit dans un <strong>résumé compressé</strong> de l&#x27;image — ce qu&#x27;on appelle un</p>
+<p><strong>embedding</strong> (ou « plongement », ou « représentation latente »). Vois un embedding comme une</p>
+<p>courte liste de nombres qui capture &quot;ce qui compte&quot; dans une scène, un peu comme un résumé d&#x27;une</p>
+<p>phrase capture l&#x27;intrigue d&#x27;un livre sans en répéter chaque mot.</p>
+<p>Voici la forme que ça prend :</p>
+<ol>
+<li>Un <strong>encodeur</strong> (l&#x27;« encoder ») regarde l&#x27;image actuelle et la compresse en un vecteur compact</li>
+</ol>
+<p>— &quot;voici ce que je comprends actuellement de la situation&quot;.</p>
+<ol>
+<li>Un <strong>prédicteur</strong> (le « predictor ») prend ce vecteur, ainsi que l&#x27;action que l&#x27;agent est sur le</li>
+</ol>
+<p>point de faire (avancer, frapper avec l&#x27;outil, etc.), et prédit à quoi ressemblera le <em>prochain</em></p>
+<p>vecteur compact.</p>
+<ol>
+<li>Un second encodeur regarde l&#x27;image suivante <em>réelle</em>, et produit le vrai vecteur compact</li>
+</ol>
+<p>correspondant.</p>
+<ol>
+<li>Le modèle est entraîné pour que sa prédiction se rapproche le plus possible de ce vrai vecteur.</li>
+</ol>
+<p>Remarque importante : à aucun moment dans cette boucle le modèle n&#x27;essaie de redessiner l&#x27;image.</p>
+<p>Il compare &quot;le résumé compressé de ma supposition&quot; au &quot;résumé compressé de ce qui s&#x27;est vraiment</p>
+<p>passé&quot;. C&#x27;est toute l&#x27;astuce.</p>
+<h2>Une image concrète pour s&#x27;en souvenir</h2>
+<p>Imagine que tu joues aux échecs par SMS avec un ami, et qu&#x27;au lieu de décrire chaque détail du</p>
+<p>plateau, vous vous mettez d&#x27;accord pour dire simplement des choses comme &quot;cavalier prend pion,</p>
+<p>échec&quot;. Vous ne perdez pas de mots à décrire le grain du bois des pièces. Vous ne gardez que</p>
+<p>l&#x27;information qui change ce qui va se passer ensuite. JEPA essaie exactement ça : faire inventer à</p>
+<p>un réseau de neurones sa propre version de ce langage abrégé — automatiquement, juste en</p>
+<p>regardant des images — puis utiliser cet abrégé pour prédire &quot;que se passe-t-il si je fais ceci&quot;.</p>
+<h2>Ce que ça apporte au projet</h2>
+<p>Une fois qu&#x27;un modèle sait prédire &quot;à quoi ressemblera mon résumé compact du monde si je prends</p>
+<p>cette action&quot;, il peut commencer à <em>imaginer</em> — essayer une action dans sa tête, vérifier si le</p>
+<p>résultat imaginé se rapproche de ce qu&#x27;il veut, et seulement ensuite appuyer réellement sur le</p>
+<p>bouton. C&#x27;est le germe de la planification, et c&#x27;est pour ça que Mine-JEPA est construit autour de</p>
+<p>JEPA plutôt que, par exemple, autour d&#x27;un modèle qui essaierait de générer des images complètes</p>
+<p>du futur.</p>
+<h2>Pourquoi ne pas utiliser un énorme modèle d&#x27;IA déjà prêt à l&#x27;emploi ?</h2>
+<p>On pourrait se demander : les très gros modèles d&#x27;IA (ceux derrière les chatbots ou les</p>
+<p>générateurs d&#x27;images) ne comprennent-ils pas déjà la vidéo ? En quelque sorte — mais les plus</p>
+<p>gros sont énormes (des centaines de millions à des milliards de paramètres), conçus pour décrire</p>
+<p>ou générer de la vidéo, pas pour réagir en temps réel, et n&#x27;ont jamais été entraînés spécifiquement</p>
+<p>sur Minecraft. Ce projet utilise volontairement un modèle JEPA <strong>petit</strong> — assez petit pour</p>
+<p>s&#x27;entraîner sur une seule carte graphique grand public — construit et entraîné *directement sur</p>
+<p>le jeu qu&#x27;il doit comprendre*. Il ne t&#x27;écrira pas un poème sur Minecraft, mais il peut réagir à</p>
+<p>une image en une fraction de seconde, ce qui est exactement ce qu&#x27;exige le fait de jouer à un jeu</p>
+<p>en temps réel.</p>
         </div>
 
         <div class="track-panel chapter-prose" data-track-panel="expert" role="tabpanel" id="panel-expert" aria-labelledby="tab-expert">
           <p class="track-kicker">Piste expert</p>
 
-          <h2>Énoncé du problème</h2>
-          <p>
-            Le backbone de Mine-JEPA est un JEPA léger (~15M paramètres) entraîné de bout en bout
-            sur des données pixel Crafter/MineRL, choisi explicitement plutôt qu'un grand modèle
-            de fondation vidéo figé (« frozen ») — voir la justification du rejet plus bas.
-            L'architecture suit la proposition JEPA de Yann LeCun (<em>A Path Towards Autonomous
-            Machine Intelligence</em>, openreview BZ5a1r-kVsf, 2022) et hérite sa lignée
-            d'encodeur d'I-JEPA (Assran et al., arXiv:2301.08243, CVPR 2023).
-          </p>
-
-          <h2>Pourquoi pas une prédiction générative en espace pixel</h2>
-          <p>
-            Un modèle génératif (autoencodeur, diffusion, modèle pixel autorégressif) est
-            entraîné pour minimiser une perte de reconstruction ou de vraisemblance sur
-            <em>l'ensemble</em> de l'observation — chaque pixel a le même poids dans l'objectif.
-            Sur une vue POV Minecraft/Crafter, cela signifie que la perte est dominée par du
-            signal à forte entropie et sans intérêt pour la tâche (texture du feuillage, gradient
-            du ciel, bruit d'éclairage) plutôt que par la structure de basse dimension réellement
-            pertinente pour la tâche (posture de l'agent, identité des objets proches, état
-            d'inventaire). C'est exactement le mode de défaillance générique contre lequel JEPA
-            est conçu : les features utiles pour le contrôle sont généralement à <em>faible
-            variance et forte influence</em> dans le signal pixel, pas à forte variance — voir
-            Littwin et al. (arXiv:2407.03475) pour l'argument théorique selon lequel le biais
-            implicite de JEPA favorise précisément ces features prédictives à forte influence
-            plutôt que les features bruitées à forte variance qu'un objectif de reconstruction
-            (par ex. MAE) poursuit.
-          </p>
-
-          <h2>L'architecture</h2>
-          <p>
-            Trois composants, tous opérant sur un latent par image <code>s &isin; R^D</code>
-            (D=128 dans l'encodeur Crafter de la Phase 1 de Mine-JEPA) :
-          </p>
-          <pre><code>x_t  &#9472;&#9472;&#8594; [Context Encoder f_&theta;]  &#9472;&#9472;&#8594; s_x
-                                       &#9474;
-                              [Predictor g] + a_t  &#9472;&#9472;&#8594; &#375;_{t+1}
-                                                             &#9474;
-x_{t+1} &#9472;&#9472;&#8594; [Target Encoder f_&theta;&#772;]  &#9472;&#9472;&#8594; s_y                  &#9474;
-                                       &#9474;                     &#9474;
-                            L = &#8214;&#375;_{t+1} - s_y&#8214;&#178;  &#8592;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9474;</code></pre>
-          <ul>
-            <li>
-              <strong>Context encoder</strong> <code>f_&theta;</code> : ResNet5 (~40K paramètres)
-              qui prend une image RGB 64&times;64 en entrée (<code>docs/01_jepa.md</code>).
-            </li>
-            <li>
-              <strong>Target encoder</strong> <code>f_&theta;&#772;</code> : architecturalement
-              identique, mais ses poids sont une EMA (<strong>Exponential Moving Average</strong>,
-              moyenne mobile exponentielle) de ceux de <code>f_&theta;</code>
-              (<code>&theta;&#772;_{t+1} &#8592; 0.99&middot;&theta;&#772;_t + 0.01&middot;&theta;_t</code>),
-              avec les gradients bloqués (<code>@torch.no_grad()</code> dans l'étape de mise à
-              jour). C'est le mécanisme qui empêche les deux encodeurs de co-s'effondrer vers une
-              constante triviale — voir le Chapitre 02 pour le traitement complet de
-              l'anti-collapse.
-            </li>
-            <li>
-              <strong>Predictor</strong> : un petit MLP (ou convolution légère) qui prend
-              <code>s_x</code> et un embedding d'action discrète
-              (<code>Embedding(n_actions, 32)</code>, sur l'espace à 17 actions de Crafter), et
-              produit <code>&#375;_{t+1}</code>.
-            </li>
-          </ul>
-          <p>
-            La perte est exclusivement un L2 en espace latent :
-            <code>L_JEPA = &#8214;&#375;_{t+1} - s_y&#8214;&#178;</code>. Il n'y a aucun terme de
-            reconstruction pixel dans l'objectif — c'est la différence structurelle qui définit
-            JEPA face aux modèles du monde génératifs/autoencodeurs, pas un simple détail
-            d'entraînement.
-          </p>
-
-          <h2>Conditionnement par l'action et rollout latent</h2>
-          <p>
-            Comme le predictor est conditionné par <code>a_t</code>, il encode la dynamique de
-            transition plutôt que des statistiques marginales sur l'état suivant :
-            <code>&#375;_{t+1} = g(s_t, a_t)</code>. Cela permet de dérouler ("unroll") entièrement
-            en espace latent sans toucher au moteur de rendu ni à l'environnement réel :
-          </p>
-          <pre><code>s_1 = g(s_0, a_0);  s_2 = g(s_1, a_1); ...; s_k = g(s_{k-1}, a_{k-1})</code></pre>
-          <p>
-            Cette « imagination latente » est le mécanisme exploité par le planificateur (chapitre
-            à venir, sur le modèle du monde et la planification) via MPC/CEM : échantillonner des
-            séquences d'actions candidates, les dérouler en espace latent, les évaluer contre un
-            embedding-objectif, exécuter la première action de la meilleure séquence,
-            replanifier.
-          </p>
-
-          <h2>Choix d'architecture et alternative rejetée</h2>
-          <p>
-            Le projet a explicitement rejeté V-JEPA 2 figé (« frozen », Assran et al.,
-            arXiv:2506.09985, 30 auteurs, 2025) comme backbone principal : un ViT-H de 600M
-            paramètres entraîné sur ~1M heures de vidéo naturelle est hors distribution (« OOD »)
-            sur la vue POV stylisée de Minecraft, et n'est ni clonable ni fine-tunable de bout en
-            bout sur un GPU grand public à 8 Go de VRAM. Il reste disponible uniquement comme
-            comparaison secondaire via <code>torch.hub</code>, jamais comme substrat de
-            planification. Le design de backbone choisi — petit, entraîné directement sur le
-            domaine cible, conditionné par l'action — suit de très près LeWorldModel (Maes, Le
-            Lidec, Scieur, LeCun, Balestriero, arXiv:2603.19312, 2026) : ~15M paramètres, un seul
-            GPU, et l'objectif à deux termes (prédiction du prochain embedding + un
-            régularisateur de variance/covariance) que la perte de Mine-JEPA reprend dans son
-            propre principe (voir Chapitre 02).
-          </p>
-
-          <h2>Pourquoi ça plutôt qu'une politique LLM/VLM pour cette tâche</h2>
-          <p>
-            JEPA et un modèle de langage/vision-langage résolvent des problèmes différents et ne
-            sont pas des substituts en concurrence ici : un agent piloté par LLM ("computer use")
-            raisonne bien sur des instructions de haut niveau mais, à ~1&ndash;10 s par décision,
-            est bien trop lent pour du contrôle réactif, et sa "compréhension" de la dynamique de
-            la scène passe par une description textuelle plutôt qu'une prédiction directement
-            conditionnée par les pixels. Le backbone JEPA de Mine-JEPA tourne en moins de 100 ms
-            par action et prédit la dynamique visuelle directement à partir des pixels, au prix de
-            n'avoir aucun raisonnement de haut niveau propre. Le cadrage du projet : un LLM dirait
-            <em>quoi</em> faire (haut niveau), JEPA fait <em>comment</em> le faire — ce projet
-            construit et valide uniquement ce second volet.
-          </p>
-
-          <h2>Références (vérifiées, tirées de docs/references/index.md)</h2>
-          <ul>
-            <li>
-              LeCun, <em>A Path Towards Autonomous Machine Intelligence</em>, openreview
-              BZ5a1r-kVsf (2022) — la proposition originale de JEPA.
-            </li>
-            <li>Assran et al., I-JEPA, arXiv:2301.08243 (CVPR 2023) — lignée de l'architecture d'encodeur.</li>
-            <li>
-              Maes, Le Lidec, Scieur, LeCun, Balestriero, LeWorldModel, arXiv:2603.19312 (2026) —
-              l'architecture publiée la plus proche ; source du gate
-              <code>ratio = val_pred/val_copy</code> utilisé à partir du Chapitre 03.
-            </li>
-            <li>Assran et al., V-JEPA 2, arXiv:2506.09985 (2025) — rejeté comme backbone principal, comparaison uniquement.</li>
-            <li>
-              Littwin et al., arXiv:2407.03475 (2024) — fondement théorique de pourquoi JEPA
-              favorise les features prédictives plutôt que les features bruitées à forte
-              variance.
-            </li>
-          </ul>
+<h2>Énoncé du problème</h2>
+<p>Le backbone de Mine-JEPA est un JEPA léger (~15M paramètres) entraîné de bout en bout sur des</p>
+<p>données pixel Crafter/MineRL, choisi explicitement plutôt qu&#x27;un grand modèle de fondation vidéo</p>
+<p>figé (« frozen ») — voir la justification du rejet plus bas. L&#x27;architecture suit la proposition</p>
+<p>JEPA de Yann LeCun (<em>A Path Towards Autonomous Machine Intelligence</em>, openreview BZ5a1r-kVsf,</p>
+<p>2022) et hérite sa lignée d&#x27;encodeur d&#x27;I-JEPA (Assran et al., arXiv:2301.08243, CVPR 2023).</p>
+<h2>Pourquoi pas une prédiction générative en espace pixel</h2>
+<p>Un modèle génératif (autoencodeur, diffusion, modèle pixel autorégressif) est entraîné pour</p>
+<p>minimiser une perte de reconstruction ou de vraisemblance sur <em>l&#x27;ensemble</em> de l&#x27;observation —</p>
+<p>chaque pixel a le même poids dans l&#x27;objectif. Sur une vue POV Minecraft/Crafter, cela signifie</p>
+<p>que la perte est dominée par du signal à forte entropie et sans intérêt pour la tâche (texture du</p>
+<p>feuillage, gradient du ciel, bruit d&#x27;éclairage) plutôt que par la structure de basse dimension</p>
+<p>réellement pertinente pour la tâche (posture de l&#x27;agent, identité des objets proches, état</p>
+<p>d&#x27;inventaire). C&#x27;est exactement le mode de défaillance générique contre lequel JEPA est conçu :</p>
+<p>les features utiles pour le contrôle sont généralement à <em>faible variance et forte influence</em></p>
+<p>dans le signal pixel, pas à forte variance — voir Littwin et al. (arXiv:2407.03475) pour</p>
+<p>l&#x27;argument théorique selon lequel le biais implicite de JEPA favorise précisément ces features</p>
+<p>prédictives à forte influence plutôt que les features bruitées à forte variance qu&#x27;un objectif de</p>
+<p>reconstruction (par ex. MAE) poursuit.</p>
+<h2>L&#x27;architecture</h2>
+<p>Trois composants, tous opérant sur un latent par image <code>s ∈ R^D</code> (D=128 dans l&#x27;encodeur Crafter de</p>
+<p>la Phase 1 de Mine-JEPA) :</p>
+<pre><code>x_t  ──→ [Context Encoder f_θ]  ──→ s_x
+                                       │
+                              [Predictor g] + a_t  ──→ ŝ_{t+1}
+                                                             │
+x_{t+1} ──→ [Target Encoder f_θ̄]  ──→ s_y                  │
+                                       │                     │
+                            L = ‖ŝ_{t+1} - s_y‖²  ←──────────┘</code></pre>
+<ul>
+<li><strong>Context encoder</strong> <code>f_θ</code> : ResNet5 (~40K paramètres) qui prend une image RGB 64×64 en entrée</li>
+</ul>
+<p>(<code>docs/01_jepa.md</code>).</p>
+<ul>
+<li><strong>Target encoder</strong> <code>f_θ̄</code> : architecturalement identique, mais ses poids sont une EMA</li>
+</ul>
+<p>(<strong>Exponential Moving Average</strong>, moyenne mobile exponentielle) de ceux de <code>f_θ</code></p>
+<p>(<code>θ̄<em>{t+1} ← 0.99·θ̄</em>t + 0.01·θ<em>t</code>), avec les gradients bloqués (<code>@torch.no</em>grad()</code> dans l&#x27;étape</p>
+<p>de mise à jour). C&#x27;est le mécanisme qui empêche les deux encodeurs de co-s&#x27;effondrer vers une</p>
+<p>constante triviale — voir le Chapitre 02 pour le traitement complet de l&#x27;anti-collapse.</p>
+<ul>
+<li><strong>Predictor</strong> : un petit MLP (ou convolution légère) qui prend <code>s_x</code> et un embedding d&#x27;action</li>
+</ul>
+<p>discrète (<code>Embedding(n_actions, 32)</code>, sur l&#x27;espace à 17 actions de Crafter), et produit</p>
+<p><code>ŝ_{t+1}</code>.</p>
+<p>La perte est exclusivement un L2 en espace latent : <code>L<em>JEPA = ‖ŝ</em>{t+1} - s_y‖²</code>. Il n&#x27;y a aucun</p>
+<p>terme de reconstruction pixel dans l&#x27;objectif — c&#x27;est la différence structurelle qui définit JEPA</p>
+<p>face aux modèles du monde génératifs/autoencodeurs, pas un simple détail d&#x27;entraînement.</p>
+<h2>Conditionnement par l&#x27;action et rollout latent</h2>
+<p>Comme le predictor est conditionné par <code>a_t</code>, il encode la dynamique de transition plutôt que des</p>
+<p>statistiques marginales sur l&#x27;état suivant : <code>ŝ<em>{t+1} = g(s</em>t, a_t)</code>. Cela permet de dérouler</p>
+<p>(&quot;unroll&quot;) entièrement en espace latent sans toucher au moteur de rendu ni à l&#x27;environnement réel :</p>
+<pre><code>s_1 = g(s_0, a_0);  s_2 = g(s_1, a_1); ...; s_k = g(s_{k-1}, a_{k-1})</code></pre>
+<p>Cette « imagination latente » est le mécanisme exploité par le planificateur (chapitre à venir, sur</p>
+<p>le monde model et la planification) via MPC/CEM : échantillonner des séquences d&#x27;actions</p>
+<p>candidates, les dérouler en espace latent, les évaluer contre un embedding-objectif, exécuter la</p>
+<p>première action de la meilleure séquence, replanifier.</p>
+<h2>Choix d&#x27;architecture et alternative rejetée</h2>
+<p>Le projet a explicitement rejeté V-JEPA 2 figé (« frozen », Assran et al., arXiv:2506.09985, 30</p>
+<p>auteurs, 2025) comme backbone principal : un ViT-H de 600M paramètres entraîné sur ~1M heures de</p>
+<p>vidéo naturelle est hors distribution (« OOD ») sur la vue POV stylisée de Minecraft, et n&#x27;est ni</p>
+<p>clonable ni fine-tunable de bout en bout sur un GPU grand public à 8 Go de VRAM. Il reste</p>
+<p>disponible uniquement comme comparaison secondaire via <code>torch.hub</code>, jamais comme substrat de</p>
+<p>planification. Le design de backbone choisi — petit, entraîné directement sur le domaine cible,</p>
+<p>conditionné par l&#x27;action — suit de très près LeWorldModel (Maes, Le Lidec, Scieur, LeCun,</p>
+<p>Balestriero, arXiv:2603.19312, 2026) : ~15M paramètres, un seul GPU, et l&#x27;objectif à deux termes</p>
+<p>(prédiction du prochain embedding + un régularisateur de variance/covariance) que la perte de</p>
+<p>Mine-JEPA reprend dans son propre principe (voir Chapitre 02).</p>
+<h2>Pourquoi ça plutôt qu&#x27;une politique LLM/VLM pour cette tâche</h2>
+<p>JEPA et un modèle de langage/vision-langage résolvent des problèmes différents et ne sont pas des</p>
+<p>substituts en concurrence ici : un agent piloté par LLM (&quot;computer use&quot;) raisonne bien sur des</p>
+<p>instructions de haut niveau mais, à ~1–10 s par décision, est bien trop lent pour du contrôle</p>
+<p>réactif, et sa &quot;compréhension&quot; de la dynamique de la scène passe par une description textuelle</p>
+<p>plutôt qu&#x27;une prédiction directement conditionnée par les pixels. Le backbone JEPA de Mine-JEPA</p>
+<p>tourne en moins de 100 ms par action et prédit la dynamique visuelle directement à partir des</p>
+<p>pixels, au prix de n&#x27;avoir aucun raisonnement de haut niveau propre. Le cadrage du projet : un LLM</p>
+<p>dirait <em>quoi</em> faire (haut niveau), JEPA fait <em>comment</em> le faire — ce projet construit et valide</p>
+<p>uniquement ce second volet.</p>
+<h2>Références (vérifiées, tirées de docs/references/index.md)</h2>
+<ul>
+<li>LeCun, <em>A Path Towards Autonomous Machine Intelligence</em>, openreview BZ5a1r-kVsf (2022) — la</li>
+</ul>
+<p>proposition originale de JEPA.</p>
+<ul>
+<li>Assran et al., I-JEPA, arXiv:2301.08243 (CVPR 2023) — lignée de l&#x27;architecture d&#x27;encodeur.</li>
+<li>Maes, Le Lidec, Scieur, LeCun, Balestriero, LeWorldModel, arXiv:2603.19312 (2026) —</li>
+</ul>
+<p>l&#x27;architecture publiée la plus proche ; source du gate <code>ratio = val<em>pred/val</em>copy</code> utilisé à</p>
+<p>partir du Chapitre 03.</p>
+<ul>
+<li>Assran et al., V-JEPA 2, arXiv:2506.09985 (2025) — rejeté comme backbone principal, comparaison</li>
+</ul>
+<p>uniquement.</p>
+<ul>
+<li>Littwin et al., arXiv:2407.03475 (2024) — fondement théorique de pourquoi JEPA favorise les</li>
+</ul>
+<p>features prédictives plutôt que les features bruitées à forte variance.</p>
         </div>
       </div>
 
+
     </div>
   </article>
-
-  <nav class="chapter-nav" aria-label="Navigation entre chapitres">
-    <div class="wrap chapter-nav-inner">
-      <a class="chapter-nav-link" href="index.html">&larr; Retour au parcours</a>
-      <a class="chapter-nav-link" href="02-le-piege-du-collapse.html">Chapitre suivant : Le raccourci que le modèle essaie toujours de trouver &rarr;</a>
-    </div>
-  </nav>
 
 </main>
 

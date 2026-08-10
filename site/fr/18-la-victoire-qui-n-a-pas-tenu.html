@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>La première victoire de la campagne n&#x27;a pas survécu à un échantillon plus grand — et c&#x27;est elle-même qui s&#x27;en est aperçue — Mine-JEPA</title>
+<meta name="description" content="Chapitre 18 du parcours Mine-JEPA : La première victoire de la campagne n&#x27;a pas survécu à un échantillon plus grand — et c&#x27;est elle-même qui s&#x27;en est aperçue.">
+<link rel="stylesheet" href="../style.css">
+<script>document.documentElement.classList.add("js");</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Aller au contenu</a>
+
+<header class="site-header">
+  <div class="wrap site-header-inner">
+    <a class="site-brand" href="index.html"><span class="brand-mark" aria-hidden="true">&#9935;</span> Mine-JEPA</a>
+    <div class="header-controls">
+      <span class="last-updated" title="Date de mise à jour">Mis à jour le: 2026-08-11</span>
+            <nav class="lang-switch" aria-label="Langue du site">
+        <a href="18-la-victoire-qui-n-a-pas-tenu.html" aria-current="true" lang="fr" hreflang="fr">FR</a>
+        <a href="../en/18-the-victory-that-did-not-hold.html" lang="en" hreflang="en">EN</a>
+      </nav>
+      <div class="track-pref" data-track-pref>
+        <span class="track-pref-label" id="track-pref-label">Afficher :</span>
+        <button type="button" data-track-pref-value="beginner" aria-pressed="true" aria-describedby="track-pref-label">Débutant</button>
+        <button type="button" data-track-pref-value="expert" aria-pressed="false" aria-describedby="track-pref-label">Expert</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <nav class="breadcrumb" aria-label="Fil d'Ariane">
+    <div class="wrap">
+      <a href="index.html">Parcours d'apprentissage</a>
+      <span aria-hidden="true">/</span>
+      <span>Chapitre 18</span>
+    </div>
+  </nav>
+
+  <article class="chapter">
+    <div class="wrap">
+
+      <header class="chapter-header">
+        <p class="chapter-kicker">Chapitre 18</p>
+        <h1>La première victoire de la campagne n&#x27;a pas survécu à un échantillon plus grand — et c&#x27;est elle-même qui s&#x27;en est aperçue</h1>
+        <p class="chapter-prereqs">Prérequis : Chapitres 1 à 17.</p>
+      </header>
+
+
+      <div class="tracks" data-tracks>
+        <div class="track-tabs" role="tablist" aria-label="Niveau de lecture">
+          <button class="track-tab" role="tab" id="tab-beginner" aria-controls="panel-beginner" aria-selected="true" data-track-tab="beginner">Débutant</button>
+          <button class="track-tab" role="tab" id="tab-expert" aria-controls="panel-expert" aria-selected="false" tabindex="-1" data-track-tab="expert">Expert</button>
+        </div>
+
+        <div class="track-panel is-active chapter-prose" data-track-panel="beginner" role="tabpanel" id="panel-beginner" aria-labelledby="tab-beginner">
+          <p class="track-kicker">Piste débutant</p>
+
+<h2>Là où on en était</h2>
+<p>Le Chapitre 17 s&#x27;est terminé sur un chiffre lourd : <strong>six</strong> façons complètement différentes de</p>
+<p>mesurer « y a-t-il un arbre proche ? » — deux petits modules entraînés, un géant du web jamais</p>
+<p>touché par ce projet, un réentraînement direct, un calcul de couleur fait main, et même une</p>
+<p>simple formule statistique sans aucun apprentissage — étaient toutes tombées dans le même</p>
+<p>piège : elles se laissaient distraire par la luminosité de la scène plutôt que de vraiment</p>
+<p>juger la présence d&#x27;un arbre. La décision de la suite (réentraîner le cœur du modèle, ou</p>
+<p>accepter cette limite et continuer avec ce qui marche déjà) restait posée à l&#x27;utilisateur,</p>
+<p>non tranchée.</p>
+<p>Avant de trancher, une relecture des dernières publications scientifiques sur des sujets</p>
+<p>proches a fait remonter deux idées neuves, bon marché à tester avant tout engagement lourd.</p>
+<p>Ce chapitre raconte ce qui s&#x27;est passé quand elles l&#x27;ont été — et son événement le plus</p>
+<p>important n&#x27;est pas un résultat, mais une <em></em>correction que l&#x27;équipe s&#x27;est infligée à elle-même,</p>
+<p>dans la même session de travail<em></em>, avant que quiconque n&#x27;ait le temps de crier victoire trop</p>
+<p>vite.</p>
+<h2>Idée n°1 : et si on regardait la distance, pas la couleur ?</h2>
+<p>Toutes les tentatives précédentes essayaient de deviner « il y a un arbre proche » à partir de</p>
+<p>la couleur et de la texture de l&#x27;image — exactement le genre d&#x27;indice que la luminosité peut</p>
+<p>polluer. Une publication scientifique récente proposait autre chose : ajouter à un modèle JEPA</p>
+<p>une notion de <strong>profondeur</strong> — à quelle distance se trouve chaque partie de l&#x27;image, un peu</p>
+<p>comme un radar qui mesure les distances plutôt qu&#x27;un œil qui regarde les couleurs — et cette</p>
+<p>publication montrait que ça aidait un modèle à mieux généraliser sur des scènes inconnues.</p>
+<p>Le test est construit exactement sur le modèle du Chapitre 14 : prendre un modèle de vision</p>
+<p>tout fait, jamais entraîné sur Minecraft, capable d&#x27;estimer à quelle distance se trouve chaque</p>
+<p>zone d&#x27;une image à partir d&#x27;une seule photo. Aucun réglage n&#x27;est ajusté pour Minecraft — c&#x27;est</p>
+<p>un outil extérieur, utilisé tel quel, exactement pour éviter qu&#x27;un apprentissage propre au</p>
+<p>projet ne réinvente le même raccourci de luminosité.</p>
+<p>Sur le tout petit échantillon d&#x27;images déjà utilisé par chaque chapitre précédent (4 images</p>
+<p>avec un arbre proche, 6 sans arbre), ce test a réussi les <strong>deux</strong> conditions que six tentatives</p>
+<p>précédentes n&#x27;avaient jamais réussies ensemble : il distinguait bien les scènes avec arbre des</p>
+<p>scènes sans arbre, ET il ne se laissait presque pas distraire par la luminosité — de très loin</p>
+<p>le meilleur résultat sur ce deuxième point depuis le début de la campagne. Sur le moment, ça</p>
+<p>ressemblait au tout premier « oui » de cette longue enquête.</p>
+<h2>Mais l&#x27;équipe ne s&#x27;est pas arrêtée là — et a bien fait</h2>
+<p>Un chiffre a immédiatement mis la puce à l&#x27;oreille : sur la première condition (bien distinguer</p>
+<p>arbre/pas d&#x27;arbre), le résultat ne dépassait le seuil de réussite que d&#x27;un tout petit cheveu —</p>
+<p>le genre de marge qui peut disparaître si on regarde plus d&#x27;exemples. Plutôt que de publier ce</p>
+<p>résultat comme une victoire, la même équipe, dans la même session de travail, a immédiatement</p>
+<p>élargi l&#x27;échantillon d&#x27;images : au lieu de se contenter des 10 images habituelles, elle a</p>
+<p>examiné et classé à la main <strong>toutes</strong> les images restantes disponibles pour ce test — pas une</p>
+<p>sélection triée sur le volet, la population entière — pour arriver à 27 images au total (en</p>
+<p>écartant honnêtement 4 images jugées trop ambiguës pour être classées).</p>
+<p><strong>Sur cet échantillon plus grand, le résultat s&#x27;est effondré.</strong> La capacité à distinguer</p>
+<p>arbre/pas-d&#x27;arbre est repassée sous le seuil de réussite. Le sens restait correct — les images</p>
+<p>avec arbre continuaient à scorer un peu plus haut en moyenne — mais l&#x27;écart était devenu trop</p>
+<p>faible pour être une vraie découverte : c&#x27;était le genre d&#x27;écart qu&#x27;un petit échantillon produit</p>
+<p>parfois par pur hasard, pas une propriété fiable du signal.</p>
+<p>C&#x27;est le cœur de ce chapitre : <em></em>la toute première victoire apparente de cette campagne longue</p>
+<p>de dix-huit tentatives n&#x27;a pas résisté à un examen plus large — et c&#x27;est la même équipe, le même</p>
+<p>jour, qui l&#x27;a détecté et corrigé<em></em>, plutôt que de laisser le premier résultat flatteur devenir</p>
+<p>l&#x27;histoire officielle. C&#x27;est exactement la même honnêteté qui, depuis le tout premier chapitre</p>
+<p>de ce site, a fait dire « 0/20 », « pas significatif » ou « ça ne marche pas » chaque fois que</p>
+<p>c&#x27;était la vérité — appliquée ici, pour la première fois, à un résultat du projet lui-même</p>
+<p>plutôt qu&#x27;à celui d&#x27;un concurrent extérieur.</p>
+<p>Une chose importante à ne pas confondre, cependant : <strong>deux affirmations différentes</strong>, et une</p>
+<p>seule d&#x27;entre elles a survécu. « Ce signal ne se laisse pas distraire par la luminosité » —</p>
+<p>vrai, confirmé, et c&#x27;est même le meilleur résultat de toute la campagne sur ce point précis.</p>
+<p>« Ce signal détecte vraiment un arbre proche » — faux, en tout cas pas encore prouvé, dès qu&#x27;on</p>
+<p>regarde assez d&#x27;exemples. Ne pas être trompé par la luminosité ne suffit pas à être un bon</p>
+<p>détecteur d&#x27;arbre.</p>
+<h2>Idée n°2 : et si le vrai problème n&#x27;était pas visuel du tout ?</h2>
+<p>Une deuxième publication scientifique, sur un sujet différent, a inspiré une question qui n&#x27;a</p>
+<p>rien à voir avec les couleurs ou la lumière : est-ce que l&#x27;agent a appris à <strong>bouger</strong> de façon</p>
+<p>suffisamment différente dans les deux jeux d&#x27;entraînement pour que ça pose problème tout seul ?</p>
+<p>Le test compte, sans rien entraîner ni faire tourner de GPU, quelles actions apparaissent dans</p>
+<p>les parties d&#x27;experts utilisées pour chacune des deux tâches. Résultat frappant : dans les</p>
+<p>parties d&#x27;experts de la tâche « couper un arbre » (Treechop), l&#x27;action la plus fréquente et de</p>
+<p>loin est <strong>frapper</strong> (58,5 % du temps) — logique, l&#x27;expert passe son temps à bûcheronner. Dans</p>
+<p>les parties d&#x27;experts de la tâche de fabrication (Obtain), les actions sont beaucoup plus</p>
+<p>partagées entre « ne rien faire », « avancer » et « frapper », avec beaucoup moins de frappe. Un</p>
+<p>calcul statistique qui mesure à quel point deux répartitions d&#x27;actions sont différentes donne un</p>
+<p>écart <strong>104 fois plus grand</strong> que ce qu&#x27;on obtiendrait par pur hasard en comparant une moitié</p>
+<p>d&#x27;une partie d&#x27;experts à l&#x27;autre moitié de la même partie.</p>
+<p>Ce n&#x27;est prouvé la cause de rien pour l&#x27;instant — c&#x27;est un fait nouveau et honnêtement présenté</p>
+<p>comme une piste, pas une certitude. Mais c&#x27;est la toute première fois, en dix-huit tentatives,</p>
+<p>qu&#x27;un test fait remonter un écart réel et important entre les deux jeux d&#x27;entraînement qui n&#x27;a</p>
+<p><strong>rien à voir avec la couleur ou la lumière</strong>. Ça ouvre une porte que personne n&#x27;avait encore</p>
+<p>ouverte : peut-être que le modèle ne s&#x27;est simplement jamais assez entraîné à bouger comme le</p>
+<p>fait un agent en exploration, parce que ses parties d&#x27;experts lui montraient surtout comment</p>
+<p>bûcheronner.</p>
+<h2>Un petit test en direct : rien de cassé de façon spectaculaire, mais un signal à surveiller</h2>
+<p>Une petite expérience en direct (6 parties) a essayé de faire naviguer l&#x27;agent en utilisant</p>
+<p>cette estimation de distance plutôt que la boussole habituelle, dès que l&#x27;agent semble perdu.</p>
+<p>Le mécanisme ne s&#x27;est déclenché que 3 fois sur les 6 parties — trop peu pour vraiment juger s&#x27;il</p>
+<p>se comporte bien — et n&#x27;a montré aucun blocage grave sur une seule direction, contrairement à</p>
+<p>plusieurs tentatives ratées passées. Aucune coupe de bois, sans surprise, ce n&#x27;était pas la</p>
+<p>question posée.</p>
+<p>En revanche, un signal préoccupant est apparu et a été signalé honnêtement plutôt que caché :</p>
+<p>dans 2 parties sur 6, l&#x27;agent est mort <strong>pendant que</strong> le réflexe anti-noyade (réparé et confirmé</p>
+<p>au Chapitre 13) essayait activement de le sortir de l&#x27;eau. Ce réflexe avait pourtant survécu à</p>
+<p>6 parties sur 6 sans aucune mort lors de sa dernière vérification. Rien ne prouve encore que</p>
+<p>c&#x27;est cette nouvelle méthode de navigation par distance qui cause le problème — ça pourrait être</p>
+<p>un hasard sur un aussi petit nombre de parties — mais l&#x27;explication la plus plausible est</p>
+<p>intéressante : les modèles qui estiment la distance à partir d&#x27;une seule image se trompent</p>
+<p>souvent sur l&#x27;eau, une surface qui réfléchit la lumière de façon trompeuse. Ce point mérite une</p>
+<p>vérification dédiée avant de faire confiance à la solution anti-noyade avec ce nouveau</p>
+<p>mécanisme de navigation.</p>
+<h2>Ce que ce chapitre change, et ce qu&#x27;il ne change pas</h2>
+<ul>
+<li>Le diagnostic du Chapitre 17 (le défaut de luminosité est profondément ancré dans la façon</li>
+</ul>
+<p>dont le modèle de base compresse une image, pas dans une méthode d&#x27;apprentissage précise)</p>
+<p><strong>tient toujours</strong> — le test « profondeur » n&#x27;a pas réparé le problème central, seulement</p>
+<p>montré qu&#x27;un signal peut échapper à ce piège précis sans pour autant devenir un bon détecteur</p>
+<p>d&#x27;arbre.</p>
+<ul>
+<li><strong>Une vraie nouveauté apparaît</strong> : un écart de comportement, pas de perception, entre les</li>
+</ul>
+<p>deux jeux d&#x27;entraînement — jamais mesuré avant, et qui n&#x27;a rien à voir avec la couleur ou la</p>
+<p>lumière.</p>
+<ul>
+<li><strong>Le moment le plus important de ce chapitre reste la correction elle-même</strong> : un résultat qui</li>
+</ul>
+<p>semblait être la première vraie victoire de dix-huit tentatives s&#x27;est révélé être un mirage dû</p>
+<p>à un trop petit échantillon — et l&#x27;équipe l&#x27;a découvert et corrigé le jour même, sans laisser</p>
+<p>la version flatteuse s&#x27;installer. C&#x27;est la preuve concrète que la règle « vérifier avant de</p>
+<p>croire », appliquée depuis le premier chapitre de ce site, fonctionne aussi quand elle s&#x27;applique</p>
+<p>à son propre travail.</p>
+<ul>
+<li>La décision de fond (réentraîner le modèle de base, ou consolider autour de ce qui marche déjà)</li>
+</ul>
+<p>reste, comme au Chapitre 17, une question ouverte pour l&#x27;utilisateur — pas tranchée par ce</p>
+<p>chapitre.</p>
+        </div>
+
+        <div class="track-panel chapter-prose" data-track-panel="expert" role="tabpanel" id="panel-expert" aria-labelledby="tab-expert">
+          <p class="track-kicker">Piste expert</p>
+
+<h2>Contexte</h2>
+<p>Le Chapitre 17 (attempt #17) a clos deux attaques directes contre la notation goal-centroid de</p>
+<p><code>ebwm.pt</code> (repli OOD par distance de Mahalanobis, vérification de l&#x27;hypothèse « manque de</p>
+<p>données sombres ») sur un statu quo : 6 confirmations indépendantes du même confound</p>
+<p>luminosité/composition de scène, décision retrain-vs-consolidate laissée à l&#x27;utilisateur. Ce</p>
+<p>chapitre couvre l&#x27;attempt #18 de <code>docs/10<em>coldstart</em>engineering.md</code>/<code>CLAUDE.md#Phase 5+</code> : une</p>
+<p>passe de recherche bibliographique dédiée (2026-07-27, couvrant 2026-07-13 à 2026-07-27) a fait</p>
+<p>remonter 5 nouveaux papers JEPA (ajoutés à <code>docs/references/index.md</code>), dont deux ont rouvert des</p>
+<p>sous-questions bon marché avant tout engagement de réentraînement. L&#x27;événement notable de cette</p>
+<p>tentative n&#x27;est pas un résultat mais une <strong>correction émise dans la même session</strong>.</p>
+<h2>Diagnostic 1 — généralisation de la pseudo-profondeur : un premier GO apparent qui n&#x27;a pas</h2>
+<p>survécu à un échantillon plus large</p>
+<p>Motivé par Khan, « Depth-Regularized JEPA World Models Learn More Transferable Representations</p>
+<p>from Real Outdoor Robot Data » (<a href="https://arxiv.org/abs/2607.16314">arXiv:2607.16314</a>, 2026) : un</p>
+<p>modèle du monde JEPA de 18M paramètres + SIGReg sur vidéo robotique réelle, avec un terme</p>
+<p>auxiliaire de supervision par profondeur, gagne -33% d&#x27;erreur sur une sonde d&#x27;odométrie visuelle</p>
+<p>et une meilleure séparation du score de surprise en distribution ET hors distribution (benchmark</p>
+<p>TartanGround) sous décalage de domaine réel, sans coût d&#x27;inférence supplémentaire — la première</p>
+<p>instance publiée de la conclusion de l&#x27;attempt #15 lui-même : le confound de luminosité a besoin</p>
+<p>« d&#x27;une modalité différente », pas d&#x27;une nouvelle feature photométrique.</p>
+<p><code>scripts/diagnose<em>depth</em>gate.py</code> fait tourner MiDaS_small (<code>torch.hub</code>, <code>intel-isl/MiDaS</code>,</p>
+<p>tout fait, aucun entraînement Minecraft-spécifique — même logique de « modèle extérieur » que le</p>
+<p>test CLIP de l&#x27;attempt #14 Phase 1) sur le jeu de 251 frames standard de la campagne, en notant</p>
+<p>chaque frame par la moyenne de ses 10% de pixels les plus proches selon MiDaS (proxy d&#x27;objet le</p>
+<p>plus proche).</p>
+<p><strong>Première passe, le petit échantillon habituel de la campagne (tree<em>close n=4, no</em>tree n=6) :</strong></p>
+<table>
+<thead><tr><th>Gate</th><th>Seuil</th><th>Résultat</th></tr></thead>
+<tbody>
+<tr><td>A — séparation</td><td>≥ 1,3x</td><td><strong>PASS — 1,304x</strong></td></tr>
+<tr><td>B — indépendance à la luminosité</td><td>\</td><td>r\</td><td>&lt; 0,3</td><td><strong>PASS — r = 0,0451</strong> (le meilleur de toute la campagne, de loin ; fourchette précédente 0,117-0,947)</td></tr>
+</tbody>
+</table>
+<p>Lu au premier degré, c&#x27;était le premier mécanisme sur 7 tests indépendants (#7, #11, #14</p>
+<p>Phase1/Phase2, #15, #17 Prong A, et celui-ci) à réussir les deux gates établis — signalé sur le</p>
+<p>moment comme « une marge fine sur un petit échantillon », pas déclaré comme une victoire, parce</p>
+<p>que cette marge semblait fragile à l&#x27;inspection (Gate A dépassait le seuil de 1,3x de seulement</p>
+<p>0,004).</p>
+<p><strong>Suivi le même jour : l&#x27;échantillon annoté à la main a été étendu de 10 à 27 frames</strong> (21</p>
+<p>nouveaux candidats inspectés visuellement — la population <em>entière</em> restante éligible pour ce</p>
+<p>gate dans <code>data/minerl<em>coverage/episodes.npz</code> et <code>assets/spawn</em>thumbs/</code>, pas une sous-sélection</p>
+<p>triée sur le volet ; 4 écartées comme authentiquement ambiguës, un taux d&#x27;exclusion de 19%,</p>
+<p>rapporté plutôt que caché).</p>
+<table>
+<thead><tr><th>Gate</th><th>n=10 (original)</th><th>n=27 (étendu)</th></tr></thead>
+<tbody>
+<tr><td>A — séparation</td><td>1,304x (PASS)</td><td><strong>1,086x (FAIL)</strong></td></tr>
+<tr><td>B — indépendance à la luminosité</td><td>r=0,0451 (PASS)</td><td>r=0,0451 (PASS, inchangé)</td></tr>
+</tbody>
+</table>
+<div class="callout">
+<p><em></em>LEÇON : le premier passage à 1,304x était un artefact de petit échantillon, pas une vraie</p>
+<p>séparation robuste.<em></em> Les frames avec arbre proche continuent à scorer plus haut en moyenne que</p>
+<p>les frames sans arbre (644,3 contre 593,5) — la <em>direction</em> reste correcte — mais la marge s&#x27;est</p>
+<p>effondrée bien en dessous du seuil de 1,3x une fois l&#x27;échantillon presque triplé. Le résultat</p>
+<p>d&#x27;indépendance à la luminosité du Gate B est réel et non affecté : la profondeur n&#x27;est</p>
+<p>authentiquement pas un raccourci de luminosité, le meilleur résultat de tout mécanisme testé</p>
+<p>par cette campagne. Mais l&#x27;indépendance à un confound n&#x27;est pas la même chose qu&#x27;être un</p>
+<p>détecteur d&#x27;arbre qui fonctionne.</p>
+</div>
+<p><strong>VERDICT CORRIGÉ : MIXED, pas GO.</strong> Le diagnostic établi à l&#x27;attempt #17 — aucun mécanisme n&#x27;a</p>
+<p>encore séparé proprement les scènes proches-d&#x27;arbre des scènes ouvertes tout en restant</p>
+<p>indépendant de la luminosité, à une taille d&#x27;échantillon fiable — <strong>tient toujours</strong>. Ce qui a</p>
+<p>réellement changé : l&#x27;indépendance à la luminosité de la profondeur est confirmée et</p>
+<p>reproductible (un signal non photométrique qui n&#x27;est pas lui-même un raccourci de luminosité,</p>
+<p>même s&#x27;il n&#x27;est pas encore, seul, un détecteur qui fonctionne). Corrigé dans la session même où</p>
+<p>il a été trouvé, pas laissé debout comme un faux premier GO — la discipline d&#x27;honnêteté de la</p>
+<p>campagne appliquée à elle-même, pas seulement à chaque nouveau mécanisme testé.</p>
+<h2>Diagnostic 2 — recouvrement de couverture d&#x27;actions Treechop/Obtain : un facteur réellement</h2>
+<p>nouveau, non photométrique, qui tient toujours</p>
+<p>Motivé par Zhang, Guan, Zhang, Zhang, Li, « On the Identifiability of Controlled World Models »</p>
+<p>(<a href="https://arxiv.org/abs/2607.22430">arXiv:2607.22430</a>, 2026) : un JEPA action-conditionné ne</p>
+<p>retrouve un état/dynamique fiable que si la distribution d&#x27;actions d&#x27;entraînement a une</p>
+<p>couverture adéquate. <code>scripts/diagnose<em>action</em>coverage.py</code> mesure ceci directement — pas de</p>
+<p>GPU, pures statistiques sur tableaux d&#x27;actions, seedé, auto-calibré contre un null Treechop-vs-</p>
+<p>Treechop en split-half plutôt qu&#x27;un seuil inventé.</p>
+<ul>
+<li><strong>Fraction hors-vocabulaire</strong> : seulement <strong>2,33%</strong> des actions Obtain poolées utilisent un</li>
+</ul>
+<p>indice hors du vocabulaire de 17 actions entraîné de <code>ebwm.pt</code> — bien plus bas que l&#x27;estimation</p>
+<p>naïve de départ « 5/22≈22,7% » (les démos d&#x27;experts orientées fabrication invoquent rarement le</p>
+<p>craft par rapport au mouvement ; le jeu de couverture en politique aléatoire seul est à 22,6%</p>
+<p>hors-vocabulaire).</p>
+<ul>
+<li><strong>Divergence de Jensen-Shannon sur les indices partagés</strong> : Treechop vs. Obtain poolé =</li>
+</ul>
+<p><strong>0,1453</strong>, contre un null Treechop-vs-Treechop-split-half de <strong>0,0014</strong> — un ratio de <strong>104x</strong>,</p>
+<p>non explicable par le bruit d&#x27;échantillonnage. Les démos Treechop sont 58,5% attack / 14,7%</p>
+<p>forward / 12,0% noop (« marcher vers un arbre, tenir l&#x27;attaque ») ; Obtain est comparativement</p>
+<p>plus riche en noop/forward et pauvre en attack (33%/31%/25%).</p>
+<ul>
+<li><strong>Résultat bonus, plus spécifique que la question posée</strong> : les données d&#x27;entraînement propres</li>
+</ul>
+<p>de Treechop n&#x27;exercent jamais que 8 des 17 indices d&#x27;action entraînés de <code>ebwm.pt</code> — strafe,</p>
+<p>jump, et les deux directions d&#x27;inclinaison caméra ne sont jamais échantillonnés à</p>
+<p>l&#x27;entraînement, un écart de couverture interne à Treechop, indépendant du domaine Obtain.</p>
+<div class="callout">
+<p><strong>LEÇON, tenue à la discipline « hypothèse vs. confirmée » de la campagne</strong> : ceci établit un</p>
+<p>écart distributionnel réel, large, non photométrique — le premier diagnostic sur 18 tentatives</p>
+<p>à faire remonter un facteur candidat en dehors de la famille luminosité/composition de scène —</p>
+<p>mais ne prouve PAS à lui seul que ce mécanisme cause l&#x27;inversion de score de l&#x27;attempt #10.</p>
+<p>L&#x27;affirmation du papier concerne l&#x27;identifiabilité état-action-état-suivant ; ce diagnostic n&#x27;a</p>
+<p>mesuré que l&#x27;histogramme marginal d&#x27;usage des actions. Un facteur contributif plausible, pas</p>
+<p>une cause confirmée.</p>
+</div>
+<p>Reformule « réentraîner l&#x27;objectif central » d&#x27;une idée vague et coûteuse en deux candidats</p>
+<p>concrets et bornés : élargir la couverture d&#x27;actions propre de Treechop, et/ou repondérer</p>
+<p>l&#x27;entraînement vers les actions qu&#x27;Obtain exerce réellement. Non affecté par la correction du</p>
+<p>Diagnostic 1.</p>
+<h2>Test de sanité en direct — <code>scan.macro: &quot;depth&quot;</code> (N=6) : pas de coupe, mécanisme à peine</h2>
+<p>exercé, un signal de régression signalé sans être enterré</p>
+<p>Dispatché contre le résultat ORIGINAL (depuis corrigé) du Diagnostic 1, avant que l&#x27;échantillon</p>
+<p>plus large ne revienne. Recadré correctement une fois la correction arrivée : lu comme « ce cap</p>
+<p>piloté par la profondeur se comporte-t-il sainement », pas comme validant une réparation.</p>
+<p><code>mine_jepa/ebwm/depth.py</code> (nouveau module — chargement MiDaS, notation de profondeur par colonne,</p>
+<p>calcul de delta de cap) alimente une nouvelle variante de macro de scan</p>
+<p>(<code>configs/play<em>craft</em>commit4<em>depth.yaml</code>, construite sur la base déjà validée commit</em>length=4 +</p>
+<p>évitement de danger). Par construction, ne touche jamais à la notation en espace latent de</p>
+<p><code>CraftPlannerV4</code>/<code>SwitchingCraftPlanner</code> — MiDaS a besoin de pixels réels, les rollouts candidats</p>
+<p>du planificateur sont des latents imaginés sans pixels à décoder, donc la profondeur ne peut</p>
+<p>informer qu&#x27;un cap de navigation sur la frame réelle courante, pas un score de rollout.</p>
+<ul>
+<li><strong>0/6 logs, 0/6 planches, récompense moyenne 0,000</strong> (sous la ligne de base ~0,4 en politique</li>
+</ul>
+<p>aléatoire de MineRL) — attendu, pas la question posée par ce batch.</p>
+<ul>
+<li><strong>La macro de scan ne s&#x27;est déclenchée que 3 fois sur les 6 épisodes</strong> — <code>goal<em>score</em>std</code></li>
+</ul>
+<p>descendait rarement assez bas pour l&#x27;invoquer. La question de sanité n&#x27;est répondue que</p>
+<p>faiblement par ce batch, indépendamment de la réserve de petit N qui s&#x27;applique déjà partout</p>
+<p>dans cette campagne.</p>
+<ul>
+<li>Sur les 3 déclenchements : aucun blocage sévère (contrairement au CEM de l&#x27;attempt #6 ou au</li>
+</ul>
+<p>priming de pool d&#x27;actions de l&#x27;attempt #8, tous deux &gt;80% de concentration sur une seule</p>
+<p>action) ; un a convergé en 2 pas ; un a tenu un cap constant sur la colonne la plus à droite</p>
+<p>sur 4 des 6 pas avec un détour ; <em></em>un a fait un revirement complet de la colonne la plus à</p>
+<p>droite (delta +26,2°) vers la plus à gauche (delta -26,2°) en un seul pas de 16 ticks<em></em> — pas</p>
+<p>le bug classique de ping-pong-à-chaque-replan de la campagne (premier round de fuite dirigée</p>
+<p>de l&#x27;attempt #13), mais un revirement réel, inexpliqué, sur un échantillon trop petit (2</p>
+<p>points) pour être caractérisé davantage.</p>
+<ul>
+<li><strong>Signal de régression, signalé plutôt qu&#x27;enterré</strong> : 2/6 épisodes se sont terminés par</li>
+</ul>
+<p><code>died<em>during</em>escape=True</code> (mort pendant que le réflexe anti-noyade tentait activement de</p>
+<p>s&#x27;échapper de l&#x27;eau) — exactement le mode d&#x27;échec que le dernier round de l&#x27;attempt #13</p>
+<p>(élargissement de <code>align_deg</code> + ancre sèche débouncée) croyait RÉPARÉ à 6/6 épisodes survécus,</p>
+<p>0 mort, même N=6. Ce batch réutilise cette configuration de danger identique, en ajoutant</p>
+<p>seulement la nouvelle macro de scan par profondeur en parallèle. Pas établi comme causal à ce</p>
+<p>N (pourrait être du bruit de batch à batch qui recoïncide par hasard), mais plausible : les</p>
+<p>modèles de profondeur monoculaire sont connus pour se comporter de façon imprévisible sur des</p>
+<p>surfaces réfléchissantes/transparentes comme l&#x27;eau, donc un cap piloté par la profondeur</p>
+<p>pourrait plausiblement diriger vers l&#x27;eau ou s&#x27;y attarder d&#x27;une façon que les macros</p>
+<p><code>&quot;turn&quot;</code>/<code>&quot;frontier&quot;</code> précédentes ne faisaient pas. <em></em>Avant de faire confiance à la réparation</p>
+<p>anti-danger de l&#x27;attempt #13 comme robuste à travers les choix de macro de scan, ceci mérite</p>
+<p>une vérification dédiée — pas affirmé comme régression confirmée, mais pas non plus écarté.<em></em></p>
+<p>GIF : <code>assets/agent<em>play</em>craft<em>commit4</em>depth.gif</code>. Log complet :</p>
+<p><code>logs/coldstart<em>attempt18</em>depth<em>sanity</em>n6.log</code>.</p>
+<h2>Diagnostic d&#x27;ensemble après l&#x27;attempt #18</h2>
+<p>La conclusion « le confound encodeur/notation est structurel et non réparable sans réentraîner »</p>
+<p>de l&#x27;attempt #17 <strong>tient toujours sur la question de la séparation</strong> — aucun mécanisme n&#x27;a encore</p>
+<p>séparé proprement les scènes proches-d&#x27;arbre des scènes ouvertes tout en restant indépendant de</p>
+<p>la luminosité, à une taille d&#x27;échantillon fiable. Ce qui a réellement changé : l&#x27;indépendance à</p>
+<p>la luminosité de la profondeur (Gate B, r=0,045, inchangé sur les deux échantillons) est réelle</p>
+<p>et reproductible — un signal non photométrique qui n&#x27;est pas lui-même un raccourci de</p>
+<p>luminosité, même s&#x27;il n&#x27;est pas encore, seul, un détecteur d&#x27;arbre qui fonctionne — et l&#x27;écart de</p>
+<p>couverture d&#x27;actions du Diagnostic 2 est un facteur séparé, toujours debout, authentiquement</p>
+<p>nouveau et non photométrique. Aucun des deux n&#x27;est une réparation en direct prouvée. Le</p>
+<p>Diagnostic 2 reformule « réentraîner l&#x27;objectif central » en deux candidats concrets et bornés</p>
+<p>(repondération de la couverture d&#x27;actions ; SIGReg à la place de VICReg, voir</p>
+<p><a href="https://arxiv.org/abs/2607.13612">arXiv:2607.13612</a>) plutôt qu&#x27;une idée vague et coûteuse. Le</p>
+<p>signal de régression du test de sanité en direct est une question ouverte séparée sur</p>
+<p>l&#x27;interaction entre mécanismes (choix de macro de scan vs. évitement de danger), sans rapport</p>
+<p>avec le score central. <em></em>La décision sur la suite (réentraîner l&#x27;objectif central de <code>ebwm.pt</code></p>
+<p>vs. consolider autour des mécanismes de couverture/exécution qui fonctionnent déjà) appartient</p>
+<p>toujours à l&#x27;utilisateur — cette tentative enregistre des résultats, pas un engagement vers une</p>
+<p>prochaine étape.<em></em></p>
+<h2>Références</h2>
+<ul>
+<li>Khan, « Depth-Regularized JEPA World Models Learn More Transferable Representations from Real</li>
+</ul>
+<p>Outdoor Robot Data », <a href="https://arxiv.org/abs/2607.16314">arXiv:2607.16314</a> (2026) — fondement</p>
+<p>du Diagnostic 1 (MiDaS_small, séparation par profondeur, indépendance à la luminosité).</p>
+<ul>
+<li>Zhang, Guan, Zhang, Zhang, Li, « On the Identifiability of Controlled World Models »,</li>
+</ul>
+<p><a href="https://arxiv.org/abs/2607.22430">arXiv:2607.22430</a> (2026) — fondement du Diagnostic 2</p>
+<p>(recouvrement de couverture d&#x27;actions Treechop/Obtain).</p>
+<ul>
+<li>Arnez, Gomez-Villa, « The SIGReg Objective as Variational Free Energy: A Theoretical</li>
+</ul>
+<p>Active-Inference Account of JEPA World Models », <a href="https://arxiv.org/abs/2607.13612">arXiv:2607.13612</a></p>
+<p>(2026) — mentionnée dans le diagnostic d&#x27;ensemble comme second candidat concret si le</p>
+<p>réentraînement de l&#x27;objectif central est un jour engagé ; non testée dans ce chapitre.</p>
+<p>Les trois références sont vérifiées dans <code>docs/references/index.md</code>.</p>
+        </div>
+      </div>
+
+
+    </div>
+  </article>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>Mine-JEPA — un agent JEPA qui apprend à jouer à Minecraft à partir des pixels, documenté au fil de l'eau.</p>
+    <p class="footer-links">
+      Auteur : <a href="https://x.com/reddwarf03" target="_blank" rel="noopener">@reddwarf03 (X/Twitter)</a> ·
+      <a href="https://github.com/redDwarf03" target="_blank" rel="noopener">redDwarf03 (GitHub)</a> |
+      <a href="https://github.com/redDwarf03/mine-jepa" target="_blank" rel="noopener">Repository GitHub</a>
+    </p>
+  </div>
+</footer>
+
+<script src="../script.js" defer></script>
+</body>
+</html>

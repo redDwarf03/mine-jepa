@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Même un détecteur qui ne peut rien apprendre retombe sur le même raccourci : le problème est dans l&#x27;œil, pas dans l&#x27;apprentissage — Mine-JEPA</title>
+<meta name="description" content="Chapitre 17 du parcours Mine-JEPA : Même un détecteur qui ne peut rien apprendre retombe sur le même raccourci : le problème est dans l&#x27;œil, pas dans l&#x27;apprentissage.">
+<link rel="stylesheet" href="../style.css">
+<script>document.documentElement.classList.add("js");</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Aller au contenu</a>
+
+<header class="site-header">
+  <div class="wrap site-header-inner">
+    <a class="site-brand" href="index.html"><span class="brand-mark" aria-hidden="true">&#9935;</span> Mine-JEPA</a>
+    <div class="header-controls">
+      <span class="last-updated" title="Date de mise à jour">Mis à jour le: 2026-08-11</span>
+            <nav class="lang-switch" aria-label="Langue du site">
+        <a href="17-le-raccourci-est-dans-l-oeil.html" aria-current="true" lang="fr" hreflang="fr">FR</a>
+        <a href="../en/17-the-shortcut-is-in-the-eye.html" lang="en" hreflang="en">EN</a>
+      </nav>
+      <div class="track-pref" data-track-pref>
+        <span class="track-pref-label" id="track-pref-label">Afficher :</span>
+        <button type="button" data-track-pref-value="beginner" aria-pressed="true" aria-describedby="track-pref-label">Débutant</button>
+        <button type="button" data-track-pref-value="expert" aria-pressed="false" aria-describedby="track-pref-label">Expert</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <nav class="breadcrumb" aria-label="Fil d'Ariane">
+    <div class="wrap">
+      <a href="index.html">Parcours d'apprentissage</a>
+      <span aria-hidden="true">/</span>
+      <span>Chapitre 17</span>
+    </div>
+  </nav>
+
+  <article class="chapter">
+    <div class="wrap">
+
+      <header class="chapter-header">
+        <p class="chapter-kicker">Chapitre 17</p>
+        <h1>Même un détecteur qui ne peut rien apprendre retombe sur le même raccourci : le problème est dans l&#x27;œil, pas dans l&#x27;apprentissage</h1>
+        <p class="chapter-prereqs">Prérequis : Chapitres 1 à 16.</p>
+      </header>
+
+
+      <div class="tracks" data-tracks>
+        <div class="track-tabs" role="tablist" aria-label="Niveau de lecture">
+          <button class="track-tab" role="tab" id="tab-beginner" aria-controls="panel-beginner" aria-selected="true" data-track-tab="beginner">Débutant</button>
+          <button class="track-tab" role="tab" id="tab-expert" aria-controls="panel-expert" aria-selected="false" tabindex="-1" data-track-tab="expert">Expert</button>
+        </div>
+
+        <div class="track-panel is-active chapter-prose" data-track-panel="beginner" role="tabpanel" id="panel-beginner" aria-labelledby="tab-beginner">
+          <p class="track-kicker">Piste débutant</p>
+
+<h2>Là où on en était</h2>
+<p>Depuis le Chapitre 11, un fait dérangeant traîne au centre de toute cette campagne, jamais</p>
+<p>réparé : la boussole du planificateur — celle qui compare une histoire imaginée à un souvenir</p>
+<p>de succès — pointe <strong>à l&#x27;envers</strong> une fois sortie de son terrain d&#x27;entraînement. Chaque</p>
+<p>tentative depuis (Chapitres 12 à 16) a construit quelque chose <em>autour</em> de ce problème —</p>
+<p>une mémoire des lieux visités, un réflexe anti-noyade, une prédiction d&#x27;exploration — sans</p>
+<p>jamais s&#x27;attaquer directement à la boussole elle-même. Ce chapitre raconte les deux premières</p>
+<p>tentatives qui visent directement le cœur du problème. Aucune des deux ne fonctionne. Mais</p>
+<p>ensemble, elles apprennent quelque chose d&#x27;important sur <em>où</em> se cache réellement ce défaut.</p>
+<h2>Première idée : ne pas réparer la boussole, apprendre à ne pas lui faire confiance</h2>
+<p>Au lieu de corriger le jugement biaisé de la boussole, cette première idée essaie de le</p>
+<p>contourner autrement : construire un détecteur séparé, dont le seul travail est de repérer</p>
+<p>« cette image ressemble à quelque chose que le modèle n&#x27;a jamais bien vu à l&#x27;entraînement » —</p>
+<p>et si c&#x27;est le cas, ignorer la boussole et laisser la main à la mémoire des lieux visités</p>
+<p>(Chapitre 12), qui elle a déjà fait ses preuves.</p>
+<p>La particularité de ce détecteur, c&#x27;est qu&#x27;il ne s&#x27;entraîne pas du tout, au sens où</p>
+<p>l&#x27;apprentissage automatique l&#x27;entend d&#x27;habitude. Pas de réseau de neurones, pas de</p>
+<p>descente de gradient (la méthode habituelle par laquelle un modèle ajuste peu à peu ses</p>
+<p>réglages internes pour améliorer un score). Il se contente de mesurer, une bonne fois pour</p>
+<p>toutes, à quoi ressemble la forme statistique typique — la moyenne et la dispersion — des</p>
+<p>images d&#x27;entraînement dans l&#x27;espace compressé (l&#x27;<strong>embedding</strong>, la représentation compacte</p>
+<p>que fabrique le modèle à partir d&#x27;une image) que le modèle utilise déjà. Ensuite, pour</p>
+<p>n&#x27;importe quelle nouvelle image, il calcule simplement à quelle distance elle se trouve de</p>
+<p>cette forme typique. Plus loin = plus suspect. C&#x27;est une formule mathématique fixe, pas</p>
+<p>quelque chose qui « apprend » au sens où un raccourci trompeur pourrait s&#x27;y glisser en</p>
+<p>douce.</p>
+<p>Ce détecteur a été soumis à trois tests, sur les mêmes images déjà utilisées pour prouver</p>
+<p>au Chapitre 11 que la boussole était inversée :</p>
+<ol>
+<li><strong>Sait-il distinguer un terrain connu d&#x27;un terrain inconnu ?</strong> Presque, mais raté de</li>
+</ol>
+<p>justesse — la différence entre les deux catégories n&#x27;était pas assez nette.</p>
+<ol>
+<li><strong>Est-ce qu&#x27;il repère spécifiquement les images où la boussole s&#x27;est trompée</strong>, et pas</li>
+</ol>
+<p>juste « n&#x27;importe quelle image un peu différente » ? Raté plus clairement — le détecteur</p>
+<p>réagissait à « c&#x27;est un décor différent », pas à « c&#x27;est ici que le jugement est faux ».</p>
+<ol>
+<li><em></em>Est-ce qu&#x27;il se laisse distraire par un détail sans rapport, comme la simple luminosité</li>
+</ol>
+<p>de l&#x27;image ?<em></em> Raté nettement, et c&#x27;est le résultat le plus important des trois : le</p>
+<p>détecteur suivait la luminosité presque autant que les précédentes tentatives ratées des</p>
+<p>Chapitres 10, 14 et 15.</p>
+<h2>Pourquoi ce troisième échec compte plus que les cinq précédents</h2>
+<p>Voilà le point le plus important de ce chapitre. Cinq fois avant celle-ci (Chapitres 10, 11,</p>
+<p>14 en comptant ses deux moitiés, et 15), un système entraîné s&#x27;est fait piéger par la</p>
+<p>luminosité de la scène au lieu de vraiment juger la présence d&#x27;un arbre. On aurait pu penser</p>
+<p>que le problème venait de la façon dont ces systèmes <em>apprenaient</em> — un raccourci facile que</p>
+<p>l&#x27;entraînement finissait toujours par trouver, comme une pente de facilité. Mais ce nouveau</p>
+<p>détecteur <strong>n&#x27;apprend rien du tout</strong>. C&#x27;est une formule fixe, sans réglages ajustables, sans</p>
+<p>possibilité de « tricher » en trouvant un raccourci pendant un entraînement — parce qu&#x27;il n&#x27;y</p>
+<p>a pas d&#x27;entraînement.</p>
+<p>Et pourtant, il tombe exactement dans le même piège.</p>
+<p>Cela change complètement l&#x27;explication la plus probable. Le problème n&#x27;est vraisemblablement</p>
+<p>pas « nos méthodes d&#x27;entraînement trouvent toujours le même mauvais raccourci ». Le problème</p>
+<p>est plus profond : la confusion entre « c&#x27;est un arbre proche » et « c&#x27;est sombre » semble</p>
+<p>être <em></em>déjà présente dans la façon même dont le modèle de base compresse une image en</p>
+<p>représentation compacte<em></em> — avant même qu&#x27;un quelconque apprentissage supplémentaire</p>
+<p>n&#x27;intervienne. N&#x27;importe quel calcul construit par-dessus cette représentation, aussi</p>
+<p>prudent soit-il, hérite du même défaut, parce que le défaut est dans le matériau brut, pas</p>
+<p>dans la façon de le travailler.</p>
+<h2>Deuxième idée, plus modeste : le problème vient-il d&#x27;un manque de photos sombres ?</h2>
+<p>La deuxième piste de ce chapitre revient sur une vieille hypothèse jamais vérifiée</p>
+<p>directement, datant du tout début de cette enquête (le raccourci de luminosité corrigé — sans</p>
+<p>succès — au Chapitre 10) : et si le modèle confondait obscurité et absence d&#x27;arbre simplement</p>
+<p>parce qu&#x27;il n&#x27;avait presque jamais vu de scènes sombres pendant son tout premier</p>
+<p>entraînement ?</p>
+<p>La vérification est simple, sans rien entraîner : compter, dans les données d&#x27;entraînement</p>
+<p>d&#x27;origine, la proportion d&#x27;images sombres ou sous l&#x27;eau. Résultat : à peine 1 % — l&#x27;hypothèse</p>
+<p>d&#x27;un manque de diversité était donc bien fondée, pour ce modèle d&#x27;origine.</p>
+<p>Mais le Chapitre 14 avait déjà réentraîné une version du modèle sur un mélange de données</p>
+<p>beaucoup plus large, incluant beaucoup de scènes issues du vrai jeu de fabrication — et</p>
+<p>cette vérification montre que ces données-là contenaient déjà 16 à 22 % d&#x27;images sombres ou</p>
+<p>sous l&#x27;eau, même en comptant large. L&#x27;image bizarre repérée au Chapitre 14 (celle dont le</p>
+<p>score a empiré après le réentraînement) n&#x27;était donc pas un cas extrême jamais rencontré : elle</p>
+<p>ressemble à beaucoup d&#x27;autres images déjà présentes dans les données d&#x27;entraînement.</p>
+<p><em></em>Conclusion : pour ce cas précis, manquer de photos sombres n&#x27;est plus une explication</p>
+<p>plausible.<em></em> Si quelqu&#x27;un reprend un jour la réparation du modèle de base, la piste la plus</p>
+<p>prometteuse n&#x27;est probablement pas « plus de données », mais quelque chose dans *la façon</p>
+<p>dont l&#x27;entraînement compare des scènes différentes entre elles* — un point que personne n&#x27;a</p>
+<p>encore testé.</p>
+<h2>Ce que ça change pour la suite</h2>
+<p>Ces deux résultats négatifs, mis ensemble, ferment une question et en éclaircissent une</p>
+<p>autre :</p>
+<ul>
+<li><strong>Sixième confirmation indépendante du même piège de luminosité</strong> — après un petit module</li>
+</ul>
+<p>entraîné, ce même module réentraîné, une variation de lumière artificielle, un modèle</p>
+<p>géant tout fait, un calcul de couleur fait main, et maintenant une simple formule</p>
+<p>statistique sans aucun apprentissage. Six façons complètement différentes de s&#x27;y prendre,</p>
+<p>un seul et même mur.</p>
+<ul>
+<li><strong>La piste « pas assez de données sombres » est fermée</strong> pour le cas précis qui l&#x27;avait</li>
+</ul>
+<p>motivée — pas parce que plus de données ne servirait jamais à rien en général, mais parce</p>
+<p>que, dans ce cas précis, il y en avait déjà assez.</p>
+<ul>
+<li>Le projet se retrouve donc devant un choix net, pas encore tranché : soit réentraîner le</li>
+</ul>
+<p>cœur même du modèle avec un objectif d&#x27;entraînement différent — un chantier lourd,</p>
+<p>jamais tenté jusqu&#x27;ici — soit accepter ce défaut comme une limite connue du projet et</p>
+<p>continuer à construire sur ce qui fonctionne déjà (exécuter les plans plus longtemps, la</p>
+<p>mémoire des lieux visités, le réflexe anti-noyade). Ce n&#x27;est pas encore décidé, et ce</p>
+<p>chapitre ne tranche pas à la place de qui de droit.</p>
+<p>Comme pour chaque chapitre de ce site : deux vraies tentatives, deux échecs honnêtes, et un</p>
+<p>résultat qui, même négatif, apprend quelque chose de solide sur la nature du problème.</p>
+        </div>
+
+        <div class="track-panel chapter-prose" data-track-panel="expert" role="tabpanel" id="panel-expert" aria-labelledby="tab-expert">
+          <p class="track-kicker">Piste expert</p>
+
+<h2>Contexte</h2>
+<p>Le Chapitre 16 (attempt #16, CVP) a clos sans toucher au problème central identifié dès le</p>
+<p>Chapitre 11 (attempt #10) : la notation goal-centroid native de <code>ebwm.pt</code>, toujours utilisée</p>
+<p>en direct par le planificateur de coupe deux-cerveaux dès que la recherche trouve quelque</p>
+<p>chose, s&#x27;inverse sur la distribution de spawn d&#x27;Obtain. Chaque tentative des attempts #11 à</p>
+<p>#16 a contourné ce fait plutôt que de le corriger. Ce chapitre couvre l&#x27;attempt #17 de</p>
+<p><code>docs/10<em>coldstart</em>engineering.md</code>/<code>CLAUDE.md#Phase 5+</code> : deux attaques directes et bon</p>
+<p>marché sur ce mécanisme central, avant tout engagement plus coûteux.</p>
+<h2>Prong A — détecteur OOD comme repli, plutôt qu&#x27;une réparation du score</h2>
+<p><strong>Idée, orthogonale à « réparer le score »</strong> : si le latent figé de <code>ebwm.pt</code> peut être montré</p>
+<p>comme mesurablement hors distribution sur une frame Obtain, un dispatch ultérieur pourrait se</p>
+<p>replier sur la recherche par couverture <code>FrontierTracker</code> (attempt #12), déjà fonctionnelle,</p>
+<p>plutôt que de faire confiance à une boussole confirmée inversée là (attempt #10). Sans</p>
+<p>gradient, sans fonction de perte pour une tête aval — un contraste volontaire avec chaque</p>
+<p>attempt à tête entraînée (#7, #11, #14 Phase 2) déjà tombé dans le piège de luminosité.</p>
+<p><code>scripts/diagnose<em>ood</em>gate.py</code> (<code>configs/diagnose<em>ood</em>gate.yaml</code>) ajuste une seule gaussienne</p>
+<p>(moyenne, covariance) sur les latents <code>ebwm.pt</code> poolés de 4 000 frames Treechop aléatoires —</p>
+<p>Lee, Lee, Lee &amp; Shin, « A Simple Unified Framework for Detecting Out-of-Distribution Samples</p>
+<p>and Adversarial Attacks », arXiv:1807.03888 (NeurIPS 2018), statistiques closed-form, aucune</p>
+<p>boucle d&#x27;entraînement — évaluée à la feature <code>vpool</code> exacte que <code>CraftPlannerV4</code>/</p>
+<p><code>SwitchingCraftPlanner</code> calculent déjà à chaque replan (<code>mine_jepa/ebwm/planner.py</code>), puis</p>
+<p>marque les frames de test par leur distance de Mahalanobis à cet ajustement. Trois gates sur</p>
+<p>le même jeu de 251 frames que chaque attempt précédent de la campagne (160 Treechop, 11 vraies</p>
+<p>thumbnails de spawn Obtain, 80 frames de couverture Obtain).</p>
+<table>
+<thead><tr><th>Gate</th><th>Seuil</th><th>Résultat</th></tr></thead>
+<tbody>
+<tr><td>A — séparation (distance de Mahalanobis moyenne Obtain vs. Treechop)</td><td>≥ 1,3x</td><td><strong>ÉCHOUÉ — 1,294x</strong> (raté de justesse ; reverifié directement depuis le CSV brut : moyenne obtain 9,905 vs. treechop 7,657, n=91/160)</td></tr>
+<tr><td>B — spécificité (élevé spécifiquement sur les frames à sens confirmé faux de l&#x27;attempt #10, pas uniformément sur tout Obtain)</td><td>≥ 1,2x</td><td><strong>ÉCHOUÉ — 1,105x</strong></td></tr>
+<tr><td>C — contrôle négatif (corrélation avec la luminosité brute de l&#x27;image)</td><td>\</td><td>r\</td><td>&lt; 0,3</td><td><strong>ÉCHOUÉ — r = 0,56</strong></td></tr>
+</tbody>
+</table>
+<p>Le Gate A raté de justesse signifie que le détecteur distingue à peine « ceci est Obtain » de</p>
+<p>« ceci est Treechop ». Le Gate B, échoué plus nettement, signifie que même la faible</p>
+<p>séparation qu&#x27;il capture n&#x27;est pas concentrée sur les frames où le score est confirmé faux —</p>
+<p>il marquerait « ceci est Obtain », un signal nettement moins utile pour un dispatch de repli</p>
+<p>que « ce score-ci n&#x27;est pas fiable ici ». Le Gate C est le résultat le plus tranchant des</p>
+<p>trois :</p>
+<div class="callout">
+<p><em></em>LEÇON : 6e confirmation indépendante de la confusion luminosité/composition de scène, et</p>
+<p>la plus structurellement décisive à ce jour.<em></em> r=0,56 tombe carrément dans la fourchette de</p>
+<p>chaque attempt à tête entraînée (0,117-0,947, attempts #7/#11/#14/#15) — mais ce détecteur</p>
+<p><strong>n&#x27;a ni gradient, ni fonction de perte, ni aucun moyen d&#x27;« apprendre » un raccourci</strong> : c&#x27;est</p>
+<p>un ajustement gaussien closed-form et un calcul de distance. Le fait qu&#x27;il atterrisse quand</p>
+<p>même dans la même fourchette de confusion montre que le raccourci n&#x27;est pas quelque chose que</p>
+<p>des têtes aval apprennent à exploiter — il est cuit dans la géométrie brute de l&#x27;espace</p>
+<p>latent figé de <code>ebwm.pt</code> lui-même, hérité par toute statistique construite dessus sans</p>
+<p>réentraîner l&#x27;objectif propre de l&#x27;encodeur.</p>
+</div>
+<p><strong>VERDICT : NO-GO sur les trois gates.</strong> Non câblé dans <code>mine_jepa/ebwm/planner.py</code> ni</p>
+<p><code>scripts/play_craft.py</code> — aucun batch en direct dépensé sur un mécanisme qui a échoué ses</p>
+<p>propres gates offline. <code>ebwm.pt</code> chargé figé et vérifié <code>requires<em>grad</em>(False)</code> tout du long ;</p>
+<p>aucun checkpoint touché. Artefacts conservés en diagnostics uniquement :</p>
+<p><code>assets/diagnostics/ood<em>gate.csv</code>, <code>assets/diagnostics/ood</em>mahalanobis_stats.npz</code>.</p>
+<h2>Prong B — l&#x27;anomalie de l&#x27;attempt #14 Phase 2 est-elle un manque de diversité des données ?</h2>
+<p>L&#x27;hypothèse originale de l&#x27;attempt #7 — jamais testée directement jusqu&#x27;ici — était que la</p>
+<p>confusion de luminosité de <code>ebwm.pt</code> pourrait provenir d&#x27;un manque de diversité d&#x27;éclairage</p>
+<p>dans ses données d&#x27;entraînement (frames sombres/sous-marines/grottes sous-représentées). Avant</p>
+<p>de collecter quoi que ce soit de nouveau, une vérification en lecture seule : quelle part des</p>
+<p>données réellement utilisées correspond déjà à cette description ?</p>
+<p>En utilisant le détecteur calibré sous-l&#x27;eau/grotte de <code>mine_jepa/ebwm/hazard.py</code> (l&#x27;heuristique</p>
+<p>de ratio de canaux invariante à la luminosité, validée à l&#x27;attempt #13 — préférée à la</p>
+<p>luminosité brute, un mauvais discriminant ici puisque Treechop est en réalité plus sombre en</p>
+<p>moyenne à cause de l&#x27;ombre de la canopée) :</p>
+<ul>
+<li>Données d&#x27;entraînement Treechop <strong>originales</strong> de <code>ebwm.pt</code> : seulement <strong>1,0 %</strong> de frames</li>
+</ul>
+<p>marquées sous-l&#x27;eau/grotte — l&#x27;écart signalé par l&#x27;attempt #7 était réel, pour le modèle</p>
+<p>d&#x27;origine.</p>
+<ul>
+<li>Données de domaine Obtain réellement utilisées pour le fine-tune de l&#x27;attempt #14 Phase 2</li>
+</ul>
+<p>(<code>data/minerl<em>craft</code> + <code>data/minerl</em>coverage</code>, sur-échantillonnées ~4x) : <strong>16-22 %</strong> de</p>
+<p>telles frames, même après sur-échantillonnage.</p>
+<p>La frame anormale spécifique de l&#x27;attempt #14 Phase 2 (la frame sombre grotte/sous-l&#x27;eau dont</p>
+<p>le score a <em>empiré</em>, 0,0130 → 0,025-0,031, après le fine-tune) a été identifiée provisoirement</p>
+<p>par correspondance visuelle et numérique — avec un écart non réconcilié signalé honnêtement</p>
+<p>plutôt que maquillé — et se situe bien dans la fourchette des exemples d&#x27;entraînement déjà</p>
+<p>présents, pas comme un cas extrême jamais rencontré.</p>
+<div class="callout">
+<p><em></em>LEÇON : l&#x27;écart qui motivait le Prong B est déjà fermé pour les données réellement</p>
+<p>utilisées à l&#x27;attempt #14 Phase 2.<em></em> Collecter de nouvelles données n&#x27;est pas bien étayé</p>
+<p>comme prochaine étape pour cette anomalie précise. Si la piste du réentraînement de</p>
+<p>l&#x27;encodeur est reprise, une correction de pondération ou d&#x27;objectif d&#x27;entraînement — rien</p>
+<p>dans la perte VICReg + prédiction actuelle ne récompense explicitement un <em></em>ordre de</p>
+<p>distance relatif correct entre biomes<em></em>, seulement la précision de prédiction locale — est</p>
+<p>la prochaine question la mieux motivée, pas plus de données.</p>
+</div>
+<h2>Diagnostic d&#x27;ensemble, sur son terrain le plus solide à ce jour</h2>
+<p>Six approches indépendantes et mécaniquement diverses convergent maintenant sur la même</p>
+<p>confusion luminosité/composition de scène : deux têtes entraînées sur latents figés (#7, #11),</p>
+<p>un modèle tout fait de 400M images jamais touché par ce projet (#14 Phase 1, CLIP), un</p>
+<p>fine-tune direct de l&#x27;encodeur lui-même (#14 Phase 2), une caractéristique invariante à la</p>
+<p>luminosité conçue à la main (#15), et maintenant une statistique closed-form non entraînée</p>
+<p>(#17 Prong A). Combiné à la fermeture par le Prong B de la théorie « juste besoin de plus de</p>
+<p>données » pour le cas précis qui l&#x27;avait soulevée, le défaut apparaît <strong>structurel</strong> à la</p>
+<p>représentation figée de <code>ebwm.pt</code> et/ou à son objectif d&#x27;entraînement — pas réparable par</p>
+<p>quoi que ce soit construit par-dessus le checkpoint existant sans réentraîner son objectif de</p>
+<p>base, un chantier nettement plus coûteux que tout ce qui a été tenté aux attempts #7-#17.</p>
+<p><em></em>Pas encore décidé si ça vaut la peine d&#x27;être poursuivi, ou s&#x27;il faut consolider autour des</p>
+<p>mécanismes qui fonctionnent déjà (<code>commit_length</code>, couverture par frontière, évitement de</p>
+<p>danger) et accepter le score central comme une limitation connue et permanente — question</p>
+<p>posée à l&#x27;utilisateur, pas tranchée par ce chapitre.<em></em></p>
+<h2>Références</h2>
+<ul>
+<li>Lee, Lee, Lee &amp; Shin, « A Simple Unified Framework for Detecting Out-of-Distribution Samples</li>
+</ul>
+<p>and Adversarial Attacks », <a href="https://arxiv.org/abs/1807.03888">arXiv:1807.03888</a> (NeurIPS</p>
+<p>2018) — fondement du Prong A (ajustement gaussien + distance de Mahalanobis sur le latent</p>
+<p>poolé de <code>ebwm.pt</code>), vérifiée dans <code>docs/references/index.md</code>.</p>
+<p>Le Prong B ne s&#x27;appuie sur aucune nouvelle référence : il réutilise tel quel le détecteur</p>
+<p>sous-l&#x27;eau/grotte de <code>mine_jepa/ebwm/hazard.py</code>, déjà motivé et calibré à l&#x27;attempt #13</p>
+<p>(Chapitre 13).</p>
+        </div>
+      </div>
+
+
+    </div>
+  </article>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>Mine-JEPA — un agent JEPA qui apprend à jouer à Minecraft à partir des pixels, documenté au fil de l'eau.</p>
+    <p class="footer-links">
+      Auteur : <a href="https://x.com/reddwarf03" target="_blank" rel="noopener">@reddwarf03 (X/Twitter)</a> ·
+      <a href="https://github.com/redDwarf03" target="_blank" rel="noopener">redDwarf03 (GitHub)</a> |
+      <a href="https://github.com/redDwarf03/mine-jepa" target="_blank" rel="noopener">Repository GitHub</a>
+    </p>
+  </div>
+</footer>
+
+<script src="../script.js" defer></script>
+</body>
+</html>

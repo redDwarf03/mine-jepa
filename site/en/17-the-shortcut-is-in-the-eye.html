@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Even a detector that cannot learn anything falls into the same shortcut: the problem is in the eye, not in the learning — Mine-JEPA</title>
+<meta name="description" content="Chapter 17 of the Mine-JEPA learning path: Even a detector that cannot learn anything falls into the same shortcut: the problem is in the eye, not in the learning.">
+<link rel="stylesheet" href="../style.css">
+<script>document.documentElement.classList.add("js");</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="wrap site-header-inner">
+    <a class="site-brand" href="index.html"><span class="brand-mark" aria-hidden="true">&#9935;</span> Mine-JEPA</a>
+    <div class="header-controls">
+      <span class="last-updated" title="Date de mise à jour">Updated: 2026-08-11</span>
+      <nav class="lang-switch" aria-label="Site language">
+        <a href="../fr/17-le-raccourci-est-dans-l-oeil.html" lang="fr" hreflang="fr">FR</a>
+        <a href="17-the-shortcut-is-in-the-eye.html" aria-current="true" lang="en" hreflang="en">EN</a>
+      </nav>
+      <div class="track-pref" data-track-pref>
+        <span class="track-pref-label" id="track-pref-label">Show:</span>
+        <button type="button" data-track-pref-value="beginner" aria-pressed="true" aria-describedby="track-pref-label">Beginner</button>
+        <button type="button" data-track-pref-value="expert" aria-pressed="false" aria-describedby="track-pref-label">Expert</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <nav class="breadcrumb" aria-label="Breadcrumbs">
+    <div class="wrap">
+      <a href="index.html">Learning Path</a>
+      <span aria-hidden="true">/</span>
+      <span>Chapter 17</span>
+    </div>
+  </nav>
+
+  <article class="chapter">
+    <div class="wrap">
+
+      <header class="chapter-header">
+        <p class="chapter-kicker">Chapter 17</p>
+        <h1>Even a detector that cannot learn anything falls into the same shortcut: the problem is in the eye, not in the learning</h1>
+        <p class="chapter-prereqs">Prerequisites: Chapters 1 to 16.</p>
+      </header>
+
+
+      <div class="tracks" data-tracks>
+        <div class="track-tabs" role="tablist" aria-label="Reading level">
+          <button class="track-tab" role="tab" id="tab-beginner" aria-controls="panel-beginner" aria-selected="true" data-track-tab="beginner">Beginner</button>
+          <button class="track-tab" role="tab" id="tab-expert" aria-controls="panel-expert" aria-selected="false" tabindex="-1" data-track-tab="expert">Expert</button>
+        </div>
+
+        <div class="track-panel is-active chapter-prose" data-track-panel="beginner" role="tabpanel" id="panel-beginner" aria-labelledby="tab-beginner">
+          <p class="track-kicker">Beginner track</p>
+
+<h2>Where we left off</h2>
+<p>Since Chapter 11, an uncomfortable fact has been sitting at the centre of this whole campaign,</p>
+<p>never repaired: the planner&#x27;s compass — the one comparing an imagined story against a memory of</p>
+<p>success — points <strong>backwards</strong> once it leaves its training ground. Every attempt since</p>
+<p>(Chapters 12 to 16) has built something <em>around</em> that problem — a memory of visited places, an</p>
+<p>anti-drowning reflex, an exploration prediction — without ever tackling the compass itself. This</p>
+<p>chapter tells the story of the first two attempts aimed directly at the heart of the problem.</p>
+<p>Neither works. But together, they teach something important about <em>where</em> this defect really</p>
+<p>hides.</p>
+<h2>First idea: don&#x27;t repair the compass, learn not to trust it</h2>
+<p>Instead of correcting the compass&#x27;s biased judgement, this first idea tries to route around it</p>
+<p>differently: build a separate detector whose only job is to spot &quot;this image looks like something</p>
+<p>the model never saw properly during training&quot; — and if so, ignore the compass and hand over to the</p>
+<p>memory of visited places (Chapter 12), which has already proved itself.</p>
+<p>What is distinctive about this detector is that it does not train at all, in the sense machine</p>
+<p>learning usually means. No neural network, no gradient descent (the usual method by which a model</p>
+<p>gradually adjusts its internal settings to improve a score). It simply measures, once and for all,</p>
+<p>what the typical statistical shape — the average and the spread — of the training images looks</p>
+<p>like in the compressed space (the <strong>embedding</strong>, the compact representation the model builds from</p>
+<p>an image) that the model already uses. Then, for any new image, it simply computes how far that</p>
+<p>image sits from this typical shape. Further away = more suspicious. It is a fixed mathematical</p>
+<p>formula, not something that &quot;learns&quot; in a way a misleading shortcut could quietly slip into.</p>
+<p>This detector was put through three tests, on the same frames already used in Chapter 11 to prove</p>
+<p>the compass was inverted:</p>
+<ol>
+<li><strong>Can it tell known ground from unknown ground?</strong> Almost, but narrowly missed — the difference</li>
+</ol>
+<p>between the two categories was not sharp enough.</p>
+<ol>
+<li><strong>Does it specifically spot the frames where the compass got it wrong</strong>, rather than just &quot;any</li>
+</ol>
+<p>somewhat different image&quot;? Missed more clearly — the detector was reacting to &quot;this is a</p>
+<p>different setting&quot;, not to &quot;this is where the judgement is false&quot;.</p>
+<ol>
+<li><strong>Does it get distracted by an unrelated detail, like the plain brightness of the image?</strong></li>
+</ol>
+<p>Clearly missed, and this is the most important of the three results: the detector tracked</p>
+<p>brightness almost as much as the previous failed attempts in Chapters 10, 14 and 15.</p>
+<h2>Why this third failure matters more than the five before it</h2>
+<p>Here is this chapter&#x27;s most important point. Five times before this one (Chapters 10, 11, 14</p>
+<p>counting both its halves, and 15), a trained system was caught out by scene brightness instead of</p>
+<p>genuinely judging whether a tree was present. One could have thought the problem came from the way</p>
+<p>those systems <em>learned</em> — an easy shortcut that training would always end up finding, like a path</p>
+<p>of least resistance. But this new detector <strong>learns nothing at all</strong>. It is a fixed formula, with</p>
+<p>no adjustable settings, with no way to &quot;cheat&quot; by finding a shortcut during training — because</p>
+<p>there is no training.</p>
+<p>And yet it falls into exactly the same trap.</p>
+<p>That completely changes the most likely explanation. The problem is probably not &quot;our training</p>
+<p>methods always find the same bad shortcut&quot;. The problem runs deeper: the confusion between &quot;there</p>
+<p>is a tree close by&quot; and &quot;this is dark&quot; appears to be <em></em>already present in the very way the base</p>
+<p>model compresses an image into a compact representation<em></em> — before any additional learning is</p>
+<p>involved at all. Any calculation built on top of that representation, however careful, inherits the</p>
+<p>same defect, because the defect is in the raw material, not in how it is worked.</p>
+<h2>Second idea, more modest: does the problem come from a shortage of dark photos?</h2>
+<p>This chapter&#x27;s second line revisits an old hypothesis never directly tested, dating back to the</p>
+<p>very start of this investigation (the brightness shortcut fixed — unsuccessfully — in Chapter 10):</p>
+<p>what if the model confuses darkness with the absence of a tree simply because it had almost never</p>
+<p>seen dark scenes during its very first training?</p>
+<p>The check is simple, with nothing trained: count, in the original training data, the proportion of</p>
+<p>dark or underwater frames. Result: barely 1% — so the lack-of-diversity hypothesis was</p>
+<p>well-founded, for that original model.</p>
+<p>But Chapter 14 had already retrained a version of the model on a much broader data mixture,</p>
+<p>including many scenes from the real crafting environment — and this check shows those data already</p>
+<p>contained 16 to 22% dark or underwater frames, even counting generously. The odd frame spotted in</p>
+<p>Chapter 14 (the one whose score got worse after retraining) was therefore not an extreme case never</p>
+<p>encountered: it resembles many other frames already present in the training data. <em></em>Conclusion: for</p>
+<p>this precise case, missing dark photos is no longer a plausible explanation.<em></em> If anyone ever picks</p>
+<p>up repairing the base model, the most promising direction is probably not &quot;more data&quot;, but</p>
+<p>something in <em>the way training compares different scenes with one another</em> — a point nobody has</p>
+<p>tested yet.</p>
+<h2>What this changes for what follows</h2>
+<p>These two negative results, taken together, close one question and clarify another:</p>
+<ul>
+<li><strong>Sixth independent confirmation of the same brightness trap</strong> — after a small trained module,</li>
+</ul>
+<p>that same module retrained, an artificial lighting variation, a giant off-the-shelf model, a</p>
+<p>hand-built colour calculation, and now a plain statistical formula with no learning at all. Six</p>
+<p>completely different ways of going about it, one and the same wall.</p>
+<ul>
+<li><strong>The &quot;not enough dark data&quot; direction is closed</strong> for the precise case that motivated it — not</li>
+</ul>
+<p>because more data would never help in general, but because, in this precise case, there was</p>
+<p>already enough.</p>
+<ul>
+<li>The project therefore faces a clear choice, not yet settled: either retrain the very core of the</li>
+</ul>
+<p>model with a different training objective — a heavy piece of work, never attempted so far — or</p>
+<p>accept this defect as a known project limitation and keep building on what already works</p>
+<p>(executing plans for longer, the memory of visited places, the anti-drowning reflex). This is not</p>
+<p>yet decided, and this chapter does not decide it on anyone&#x27;s behalf.</p>
+<p>As with every chapter on this site: two real attempts, two honest failures, and a result that, even</p>
+<p>though negative, teaches something solid about the nature of the problem.</p>
+        </div>
+
+        <div class="track-panel chapter-prose" data-track-panel="expert" role="tabpanel" id="panel-expert" aria-labelledby="tab-expert">
+          <p class="track-kicker">Expert track</p>
+
+<h2>Context</h2>
+<p>Chapter 16 (attempt #16, CVP) closed without touching the central problem identified back in</p>
+<p>Chapter 11 (attempt #10): <code>ebwm.pt</code>&#x27;s native goal-centroid scoring, still used live by the</p>
+<p>two-brain chop planner as soon as the search finds something, inverts on Obtain&#x27;s spawn</p>
+<p>distribution. Every attempt from #11 to #16 worked around that fact rather than correcting it. This</p>
+<p>chapter covers attempt #17 in <code>docs/10<em>coldstart</em>engineering.md</code>/<code>CLAUDE.md#Phase 5+</code>: two direct,</p>
+<p>cheap attacks on that central mechanism, ahead of any more expensive commitment.</p>
+<h2>Prong A — an OOD detector as a fallback, rather than a score repair</h2>
+<p><strong>Idea, orthogonal to &quot;fix the score&quot;</strong>: if <code>ebwm.pt</code>&#x27;s frozen latent can be shown to be measurably</p>
+<p>out of distribution on an Obtain frame, a later dispatch could fall back on the already-working</p>
+<p><code>FrontierTracker</code> coverage search (attempt #12) instead of trusting a compass confirmed inverted</p>
+<p>there (attempt #10). No gradient, no loss function for a downstream head — a deliberate contrast</p>
+<p>with every trained-head attempt (#7, #11, #14 Phase 2) that already fell into the brightness trap.</p>
+<p><code>scripts/diagnose<em>ood</em>gate.py</code> (<code>configs/diagnose<em>ood</em>gate.yaml</code>) fits a single Gaussian (mean,</p>
+<p>covariance) over <code>ebwm.pt</code>&#x27;s pooled latents from 4,000 random Treechop frames — Lee, Lee, Lee &amp;</p>
+<p>Shin, &quot;A Simple Unified Framework for Detecting Out-of-Distribution Samples and Adversarial</p>
+<p>Attacks&quot;, arXiv:1807.03888 (NeurIPS 2018), closed-form statistics, no training loop — evaluated at</p>
+<p>the exact <code>vpool</code> feature <code>CraftPlannerV4</code>/<code>SwitchingCraftPlanner</code> already compute every replan</p>
+<p>(<code>mine_jepa/ebwm/planner.py</code>), then scores test frames by their Mahalanobis distance to that fit.</p>
+<p>Three gates on the same 251-frame set as every prior attempt in the campaign (160 Treechop, 11 real</p>
+<p>Obtain spawn thumbnails, 80 Obtain coverage frames).</p>
+<table>
+<thead><tr><th>Gate</th><th>Bar</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>A — separation (mean Mahalanobis distance, Obtain vs. Treechop)</td><td>≥ 1.3x</td><td><strong>FAILED — 1.294x</strong> (missed by a hair; re-verified directly from the raw CSV: obtain mean 9.905 vs. treechop 7.657, n=91/160)</td></tr>
+<tr><td>B — specificity (elevated specifically on attempt #10&#x27;s confirmed-wrong frames, not uniformly across all of Obtain)</td><td>≥ 1.2x</td><td><strong>FAILED — 1.105x</strong></td></tr>
+<tr><td>C — negative control (correlation with raw frame brightness)</td><td>\</td><td>r\</td><td>&lt; 0.3</td><td><strong>FAILED — r = 0.56</strong></td></tr>
+</tbody>
+</table>
+<p>Gate A missed by a hair, meaning the detector barely distinguishes &quot;this is Obtain&quot; from &quot;this is</p>
+<p>Treechop&quot;. Gate B, failed more clearly, means that even the weak separation it does capture is not</p>
+<p>concentrated on the frames where the score is confirmed wrong — it would flag &quot;this is Obtain&quot;, a</p>
+<p>markedly less useful signal for a fallback dispatch than &quot;this particular score is unreliable</p>
+<p>here&quot;. Gate C is the sharpest of the three:</p>
+<div class="callout">
+<p><em></em>LESSON: 6th independent confirmation of the brightness/scene-composition confound, and the most</p>
+<p>structurally decisive to date.<em></em> r=0.56 lands squarely inside the range of every trained-head</p>
+<p>attempt (0.117-0.947, attempts #7/#11/#14/#15) — but this detector <em></em>has no gradient, no loss</p>
+<p>function, and no way to &quot;learn&quot; a shortcut<em></em>: it is a closed-form Gaussian fit and a distance</p>
+<p>computation. That it still lands in the same confound range shows the shortcut is not something</p>
+<p>downstream heads learn to exploit — it is baked into the raw geometry of <code>ebwm.pt</code>&#x27;s frozen latent</p>
+<p>space itself, inherited by any statistic built on top without retraining the encoder&#x27;s own</p>
+<p>objective.</p>
+</div>
+<p><strong>VERDICT: NO-GO on all three gates.</strong> Not wired into <code>mine_jepa/ebwm/planner.py</code> or</p>
+<p><code>scripts/play_craft.py</code> — no live batch spent on a mechanism that failed its own offline gates.</p>
+<p><code>ebwm.pt</code> loaded frozen and verified <code>requires<em>grad</em>(False)</code> throughout; no checkpoint touched.</p>
+<p>Artefacts kept as diagnostics only: <code>assets/diagnostics/ood_gate.csv</code>,</p>
+<p><code>assets/diagnostics/ood<em>mahalanobis</em>stats.npz</code>.</p>
+<h2>Prong B — is attempt #14 Phase 2&#x27;s anomaly a data-diversity gap?</h2>
+<p>Attempt #7&#x27;s original hypothesis — never directly tested until now — was that <code>ebwm.pt</code>&#x27;s</p>
+<p>brightness confound might come from a lack of lighting diversity in its training data</p>
+<p>(dark/underwater/cave frames under-represented). Before collecting anything new, a read-only check:</p>
+<p>what share of the data actually used already fits that description?</p>
+<p>Using <code>mine_jepa/ebwm/hazard.py</code>&#x27;s calibrated underwater/cave detector (the lighting-invariant</p>
+<p>channel-ratio heuristic validated in attempt #13 — preferred over raw brightness, a poor</p>
+<p>discriminator here since Treechop is actually darker on average due to canopy shade):</p>
+<ul>
+<li><code>ebwm.pt</code>&#x27;s <strong>original</strong> Treechop training data: only <strong>1.0%</strong> of frames flagged</li>
+</ul>
+<p>underwater/cave — the gap attempt #7 flagged was real, for the original model.</p>
+<ul>
+<li>Obtain-domain data actually used for attempt #14 Phase 2&#x27;s fine-tune (<code>data/minerl_craft</code> +</li>
+</ul>
+<p><code>data/minerl_coverage</code>, ~4x oversampled): <strong>16-22%</strong> of such frames, even after oversampling.</p>
+<p>Attempt #14 Phase 2&#x27;s specific anomalous frame (the dark cave/underwater frame whose score *got</p>
+<p>worse*, 0.0130 → 0.025-0.031, after the fine-tune) was tentatively identified by visual and numeric</p>
+<p>match — with one unreconciled discrepancy honestly flagged rather than papered over — and sits well</p>
+<p>inside the range of already-present training examples, not as an extreme case never encountered.</p>
+<div class="callout">
+<p><em></em>LESSON: the gap that motivated Prong B is already closed for the data actually used in attempt</p>
+<p>#14 Phase 2.<em></em> Collecting new data is not well-supported as the next step for this precise</p>
+<p>anomaly. If the encoder-retraining direction is resumed, a reweighting or training-objective fix</p>
+<p>— nothing in the current VICReg + prediction loss explicitly rewards a <em></em>correct relative distance</p>
+<p>ordering across biomes<em></em>, only local prediction accuracy — is the better-motivated next question,</p>
+<p>not more data.</p>
+</div>
+<h2>Standing diagnosis, on its firmest footing yet</h2>
+<p>Six independent, mechanically diverse approaches now converge on the same brightness/scene-</p>
+<p>composition confound: two heads trained on frozen latents (#7, #11), a 400M-image off-the-shelf</p>
+<p>model never touched by this project (#14 Phase 1, CLIP), a direct fine-tune of the encoder itself</p>
+<p>(#14 Phase 2), a hand-designed lighting-invariant feature (#15), and now an untrained closed-form</p>
+<p>statistic (#17 Prong A). Combined with Prong B closing the &quot;just needs more data&quot; theory for the</p>
+<p>precise case that raised it, the defect looks <strong>structural</strong> to <code>ebwm.pt</code>&#x27;s frozen representation</p>
+<p>and/or its training objective — not fixable by anything built on top of the existing checkpoint</p>
+<p>without retraining its core objective, a materially more expensive undertaking than anything tried</p>
+<p>in attempts #7-#17.</p>
+<p><em></em>Not yet decided whether that is worth pursuing, or whether to consolidate around the mechanisms</p>
+<p>that already work (<code>commit_length</code>, frontier coverage, hazard avoidance) and accept the central</p>
+<p>score as a permanent known limitation — a question put to the user, not settled by this chapter.<em></em></p>
+<h2>References</h2>
+<ul>
+<li>Lee, Lee, Lee &amp; Shin, &quot;A Simple Unified Framework for Detecting Out-of-Distribution Samples and</li>
+</ul>
+<p>Adversarial Attacks&quot;, <a href="https://arxiv.org/abs/1807.03888">arXiv:1807.03888</a> (NeurIPS 2018) —</p>
+<p>foundation of Prong A (Gaussian fit + Mahalanobis distance on <code>ebwm.pt</code>&#x27;s pooled latent),</p>
+<p>verified in <code>docs/references/index.md</code>.</p>
+<p>Prong B rests on no new reference: it reuses as-is the underwater/cave detector from</p>
+<p><code>mine_jepa/ebwm/hazard.py</code>, already motivated and calibrated in attempt #13 (Chapter 13).</p>
+        </div>
+      </div>
+
+
+    </div>
+  </article>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>Mine-JEPA — a JEPA agent learning to play Minecraft from pixels, documented along the way.</p>
+    <p class="footer-links">
+      Author / Auteur: <a href="https://x.com/reddwarf03" target="_blank" rel="noopener">@reddwarf03 (X/Twitter)</a> ·
+      <a href="https://github.com/redDwarf03" target="_blank" rel="noopener">redDwarf03 (GitHub)</a> |
+      <a href="https://github.com/redDwarf03/mine-jepa" target="_blank" rel="noopener">GitHub Repository</a>
+    </p>
+  </div>
+</footer>
+
+<script src="../script.js" defer></script>
+</body>
+</html>

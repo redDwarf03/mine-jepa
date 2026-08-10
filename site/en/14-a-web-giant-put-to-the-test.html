@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A web giant put to the test: CLIP does spot the forest — but it confuses that with brightness too — Mine-JEPA</title>
+<meta name="description" content="Chapter 14 of the Mine-JEPA learning path: A web giant put to the test: CLIP does spot the forest — but it confuses that with brightness too.">
+<link rel="stylesheet" href="../style.css">
+<script>document.documentElement.classList.add("js");</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="wrap site-header-inner">
+    <a class="site-brand" href="index.html"><span class="brand-mark" aria-hidden="true">&#9935;</span> Mine-JEPA</a>
+    <div class="header-controls">
+      <span class="last-updated" title="Date de mise à jour">Updated: 2026-08-11</span>
+      <nav class="lang-switch" aria-label="Site language">
+        <a href="../fr/14-un-geant-du-web-a-l-epreuve.html" lang="fr" hreflang="fr">FR</a>
+        <a href="14-a-web-giant-put-to-the-test.html" aria-current="true" lang="en" hreflang="en">EN</a>
+      </nav>
+      <div class="track-pref" data-track-pref>
+        <span class="track-pref-label" id="track-pref-label">Show:</span>
+        <button type="button" data-track-pref-value="beginner" aria-pressed="true" aria-describedby="track-pref-label">Beginner</button>
+        <button type="button" data-track-pref-value="expert" aria-pressed="false" aria-describedby="track-pref-label">Expert</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <nav class="breadcrumb" aria-label="Breadcrumbs">
+    <div class="wrap">
+      <a href="index.html">Learning Path</a>
+      <span aria-hidden="true">/</span>
+      <span>Chapter 14</span>
+    </div>
+  </nav>
+
+  <article class="chapter">
+    <div class="wrap">
+
+      <header class="chapter-header">
+        <p class="chapter-kicker">Chapter 14</p>
+        <h1>A web giant put to the test: CLIP does spot the forest — but it confuses that with brightness too</h1>
+        <p class="chapter-prereqs">Prerequisites: Chapters 1 to 13.</p>
+      </header>
+
+
+      <div class="tracks" data-tracks>
+        <div class="track-tabs" role="tablist" aria-label="Reading level">
+          <button class="track-tab" role="tab" id="tab-beginner" aria-controls="panel-beginner" aria-selected="true" data-track-tab="beginner">Beginner</button>
+          <button class="track-tab" role="tab" id="tab-expert" aria-controls="panel-expert" aria-selected="false" tabindex="-1" data-track-tab="expert">Expert</button>
+        </div>
+
+        <div class="track-panel is-active chapter-prose" data-track-panel="beginner" role="tabpanel" id="panel-beginner" aria-labelledby="tab-beginner">
+          <p class="track-kicker">Beginner track</p>
+
+<h2>Where we left off</h2>
+<p>Chapter 11 delivered the single most important diagnosis of this long investigation into the</p>
+<p>cold start: the project&#x27;s compass (the score that compares each story imagined by the world</p>
+<p>model against a memory of &quot;a tree being chopped&quot; — see Chapter 4) does not simply switch off</p>
+<p>once it leaves its training ground. It <strong>points backwards</strong>. A tree right in front of the agent</p>
+<p>gets a lower score than an empty meadow. Chapter 12 dug further and showed that a good part of</p>
+<p>this problem very probably comes from a hidden shortcut inside the project&#x27;s very first vision</p>
+<p>model (Chapters 1-2): instead of genuinely understanding &quot;there is a tree here&quot;, the model seems</p>
+<p>mostly to be spotting whether the image is bright or dark — a shortcut confirmed three times in</p>
+<p>a row, in three different forms.</p>
+<p>Before committing to the heaviest option on the menu left by Chapter 11 (building a second</p>
+<p>brain — a separate, slower model whose only job is to &quot;find a forest&quot;), someone from outside the</p>
+<p>project, consulted by the project owner, proposed a simpler and far cheaper question to test</p>
+<p>first: <em></em>does a very large, off-the-shelf AI model, never trained on Minecraft at all, already</p>
+<p>spot a forest correctly?<em></em> If so, there would be nothing new to build — it could simply be reused</p>
+<p>as is. This chapter tells the story of that test, and what it revealed: a result that is half</p>
+<p>encouraging, half worrying, and honestly not yet fully understood.</p>
+<h2>The idea: borrow a giant&#x27;s eyes instead of building new ones</h2>
+<p>The proposed model is called <strong>CLIP</strong>. It has never seen anything from this project or from</p>
+<p>Minecraft: it was trained by another team on hundreds of millions of photos and captions taken</p>
+<p>from the internet — the kind of thing you find when searching for images on the web. What CLIP</p>
+<p>can do, once trained: compare any image to any sentence and say how well they &quot;go together&quot;,</p>
+<p>without needing to be retrained for each new task (this is called a &quot;zero-shot&quot; comparison —</p>
+<p>literally &quot;without a single extra training attempt&quot;).</p>
+<p>The test was simple: take exactly the same real game frames that were used to discover the</p>
+<p>backwards-compass problem in Chapter 11, and ask CLIP to compare each one against two sentences:</p>
+<p>&quot;a dense forest with many trees&quot; versus &quot;an open grassy field with no trees&quot;. Two conditions had</p>
+<p>to be met for the test to count as a genuine success:</p>
+<ol>
+<li><strong>CLIP must agree with common sense</strong>: an image with a nearby tree must score more favourably</li>
+</ol>
+<p>towards &quot;forest&quot; than an image with no tree. (This is exactly the opposite of what the</p>
+<p>project&#x27;s broken compass was doing in Chapter 11.)</p>
+<ol>
+<li><em></em>That score must not actually be just a roundabout way of measuring the brightness of the</li>
+</ol>
+<p>scene<em></em> — otherwise it would be the same old shortcut already spotted three times</p>
+<p>(Chapter 11), simply hidden behind a much bigger and much more impressive model.</p>
+<h2>The result: half the test clearly passes, the other half fails badly</h2>
+<p><strong>The first condition passes, and clearly</strong>: CLIP does give a better &quot;forest&quot; score to images</p>
+<p>that really do show nearby trees than to images that show none. On that specific point, CLIP does</p>
+<p>better than the project&#x27;s broken compass — it does not invert.</p>
+<p><strong>The second condition fails, and badly.</strong> CLIP&#x27;s score is very strongly tied to the overall</p>
+<p>brightness of the image — almost as if the two were measuring nearly the same thing. And this is</p>
+<p>not only true on the difficult frames from the crafting environment (where the project&#x27;s compass</p>
+<p>inverts): it is true <strong>even on the easy frames from the original tree-chopping environment</strong>, the</p>
+<p>one where the project&#x27;s home-made compass has been working correctly since Chapter 6.</p>
+<h2>What this means, honestly — and what remains a genuine mystery</h2>
+<p>Care is needed here, because this is an open question, not an established certainty.</p>
+<p>This result <strong>weakens, without completely demolishing</strong>, an idea that had seemed reasonable up to</p>
+<p>now: that the project&#x27;s small model confuses brightness with forest simply because it did not see</p>
+<p>enough varied scenes (day, night, different weather) during training. If a giant model, trained on</p>
+<p>hundreds of millions of photos far more varied than anything this project could ever collect,</p>
+<p>makes the <strong>same</strong> confusion — and even slightly worse — then a lack of diversity may not explain</p>
+<p>everything.</p>
+<p>There is even a possible explanation that would not be a &quot;bug&quot; at all: a genuinely dense forest,</p>
+<p>in real life as in a game imitating it, <strong>really is darker</strong> than an open field in full sunlight,</p>
+<p>because of the shade cast by the canopy. Picking that up could be a useful and sensible signal,</p>
+<p>not a reasoning error.</p>
+<p>But one precise observation stops us settling for that simple explanation: among the frames</p>
+<p>tested, a <strong>dark cave scene with no tree whatsoever</strong> was placed by CLIP in the same group as the</p>
+<p>bright, open scenes — &quot;no forest&quot; — instead of being confused with a dark forest, as a</p>
+<p>&quot;darkness = forest&quot; story would have predicted. So something other than plain brightness is going</p>
+<p>on, but exactly what remains, to this day, a genuinely unanswered question.</p>
+<h2>Phase 2: retraining the world model directly — a mixed result, not a clean one</h2>
+<p>The decision taken after the CLIP test was not to demand that any future fix become completely</p>
+<p>independent of brightness (at the risk of stripping out a possibly legitimate signal), but to</p>
+<p>check directly whether the real original problem — the compass pointing backwards on real random</p>
+<p>starting points — disappears, no matter which mechanism achieves it. That work is now finished,</p>
+<p>and here is what it produced.</p>
+<p>The project took the existing world model (not from scratch — a simple adjustment of already</p>
+<p>trained weights) and retrained it on a mixture: the original guaranteed-forest frames, plus real</p>
+<p>free-spawn demonstrations, plus random exploration episodes. What was new compared with every</p>
+<p>previous attempt: this time a <strong>photometric augmentation</strong> (the colours, brightness and contrast</p>
+<p>of each short sequence are altered at random, but consistently across the whole sequence rather</p>
+<p>than frame by frame, to force the model to stop leaning blindly on brightness) was applied</p>
+<p>directly to the training of the world model itself — not to a small module bolted on top, as in</p>
+<p>previous attempts. This is the first time in the whole investigation that this particular move has</p>
+<p>been made directly on the main model.</p>
+<p>The usual safety checks (no representation collapse — see Chapter 2 — and prediction quality</p>
+<p>barely moving, which was intended: the goal was a light adjustment, not a full retraining) passed</p>
+<p>without a hitch across all 5 training rounds.</p>
+<p><em></em>The real test was to re-run, on each of the 5 adjusted versions, exactly the same diagnostic</p>
+<p>that had uncovered the backwards-compass problem.<em></em> The result is genuinely split, not merely</p>
+<p>&quot;it almost worked&quot;:</p>
+<ul>
+<li><strong>Leaving out one specific frame</strong> — a dark scene, like a cave or an underwater passage, with no</li>
+</ul>
+<p>tree at all — the fix looks clean: across the 5 adjusted versions, scenes with a nearby tree now</p>
+<p>score several times higher than open scenes with no tree. That is a real reversal of the</p>
+<p>original inverted direction.</p>
+<ul>
+<li><em></em>But putting that single frame back into the calculation flips the result the wrong way again</li>
+</ul>
+<p>on all 5 versions<strong>, because that specific frame&#x27;s score </strong>got worse<em></em> after the adjustment, not</p>
+<p>better. This is a new anomaly, tied to low brightness, appearing somewhere different from before</p>
+<p>— but clearly belonging to the same family of problem as the brightness shortcut already spotted</p>
+<p>earlier (Chapter 12, and the first half of this chapter with CLIP).</p>
+<p>None of the 5 adjusted versions was promoted to replace the reference model, and no new real-game</p>
+<p>test was run: the project&#x27;s rule is to spend a live test only on a candidate that has clearly</p>
+<p>passed its offline test first — and this one did not clearly pass.</p>
+<p><strong>Why this matters, stated precisely</strong>: this is the fourth time, with four genuinely different</p>
+<p>approaches, that a brightness-linked anomaly has appeared — a small bolted-on module trained on</p>
+<p>the model&#x27;s already-frozen features; that same module retrained specifically on free-spawn data;</p>
+<p>a giant off-the-shelf model never trained for this project (CLIP, earlier in this chapter); and</p>
+<p>now a direct retraining of the world model itself, with real photometric augmentation — the most</p>
+<p>direct attack yet on this precise problem. That seriously weakens the idea that &quot;the model simply</p>
+<p>hasn&#x27;t seen enough different lighting yet&quot; explains everything — even the most direct and most</p>
+<p>carefully done attempt to fix exactly that still produced a new anomaly, not a clean fix.</p>
+<h2>What happens next</h2>
+<p>The condition the project had set itself for committing to the heaviest option on the menu left in</p>
+<p>Chapter 11 — a second, slower world model dedicated to &quot;finding a forest&quot; before handing back to</p>
+<p>the existing fast model to chop the tree, called <strong>H-JEPA</strong> — was: &quot;only if the direct, cheaper fix</p>
+<p>fails&quot;. That has now happened, with real evidence behind it rather than a merely plausible</p>
+<p>argument. The project therefore turns towards this structurally different option as its next</p>
+<p>direction, rather than continuing to hunt for a direct fix on the existing model.</p>
+        </div>
+
+        <div class="track-panel chapter-prose" data-track-panel="expert" role="tabpanel" id="panel-expert" aria-labelledby="tab-expert">
+          <p class="track-kicker">Expert track</p>
+
+<h2>Context</h2>
+<p>Chapter 11 established that <code>ebwm.pt</code>&#x27;s native goal-centroid scoring inverts outside the Treechop</p>
+<p>distribution (nearby tree → lower score than an open scene). Chapter 12 confirmed, for a third</p>
+<p>independent time, that a brightness shortcut very probably lives in the frozen visual encoder</p>
+<p>itself (attempt #11: score/brightness correlation 0.643, and an <code>is<em>tree</em>close</code>/brightness</p>
+<p>correlation of -0.917 on the gate&#x27;s own hand-labelled set, demonstrating that the 87.5% direction</p>
+<p>gate was in reality measuring that same shortcut). This chapter covers phase 1 of attempt #14: a</p>
+<p>purely offline diagnostic, with no Minecraft-specific training, testing whether a generic,</p>
+<p>entirely out-of-domain pretrained vision-language model already solves the direction problem —</p>
+<p>before committing to the cost of Chapter 11&#x27;s candidate direction 3 (hierarchical H-JEPA).</p>
+<h2>Method</h2>
+<p>An external expert consulted by the project owner proposed testing <strong>CLIP</strong> (Radford et al.,</p>
+<p>OpenAI) zero-shot, ahead of any other intervention — a model never touched or fine-tuned for this</p>
+<p>project, trained on hundreds of millions of web image-text pairs. Protocol: zero-shot CLIP</p>
+<p>similarity between each frame and two text descriptions, &quot;a dense forest with many trees&quot; versus</p>
+<p>&quot;an open grassy field with no trees&quot;, applied to the <strong>same set of real frames</strong> used to discover</p>
+<p>the inversion in attempt #10 (Chapter 11) — no new data, no resampling, for a directly paired</p>
+<p>comparison with the previous diagnostic.</p>
+<p>Two passing conditions were required, not one:</p>
+<p><strong>(a)</strong> CLIP must score tree-close frames above no-tree frames — the direction test that</p>
+<p><code>ebwm.pt</code>&#x27;s native scoring fails (attempt #10).</p>
+<p><strong>(b)</strong> CLIP&#x27;s score must not be a simple function of overall scene brightness — otherwise it</p>
+<p>would be the same shortcut confirmed three times in attempt #11, rediscovered behind a bigger</p>
+<p>model rather than solved.</p>
+<h2>Result</h2>
+<p><strong>(a) clearly passed</strong>: a real, correctly oriented separation, unlike <code>ebwm.pt</code>&#x27;s native scoring on</p>
+<p>the same distribution.</p>
+<p><strong>(b) failed, badly.</strong> CLIP&#x27;s score correlates strongly with scene brightness — a relationship</p>
+<p>close to near-collinearity between the two variables. Notably, this correlation holds <em></em>on the</p>
+<p>original Treechop environment too<em></em>, the one where <code>ebwm.pt</code>&#x27;s native scoring already works</p>
+<p>correctly (Chapter 6, Chapter 8) — not only on the difficult free-spawn distribution where the</p>
+<p>problem was discovered.</p>
+<h2>A cautious reading — hypothesis, not established fact</h2>
+<p>This result <strong>weakens, without refuting</strong>, the hypothesis carried since attempts #9/#11 that the</p>
+<p>brightness shortcut is caused by a lack of lighting diversity in the project&#x27;s Minecraft-specific</p>
+<p>training data (Treechop, almost exclusively daytime). A model trained on a web corpus several</p>
+<p>orders of magnitude more lighting-diverse than any corpus collectable within this project</p>
+<p>reproduces — and even exceeds in intensity — the same shortcut. If data diversity alone were</p>
+<p>enough to eliminate this shortcut, we would not expect to find it this strong in CLIP.</p>
+<p>An alternative reading, not excluded: &quot;a dense forest is physically darker than an open field&quot;</p>
+<p>could be a real and legitimate signal to pick up, not a reasoning error — brightness and forest</p>
+<p>presence are authentically correlated in the world (and in the game&#x27;s imitation of it).</p>
+<p>But that alternative reading does not explain everything: a specific <em></em>dark cave frame, with no</p>
+<p>tree<em></em>, was grouped by CLIP with the bright open scenes (&quot;no forest&quot;), and not with a &quot;dark</p>
+<p>forest&quot; profile — which is what a pure-brightness story would have predicted. Something other than</p>
+<p>raw brightness is therefore involved in CLIP&#x27;s score, without our being able to say precisely what</p>
+<p>at this stage. <strong>This is explicitly left as an open question, not as an established fact</strong> —</p>
+<p>consistent with the project&#x27;s honesty discipline on unresolved results.</p>
+<h2>Phase 2: direct fine-tuning of <code>ebwm.pt</code> with photometric augmentation — a mixed result</h2>
+<p>Rather than pursuing the zero-shot CLIP direction itself, or demanding that a future fix become</p>
+<p>explicitly invariant to brightness (at the risk of stripping out a potentially legitimate signal,</p>
+<p>as discussed above), the decision taken at the end of phase 1 was to proceed directly to a</p>
+<p>fine-tuning of the project&#x27;s world model on a mixture of guaranteed-forest data (Treechop) and</p>
+<p>real free-spawn data (expert Obtain demonstrations + random exploration episodes), <em></em>then to</p>
+<p>re-check directly whether the original inversion problem (attempt #10, Chapter 11) disappears —</p>
+<p>whatever mechanism mediates that change<em></em> — rather than imposing brightness-independence as the</p>
+<p>success criterion. That phase is now concluded.</p>
+<p><strong>Method</strong>: warm-start from <code>ebwm.pt</code> — same architecture, not a from-scratch retraining — on the</p>
+<p>Treechop + expert free-spawn + random exploration mixture described above, with <em></em>photometric</p>
+<p>augmentation<em></em> (brightness/contrast/saturation jitter, randomised but applied consistently across</p>
+<p>a whole short sequence, not frame by frame) injected directly into the world model&#x27;s own training</p>
+<p>— not into an additional module as in previous attempts (attempt #7&#x27;s ColorJitter repair, then</p>
+<p>attempt #11). This is the first time in the entire campaign that this augmentation has been applied</p>
+<p>to the main model rather than to a grafted-on component.</p>
+<p><strong>Safety gates</strong>: passed cleanly across all 5 training epochs — no representation collapse (see</p>
+<p>Chapter 2), prediction quality nearly unchanged (expected: the goal was a light adjustment, not a</p>
+<p>full retraining).</p>
+<p><strong>The real test</strong>: re-running attempt #10&#x27;s exact diagnostic on each of the 5 fine-tuned</p>
+<p>snapshots. Authentically mixed result, not a clean win:</p>
+<ul>
+<li>Excluding one specific frame — a dark cave/underwater-type scene with no tree — the fix looks</li>
+</ul>
+<p>clean: across the 5 snapshots, tree-close scenes now correctly score several times higher than</p>
+<p>open/no-tree scenes — a real reversal of the original inverted direction.</p>
+<ul>
+<li>Including that same frame, the result flips the wrong way again on each of the 5 snapshots,</li>
+</ul>
+<p>because that specific frame&#x27;s score <strong>degraded</strong> after fine-tuning rather than improving — a new</p>
+<p>anomaly, tied to low brightness, appearing somewhere different from attempt #11, but recognisable</p>
+<p>as belonging to the same family of brightness-linked shortcut (Chapter 12 / attempt #11, and this</p>
+<p>chapter&#x27;s own CLIP phase 1).</p>
+<p>No fine-tuned snapshot was promoted to reference-checkpoint status; no live real-game test was run,</p>
+<p>in line with the project&#x27;s rule of reserving a live test for a candidate that has clearly passed</p>
+<p>its offline gate first — which is not the case here.</p>
+<p><strong>Why this is significant</strong>: this is the fourth time, with four mechanically different approaches,</p>
+<p>that a brightness-linked anomaly has appeared — a small additional module trained on frozen</p>
+<p>features (attempt #7); that same module retrained specifically on Obtain data (attempt #11); a</p>
+<p>giant, out-of-domain, never-touched vision-language model (CLIP, phase 1 of this chapter); and now</p>
+<p>a direct retraining of the world model itself with real photometric augmentation — the most direct</p>
+<p>attack yet attempted on this precise problem. This appreciably weakens the &quot;the model simply hasn&#x27;t</p>
+<p>seen enough lighting diversity&quot; hypothesis: even the most direct and most careful attempt to fix</p>
+<p>exactly that gap produced a new anomaly rather than a clean fix.</p>
+<h2>Decision for what follows</h2>
+<p>The condition the project had set for committing to candidate direction 3 from Chapter 11&#x27;s menu —</p>
+<p><strong>H-JEPA</strong>, a second, slower, hierarchical world model planning &quot;find a forest&quot; over a long horizon</p>
+<p>before handing back to the existing fast model for the chopping gesture — was explicitly &quot;only if</p>
+<p>the direct, cheaper fix fails&quot;. That condition is now met by empirical evidence (phase 2 above</p>
+<p>being the project&#x27;s most thorough direct-fix attempt to date), and no longer merely by a plausible</p>
+<p>argument. The project therefore turns towards H-JEPA as its next direction, rather than continuing</p>
+<p>to iterate on direct fixes to <code>ebwm.pt</code> or its add-on modules.</p>
+<p><code>ebwm.pt</code> (the reference checkpoint) is modified neither by the CLIP diagnostic (a third-party</p>
+<p>model, never loaded for planning) nor by phase 2&#x27;s fine-tuning: the 5 snapshots produced are kept</p>
+<p>separately versioned, following the convention already used for every variant in this project</p>
+<p>(<code>craft<em>wm</em>v4<em>coverage.pt</code>, <code>value</em>projector_obtain.pt</code>, and so on) — no silent replacement of the</p>
+<p>reference checkpoint.</p>
+<h2>References</h2>
+<p>CLIP (Radford, Kim, Hallacy, Ramesh, Goh, Agarwal, Sastry, Askell, Mishkin, Clark, Krueger,</p>
+<p>Sutskever, <em>Learning Transferable Visual Models From Natural Language Supervision</em>, 2021) is used</p>
+<p>here zero-shot, out of domain, as an external diagnostic — this project does <strong>not</strong> have a</p>
+<p>verified arXiv identifier for CLIP in <code>docs/references/index.md</code> to date, and invents none here, in</p>
+<p>line with the project&#x27;s rule of citing only references already verified in that file. This chapter</p>
+<p>otherwise builds on attempt #10&#x27;s diagnostic (Chapter 11) and the brightness shortcut confirmed</p>
+<p>three times in attempt #11 (Chapter 12), already documented without further bibliographic citation.</p>
+        </div>
+      </div>
+
+
+    </div>
+  </article>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>Mine-JEPA — a JEPA agent learning to play Minecraft from pixels, documented along the way.</p>
+    <p class="footer-links">
+      Author / Auteur: <a href="https://x.com/reddwarf03" target="_blank" rel="noopener">@reddwarf03 (X/Twitter)</a> ·
+      <a href="https://github.com/redDwarf03" target="_blank" rel="noopener">redDwarf03 (GitHub)</a> |
+      <a href="https://github.com/redDwarf03/mine-jepa" target="_blank" rel="noopener">GitHub Repository</a>
+    </p>
+  </div>
+</footer>
+
+<script src="../script.js" defer></script>
+</body>
+</html>
