@@ -1,0 +1,42 @@
+# Cold-start attempt #20 — Context Collapse diagnostic (ActSWM, arXiv:2607.26712).
+#
+# Measures whether ebwm.pt's autoregressive latent rollouts stay RESPONSIVE to the
+# action sequence being planned, or whether they extrapolate scene progression from
+# the frame alone. Offline only: no MineRL, no Java, no checkpoint written.
+
+checkpoint: checkpoints/ebwm.pt
+
+rollout:
+  # ActSWM's protocol uses H=32 context / K_eval=32. ebwm.pt's ACConvPredictor has
+  # context_length=1, so context is a single frame; horizon is set to the planner's
+  # own value (SwitchingCraftPlanner horizon=12) so the number describes the rollout
+  # the agent actually plans over, not a longer one it never uses.
+  horizon: 12
+  windows_per_domain: 400
+  # Candidate action sequences drawn per window for the planner-matched spread arm
+  # (mirrors the planner's random-shooting pool, smaller for cost).
+  n_candidates: 64
+
+domains:
+  treechop:
+    path: data/minerl/episodes.npz
+    max_action: null
+  obtain_craft:
+    path: data/minerl_craft/episodes.npz
+    # ebwm.pt has a 17-slot action embedding; Obtain data is the 22-action space.
+    # Drop windows touching an out-of-vocabulary index rather than clamping
+    # (attempt #14's fix — clamping would silently relabel the action).
+    max_action: 17
+  obtain_coverage:
+    path: data/minerl_coverage/episodes.npz
+    max_action: 17
+
+# Action index treated as ActSWM's "all-zero action" counterfactual.
+# configs/minerl_actions.yaml: 0 = {} = noop.
+noop_action: 0
+
+seed: 0
+
+output:
+  csv: assets/diagnostics/context_collapse.csv
+  json: assets/diagnostics/context_collapse.json
