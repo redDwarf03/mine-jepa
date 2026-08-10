@@ -1,0 +1,199 @@
+{
+  "baseline": {
+    "checkpoint": "checkpoints/ebwm.pt",
+    "gate_a": {
+      "n_tree_close": 10,
+      "n_no_tree": 17,
+      "tree_close_mean": 0.008558709383942186,
+      "no_tree_mean": 0.0108338537187699,
+      "correct_direction": false,
+      "ratio": 0.7899967644120971,
+      "pass": false
+    },
+    "gate_b": {
+      "pearson_r": 0.08520294704197864,
+      "pass": true
+    },
+    "gate_c": {
+      "note": "baseline checkpoint \u2014 regression gate not applicable to itself",
+      "median": 0.004587005125358701,
+      "pass": true
+    },
+    "all_gates_pass": false
+  },
+  "epoch1": {
+    "checkpoint": "checkpoints/ebwm_v3_actioncoverage_epoch1.pt",
+    "gate_a": {
+      "n_tree_close": 10,
+      "n_no_tree": 17,
+      "tree_close_mean": 0.008348832326009869,
+      "no_tree_mean": 0.010778357939082472,
+      "correct_direction": false,
+      "ratio": 0.7745922313209593,
+      "pass": false
+    },
+    "gate_b": {
+      "pearson_r": 0.010908908049142452,
+      "pass": true
+    },
+    "gate_c": {
+      "median": 0.009555805940181017,
+      "baseline_median": 0.004587005125358701,
+      "ratio_vs_baseline": 2.0832341972658597,
+      "band": [
+        0.5,
+        2.0
+      ],
+      "band_pass": false,
+      "offset_lo": 0.0,
+      "offset_hi": 0.5,
+      "offset_lo_mean": 0.028191247517406738,
+      "offset_hi_mean": 0.009005321293807355,
+      "direction_correct": false,
+      "direction_ratio": 0.31943677867561565,
+      "direction_pass": false,
+      "pass": false
+    },
+    "all_gates_pass": false
+  },
+  "epoch2": {
+    "checkpoint": "checkpoints/ebwm_v3_actioncoverage_epoch2.pt",
+    "gate_a": {
+      "n_tree_close": 10,
+      "n_no_tree": 17,
+      "tree_close_mean": 0.005159064830513671,
+      "no_tree_mean": 0.007787369023871553,
+      "correct_direction": false,
+      "ratio": 0.6624913773443859,
+      "pass": false
+    },
+    "gate_b": {
+      "pearson_r": -0.04741493570577247,
+      "pass": true
+    },
+    "gate_c": {
+      "median": 0.007646545767784119,
+      "baseline_median": 0.004587005125358701,
+      "ratio_vs_baseline": 1.6670017928497876,
+      "band": [
+        0.5,
+        2.0
+      ],
+      "band_pass": true,
+      "offset_lo": 0.0,
+      "offset_hi": 0.5,
+      "offset_lo_mean": 0.017790571780642493,
+      "offset_hi_mean": 0.00724591787729878,
+      "direction_correct": false,
+      "direction_ratio": 0.4072897693587844,
+      "direction_pass": false,
+      "pass": false
+    },
+    "all_gates_pass": false
+  },
+  "epoch3": {
+    "checkpoint": "checkpoints/ebwm_v3_actioncoverage_epoch3.pt",
+    "gate_a": {
+      "n_tree_close": 10,
+      "n_no_tree": 17,
+      "tree_close_mean": 0.0043334037531167265,
+      "no_tree_mean": 0.007962365217013833,
+      "correct_direction": false,
+      "ratio": 0.5442357434016202,
+      "pass": false
+    },
+    "gate_b": {
+      "pearson_r": -0.1608679750372121,
+      "pass": true
+    },
+    "gate_c": {
+      "median": 0.006443440681323409,
+      "baseline_median": 0.004587005125358701,
+      "ratio_vs_baseline": 1.4047162593522362,
+      "band": [
+        0.5,
+        2.0
+      ],
+      "band_pass": true,
+      "offset_lo": 0.0,
+      "offset_hi": 0.5,
+      "offset_lo_mean": 0.010885977344878483,
+      "offset_hi_mean": 0.006136284489184618,
+      "direction_correct": false,
+      "direction_ratio": 0.5636870530574409,
+      "direction_pass": false,
+      "pass": false
+    },
+    "all_gates_pass": false
+  },
+  "epoch4": {
+    "checkpoint": "checkpoints/ebwm_v3_actioncoverage_epoch4.pt",
+    "gate_a": {
+      "n_tree_close": 10,
+      "n_no_tree": 17,
+      "tree_close_mean": 0.004483425919897854,
+      "no_tree_mean": 0.008440821910934412,
+      "correct_direction": false,
+      "ratio": 0.5311598760412103,
+      "pass": false
+    },
+    "gate_b": {
+      "pearson_r": -0.06438179673466804,
+      "pass": true
+    },
+    "gate_c": {
+      "median": 0.006285650422796607,
+      "baseline_median": 0.004587005125358701,
+      "ratio_vs_baseline": 1.3703168518489661,
+      "band": [
+        0.5,
+        2.0
+      ],
+      "band_pass": true,
+      "offset_lo": 0.0,
+      "offset_hi": 0.5,
+      "offset_lo_mean": 0.014572725631842332,
+      "offset_hi_mean": 0.0069176751567283645,
+      "direction_correct": false,
+      "direction_ratio": 0.4747001577805599,
+      "direction_pass": false,
+      "pass": false
+    },
+    "all_gates_pass": false
+  },
+  "epoch5": {
+    "checkpoint": "checkpoints/ebwm_v3_actioncoverage_epoch5.pt",
+    "gate_a": {
+      "n_tree_close": 10,
+      "n_no_tree": 17,
+      "tree_close_mean": 0.0053418399882502856,
+      "no_tree_mean": 0.009294681970084854,
+      "correct_direction": false,
+      "ratio": 0.5747200394207268,
+      "pass": false
+    },
+    "gate_b": {
+      "pearson_r": 0.01952753648630144,
+      "pass": true
+    },
+    "gate_c": {
+      "median": 0.0065316734835505486,
+      "baseline_median": 0.004587005125358701,
+      "ratio_vs_baseline": 1.4239516427485517,
+      "band": [
+        0.5,
+        2.0
+      ],
+      "band_pass": true,
+      "offset_lo": 0.0,
+      "offset_hi": 0.5,
+      "offset_lo_mean": 0.02317658656174899,
+      "offset_hi_mean": 0.007450351334409788,
+      "direction_correct": false,
+      "direction_ratio": 0.3214602510408486,
+      "direction_pass": false,
+      "pass": false
+    },
+    "all_gates_pass": false
+  }
+}

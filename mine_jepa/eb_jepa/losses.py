@@ -399,3 +399,82 @@ class BCS(nn.Module):
         invariance_loss = F.mse_loss(z1, z2).mean()
         total_loss = invariance_loss + self.lmbd * bcs
         return {"loss": total_loss, "bcs_loss": bcs, "invariance_loss": invariance_loss}
+
+
+class SIGRegRegularizer(nn.Module):
+    """
+    SIGReg anti-collapse regularizer (Balestriero & LeCun / Arnez & Gomez-Villa
+    arXiv:2607.13612), drop-in replacement for VC_IDM_Sim_Regularizer.
+
+    Same reshape convention as VC_IDM_Sim_Regularizer.forward (x [B,C,T,H,W] ->
+    x_for_vc [B*T, C*H*W] with first_t_only/spatial_as_samples controlling which
+    axes count as "samples"), but the anti-collapse term is BCS's marginal-
+    gaussianity statistic (epps_pulley on random 1-D slices) instead of
+    HingeStdLoss+CovarianceLoss. Called as z1=z2=x_for_vc (same tensor), so
+    BCS's invariance_loss term is 0 by construction (MSE(z1,z1)=0) — invariance
+    is already handled by predcost (SquareLossSeq) elsewhere in JEPA.unroll, not
+    duplicated here. Only bcs_loss (gaussianity) is a real anti-collapse signal.
+    """
+
+    def __init__(
+        self,
+        sigreg_coeff: float = 1.0,
+        first_t_only: bool = True,
+        projector: nn.Module = None,
+        spatial_as_samples: bool = False,
+        num_slices: int = 256,
+        bcs_lmbd: float = 10.0,
+    ):
+        super().__init__()
+        self.sigreg_coeff = sigreg_coeff
+        self.first_t_only = first_t_only
+        self.projector = nn.Identity() if projector is None else projector
+        self.spatial_as_samples = spatial_as_samples
+        self.bcs = BCS(num_slices=num_slices, lmbd=bcs_lmbd)
+
+    def forward(self, x, actions=None):
+        """
+        Args:
+            x: [B, C, T, H, W] - Input activations.
+            actions: unused, kept for call-convention parity with
+                VC_IDM_Sim_Regularizer.forward (JEPA.unroll always calls
+                self.regularizer(state, actions)).
+        """
+        b, c, t, h, w = x.shape
+
+        x_flat = x.permute(0, 2, 3, 4, 1).reshape(-1, c)  # [B*T*H*W, C]
+        x_proj = self.projector(x_flat)  # [B*T*H*W, C_out]
+        c_out = x_proj.shape[-1]
+        x_projected = x_proj.view(b, t, h, w, c_out)  # [B, T, H, W, C_out]
+
+        if self.spatial_as_samples:
+            if self.first_t_only:
+                x_for_vc = x_projected[:, 0].reshape(b * h * w, c_out)
+                assert x_for_vc.shape == (b * h * w, c_out)
+            else:
+                x_for_vc = x_projected.reshape(-1, c_out)
+                assert x_for_vc.shape == (b * t * h * w, c_out)
+        else:
+            x_for_vc = x_projected.permute(0, 1, 4, 2, 3).reshape(
+                b, t, -1
+            )  # [B, T, C_out*H*W]
+            if self.first_t_only:
+                x_for_vc = x_for_vc[:, 0]
+                assert x_for_vc.shape == (b, c_out * h * w)
+            else:
+                x_for_vc = x_for_vc.reshape(-1, x_for_vc.size(-1))
+                assert x_for_vc.shape == (b * t, c_out * h * w)
+
+        bcs_out = self.bcs(x_for_vc, x_for_vc)
+        bcs_loss = bcs_out["bcs_loss"]
+        invariance_loss = bcs_out["invariance_loss"]  # 0 by construction (z1=z2)
+
+        total_weighted_loss = self.sigreg_coeff * bcs_loss
+        total_unweighted_loss = bcs_loss
+
+        loss_dict = {
+            "bcs_loss": bcs_loss.item(),
+            "invariance_loss": invariance_loss.item(),
+        }
+
+        return total_weighted_loss, total_unweighted_loss, loss_dict

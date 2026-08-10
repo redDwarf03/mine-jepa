@@ -1,0 +1,71 @@
+# Cold-start attempt #18, Diagnostic 1 of 2 — offline depth-modality gate (no
+# training, no MineRL/Java, no checkpoint touched). Six independent mechanisms
+# (attempts #7, #11, #14 Phase1-CLIP, #14 Phase2-finetune, #15, #17) all found the
+# same brightness/scene-composition confound trying to score "is there a tree
+# nearby" on MineRLObtainIronPickaxeDense-v0 frames using RGB-derived features
+# alone. This tests a genuinely different MODALITY instead: an off-the-shelf
+# monocular depth estimator (MiDaS, intel-isl/MiDaS via torch.hub, MiDaS_small),
+# motivated by Khan, "Depth-Regularized JEPA World Models Learn More Transferable
+# Representations from Real Outdoor Robot Data" (arXiv:2607.16314, 2026,
+# docs/references/index.md).
+#
+# Frame gathering and direction_check shape copied verbatim from
+# configs/diagnose_ood_gate.yaml (attempt #17) — identical 251-frame population,
+# identical hand-labeled subset, for direct comparability.
+
+seed: 0
+
+depth_model:
+  repo: intel-isl/MiDaS
+  model_type: MiDaS_small
+  top_frac: 0.1   # mean of the closest (largest-disparity) 10% of pixels per frame
+
+# Reuses scripts/diagnose_score_generalization.py's gather_treechop_frames /
+# gather_obtain_frames VERBATIM — identical 251-frame diagnostic set (160
+# Treechop, 11 real Obtain spawn thumbnails from attempt #9, 80 Obtain
+# coverage-episode frames from attempt #3), same config shape as attempt #17.
+treechop:
+  data_path: data/minerl_goal/episodes.npz
+  n_episodes: 40
+  offsets: [0.0, 0.1, 0.25, 0.5]
+  n_thumbs: 0
+
+obtain:
+  spawn_thumb_dir: assets/spawn_thumbs
+  coverage_data_path: data/minerl_coverage/episodes.npz
+  coverage_chunk_size: 400
+  coverage_n_chunks: 20
+  coverage_offsets: [0.0, 0.1, 0.25, 0.5]
+
+# Hand-labeled direction-check frames. Original 10 (2 spawn_tree_close, 4
+# spawn_no_tree, 2 coverage_tree_close, 2 coverage_no_tree) copied verbatim from
+# configs/diagnose_ood_gate.yaml (attempt #17), itself copied from attempt #11's
+# direction_check block in configs/train_value_projector_obtain.yaml. CLAUDE.md's
+# attempt #10 write-up confirms ebwm.pt's own goal-centroid score is REVERSED on
+# every one of these (tree_close scored lower than no_tree).
+#
+# Expanded (attempt #18 follow-up, Task A): all remaining unlabeled candidates
+# from the two gate-eligible groups were visually inspected (the 5 spawn thumbs
+# in assets/spawn_thumbs/ not already labeled, and all 16 unlabeled coverage
+# chunks 0-19 in data/minerl_coverage/episodes.npz at offset 0.0, rendered to
+# assets/diagnostics/depth_label_candidates/). 21 candidates inspected, 4
+# discarded as genuinely ambiguous (chunk003: background tree line across
+# water, not close/prominent; chunk009 and ep001_1784647592008: too dark/
+# cave-like at night to confidently judge vegetation; chunk016: small distant
+# greenery of unclear identity) -- the remaining 17 were confident calls,
+# calibrated against the original 10 labels' own precedent (e.g. a small
+# distant tree at frame edge was already treated as no_tree in the original
+# set, so new borderline-distant cases were judged the same way).
+direction_check:
+  spawn_tree_close: ["ep001_1784647176868", "ep001_1784647708743", "ep001_1784647301681", "ep001_1784647943879"]
+  spawn_no_tree: ["ep001_1784633396270", "ep001_1784633525602", "ep001_1784647041967", "ep001_1784647444573", "ep001_1784633250670", "ep001_1784647828624"]
+  coverage_tree_close: [0, 7, 11, 12, 15, 18]   # chunk index (row "episode" field), offset 0.0
+  coverage_no_tree: [1, 5, 2, 4, 6, 8, 10, 13, 14, 17, 19]   # chunk index (row "episode" field), offset 0.0
+
+output:
+  dir: assets/diagnostics
+  csv_name: depth_gate.csv
+
+gates:
+  min_separation_ratio: 1.3   # Gate A bar, same threshold this campaign has used since attempt #7
+  max_brightness_corr: 0.3    # Gate B bar — must stay well below every prior confound (0.117-0.947)

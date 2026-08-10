@@ -1,0 +1,58 @@
+# Cold-start attempt #19, Run B — fine-tune ebwm.pt with SIGReg (Balestriero &
+# LeCun / Arnez & Gomez-Villa arXiv:2607.13612) replacing VICReg's std/cov terms,
+# on the ORIGINAL Treechop+Obtain dataset (not the action-coverage-fixed _v2 one,
+# which is Run A's own variable, not this run's). Photometric augmentation is
+# OFF (already tested separately at attempt #14 Phase 2) so SIGReg is the ONLY
+# new variable vs. the unmodified checkpoints/ebwm.pt baseline. LR is 10x lower
+# than the other fine-tune runs (1e-5 vs 3e-5) because SIGReg changes the
+# objective itself, not just the data mix — higher structural risk per the Run B
+# scoping.
+
+data:
+  path: data/minerl_treechop_obtain/episodes.npz
+  num_frames: 8
+  subsample: 4
+  val_fraction: 0.1
+  max_action: 17
+  source_weights:
+    0: 1.0
+    1: 4.0
+    2: 4.0
+
+model:
+  embed_dim: 64
+  encoder_hidden: 32
+  n_actions: 17
+  action_embed_dim: 16
+  predictor_hidden: 128
+
+regularizer:
+  type: sigreg          # sigreg|vicreg — the only variable under test in Run B
+  sigreg_coeff: 1.0
+  std_coeff: 0.0         # unused on the sigreg path, kept for config completeness
+  cov_coeff: 0.0         # unused on the sigreg path, kept for config completeness
+  sim_coeff_t: 0.0       # already inert in build_ac_jepa — untouched, not part of this test
+
+training:
+  resume_from: checkpoints/ebwm.pt
+  epochs: 3               # early-stop gated, see logging.early_stop below
+  batch_size: 64
+  lr: 1.0e-5               # 10x lower than Run A's 3e-5 (objective change, not just data)
+  weight_decay: 1.0e-5
+  num_workers: 0
+  seed: 0
+
+augmentation:
+  color_jitter:
+    enabled: false        # OFF — isolates SIGReg as the only variable vs. baseline
+
+logging:
+  log_every: 1
+  collapse_threshold: 1.0e-4
+  effective_rank_drop_threshold: 0.5   # stop if eff_rank < 0.5 * baseline eff_rank
+  ratio_threshold: 1.0                 # stop if val_pred/val_copy > 1.0
+  effective_rank_max_samples: 2048     # samples pooled from val_loader for the SVD
+
+checkpoint:
+  dir: checkpoints/
+  name_prefix: ebwm_v3_sigreg   # snapshots: {prefix}_epoch{N}.pt

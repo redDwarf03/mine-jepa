@@ -1,0 +1,121 @@
+# Cold-start attempt #18 follow-up (docs/10, CLAUDE.md): depth-driven scan
+# macro on top of the already-validated commit_length=4 + hazard-avoidance
+# baseline (configs/play_craft_commit4_hazard.yaml). Only `scan.macro` and the
+# new `scan.depth` block differ from that file — commit_length, hazard, chop
+# goal, craft goal, agent settings are all identical, so this test isolates
+# the depth macro's effect on top of the campaign's two already-validated
+# mechanisms (commit_length, hazard avoidance), not a from-scratch config.
+#
+# scan.macro: depth (mine_jepa/ebwm/depth.py) — steers the scan macro's
+# forward cruise toward the vertical column of the CURRENT observed frame
+# with the closest-looking object, per an off-the-shelf MiDaS_small monocular
+# depth model (Task A's diagnose_depth_gate.py found this a genuinely
+# different, near-brightness-independent signal, r=0.045, though its
+# separation gate did NOT hold up on Task A's larger re-check — 1.086x,
+# below the 1.3x bar — so this live test is judged on whether the
+# depth-driven heading behaves SANELY (no oscillation/lock-in, plausible
+# turns toward close objects), not on whether it fixes chopping).
+#
+# LIMITATION, stated here as in the code: depth alone cannot tell a tree
+# trunk apart from a wall, a hill, or the ground when looking down — it only
+# answers "something is close this way", not "that something is choppable".
+# This macro NEVER touches CraftPlannerV4/SwitchingCraftPlanner's
+# goal-centroid scoring — it only chooses a scan-macro heading, on the real
+# current frame, once per replan.
+
+minerl_env: MineRLObtainIronPickaxeDense-v0
+actions_config: configs/minerl_actions_obtain.yaml
+
+model:
+  checkpoint: checkpoints/craft_wm_v4.pt
+
+planner:
+  n_actions: 22
+  horizon: 12
+  n_candidates: 512
+  sticky_prob: 0.5
+  w_log: 1.0
+  w_planks: 2.0
+  log_threshold: 0.05
+  commit_length: 4
+
+scan:
+  enabled: true
+  macro: depth
+  flat_threshold: 0.003    # Treechop-calibrated (docs/10), valid here because the
+                            # two-brain chop_planner IS ebwm.pt, not craft_wm_v4
+  patience: 3
+  max_replans: 40
+  log_std: true            # mandatory per the attempt #4 RND lesson: never ship
+                            # an instrumented mechanism without its own diagnostic print
+  depth:
+    repo: intel-isl/MiDaS
+    model_type: MiDaS_small
+    top_frac: 0.1           # mean of the closest (largest-disparity) 10% of pixels per column
+    n_columns: 4            # left / center-left / center-right / right vertical strips
+    fov_deg: 70.0           # APPROXIMATE horizontal FOV assumption (Minecraft's in-game
+                            # default) -- never independently measured for MineRL's own
+                            # POV rendering pipeline in this project (mine_jepa/ebwm/depth.py)
+    turn_slots: 1           # of the commit_length=4 committed slots, how many are spent
+                            # turning when misaligned (rest walk forward in the same block)
+    align_deg: 22.0         # WEAKER "settles, does not repeat" bound (>= sweep/2 = 20 at
+                            # turn_slots=1/action_repeat=4/10deg-per-tick) -- NOT hazard's
+                            # stricter "never flips sign" bound (align_deg >= full sweep),
+                            # which would need >=40deg here and would exceed every realistic
+                            # column bearing at this fov_deg, permanently disabling the turn
+                            # branch. See mine_jepa/ebwm/depth.py's docstring for the full
+                            # derivation of why the weaker bound is the right one here.
+    jump_every: 4
+    jump_action: 8
+    forward_action: 13
+    turn_left_action: 11
+    turn_right_action: 12
+    max_ticks: 30
+
+# Cold-start attempt #13: calibrated against TWO real drowning deaths, one
+# bright daytime, one dark night (docs/10, mine_jepa/ebwm/hazard.py docstring
+# has the full calibration data from both rounds). Unchanged from
+# configs/play_craft_commit4_hazard.yaml — hazard avoidance no longer shares
+# frontier_tracker's position source with the depth macro (depth needs no
+# dead-reckoned position at all), but it still needs frontier_tracker for ITS
+# OWN steered escape, which play_craft.py instantiates independently whenever
+# hazard_enabled is true, regardless of scan.macro.
+hazard_avoidance:
+  enabled: true
+  ratio_thresh: 1.02
+  rel_rg_thresh: 0.15
+  patience: 1               # react immediately — drowning is time-critical
+  max_ticks: 60             # bounded escape budget per trigger before rechecking
+  jump_every: 2             # jump (surface, refill air) every other tick
+  jump_action: 5            # pure jump, no forward — don't swim further from land
+  retreat_action: 2         # blind fallback only, if no dry position recorded yet
+  align_deg: 85.0           # turn toward the remembered dry point until within this many degrees
+  dry_anchor_debounce: 2    # consecutive not-underwater checks required before trusting the anchor
+  turn_right_action: 12
+  turn_left_action: 11
+  forward_action: 1         # plain walk (not sprint) toward the remembered dry point
+  log: true                 # mandatory per the attempt #4 RND lesson
+
+chop_model:
+  checkpoint: checkpoints/ebwm.pt
+  n_actions: 17
+  goal:
+    data_path: data/minerl_goal/episodes.npz
+    threshold: 0.5
+    min_frames: 10
+    mode: centroid
+
+goal:
+  data_path: data/minerl_craft/episodes.npz
+  chop_reward_threshold: 0.5
+
+agent:
+  episodes: 6
+  max_steps: 3000
+  action_repeat: 4
+  seed: 0
+
+logging:
+  save_gif: true
+  gif_episodes: 6
+  gif_path: assets/agent_play_craft_commit4_depth.gif

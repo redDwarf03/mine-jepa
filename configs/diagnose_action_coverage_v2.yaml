@@ -1,0 +1,23 @@
+# Cold-start attempt #19, Run A, step 2 — re-run of attempt #18 Diagnostic 2's
+# action-coverage check against the FIXED discretizer's output
+# (data/minerl_goal_v2/episodes.npz, scripts/prepare_demos.py::discretize_actions
+# now also reads action$jump/left/right/back and camera pitch). Everything else
+# is identical to configs/diagnose_action_coverage.yaml (same Obtain-domain
+# sources, same self-calibration null) so the two runs are directly comparable —
+# only the treechop.data_path changes.
+
+seed: 0
+
+model:
+  checkpoint: checkpoints/ebwm.pt   # read-only: only cfg["model"]["n_actions"] is read
+
+treechop:
+  data_path: data/minerl_goal_v2/episodes.npz
+
+obtain:
+  craft_data_path: data/minerl_craft/episodes.npz
+  coverage_data_path: data/minerl_coverage/episodes.npz
+
+output:
+  dir: assets/diagnostics
+  json_name: action_coverage_v2.json

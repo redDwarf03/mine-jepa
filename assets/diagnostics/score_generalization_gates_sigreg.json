@@ -1,0 +1,60 @@
+{
+  "baseline": {
+    "checkpoint": "checkpoints/ebwm.pt",
+    "gate_a": {
+      "n_tree_close": 10,
+      "n_no_tree": 17,
+      "tree_close_mean": 0.008558709383942186,
+      "no_tree_mean": 0.0108338537187699,
+      "correct_direction": false,
+      "ratio": 0.7899967644120971,
+      "pass": false
+    },
+    "gate_b": {
+      "pearson_r": 0.08520294704197864,
+      "pass": true
+    },
+    "gate_c": {
+      "note": "baseline checkpoint \u2014 regression gate not applicable to itself",
+      "median": 0.004587005125358701,
+      "pass": true
+    },
+    "all_gates_pass": false
+  },
+  "epoch1": {
+    "checkpoint": "checkpoints/ebwm_v3_sigreg_epoch1.pt",
+    "gate_a": {
+      "n_tree_close": 10,
+      "n_no_tree": 17,
+      "tree_close_mean": 0.007099454718991182,
+      "no_tree_mean": 0.01932421250967309,
+      "correct_direction": false,
+      "ratio": 0.3673864958500855,
+      "pass": false
+    },
+    "gate_b": {
+      "pearson_r": 0.13096897981450462,
+      "pass": true
+    },
+    "gate_c": {
+      "median": 0.0002592312957858667,
+      "baseline_median": 0.004587005125358701,
+      "ratio_vs_baseline": 0.0565142808218674,
+      "band": [
+        0.5,
+        2.0
+      ],
+      "band_pass": false,
+      "offset_lo": 0.0,
+      "offset_hi": 0.5,
+      "offset_lo_mean": 0.008275548955818123,
+      "offset_hi_mean": 0.006196690038132146,
+      "direction_correct": false,
+      "direction_ratio": 0.748795043231007,
+      "direction_pass": false,
+      "direction_checked": false,
+      "pass": false
+    },
+    "all_gates_pass": false
+  }
+}

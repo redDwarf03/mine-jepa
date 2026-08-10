@@ -22,7 +22,7 @@ import torch.nn as nn
 
 from mine_jepa.eb_jepa.architectures import ResidualBlock, ResNet5
 from mine_jepa.eb_jepa.jepa import JEPA
-from mine_jepa.eb_jepa.losses import SquareLossSeq, VC_IDM_Sim_Regularizer
+from mine_jepa.eb_jepa.losses import SIGRegRegularizer, SquareLossSeq, VC_IDM_Sim_Regularizer
 from mine_jepa.eb_jepa.nn_utils import TemporalBatchMixin
 
 
@@ -109,6 +109,8 @@ def build_ac_jepa(
     std_coeff: float = 10.0,
     cov_coeff: float = 1.0,
     sim_coeff_t: float = 0.0,
+    regularizer_type: str = "vicreg",
+    sigreg_coeff: float = 1.0,
 ) -> JEPA:
     """
     Assembles a ready-to-train action-conditioned JEPA.
@@ -116,7 +118,10 @@ def build_ac_jepa(
     encoder    : ResNet5 → latent maps [B, embed_dim, T, 8, 8] (64×64 input)
     aencoder   : DiscreteActionEncoder (17 actions → embedding)
     predictor  : ACConvPredictor (single-step latent, context_length=1)
-    regularizer: VC_IDM_Sim_Regularizer (anti-collapse VICReg + temporal similarity)
+    regularizer: VC_IDM_Sim_Regularizer (anti-collapse VICReg + temporal similarity),
+                 or SIGRegRegularizer (cold-start attempt #19 Run B) when
+                 regularizer_type="sigreg" — default "vicreg" keeps prior behavior
+                 unchanged for every existing caller.
     predcost   : SquareLossSeq (latent MSE)
     """
     encoder = ResNet5(
@@ -131,9 +136,16 @@ def build_ac_jepa(
     # spatial_as_samples=False: variance is measured BETWEEN batch samples
     # (x_for_vc = [B*T, C*H*W]) — that's the collapse that matters. With True, the
     # regularizer only saw inter-pixel variance (blind to batch collapse).
-    regularizer = VC_IDM_Sim_Regularizer(
-        cov_coeff=cov_coeff, std_coeff=std_coeff, sim_coeff_t=sim_coeff_t,
-        idm_coeff=0.0, idm=None, first_t_only=False, spatial_as_samples=False,
-    )
+    if regularizer_type == "sigreg":
+        regularizer = SIGRegRegularizer(
+            sigreg_coeff=sigreg_coeff, first_t_only=False, spatial_as_samples=False,
+        )
+    elif regularizer_type == "vicreg":
+        regularizer = VC_IDM_Sim_Regularizer(
+            cov_coeff=cov_coeff, std_coeff=std_coeff, sim_coeff_t=sim_coeff_t,
+            idm_coeff=0.0, idm=None, first_t_only=False, spatial_as_samples=False,
+        )
+    else:
+        raise ValueError(f"unknown regularizer_type: {regularizer_type!r} (expected 'vicreg' or 'sigreg')")
     predcost = SquareLossSeq()
     return JEPA(encoder, aencoder, predictor, regularizer, predcost)

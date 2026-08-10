@@ -1,7 +1,18 @@
 # Mine-JEPA — A JEPA agent playing Minecraft from pixels
 
 > **Self-contained document.** All necessary context is here. The conversation context can
-> be cleared/compacted: this file is the single source of truth.
+> be cleared/compacted: this file is the single source of truth **for the project's original
+> vision, pedagogy, and building blocks (sections 1-3, 5-7 below) — these have not changed.**
+>
+> **For current phase status, read `CLAUDE.md` instead.** Section 4 below (execution plan by
+> phases) reflects this file's ORIGINAL plan, written before the project started; it is kept
+> for historical/narrative reference but is no longer updated phase-by-phase. In practice,
+> what this file called "Phase 5" was redefined during execution to mean **Crafting**
+> (chop → craft → tools), not the packaging step described below — that packaging step still
+> hasn't happened and is now deferred behind Phase 5's own open decision. `CLAUDE.md`'s
+> "Current phase" section and its Phase 5+ cold-start log (18 attempts and counting) are the
+> up-to-date record; `docs/10_coldstart_engineering.md` has the full attempt-by-attempt detail.
+> Last reconciled: 2026-07-28.
 
 ---
 
@@ -129,23 +140,46 @@ anywhere), **MineRL second** (the real Minecraft visuals = the brand that genera
 - 🎬 **Visible — THE VIRAL ASSET**: video of the agent **playing from pixels**.
 - ✅ **GATE**: ≥ 1 task reliably achieved over N episodes.
 
-### Phase 4 — Port to real Minecraft
+### Phase 4 — Port to real Minecraft ✅ DONE
 - Port the pipeline from Crafter → **MineRL** (real Minecraft visuals = the brand).
   Retrain predictor/encoder on MineRL frames.
 - Demo polish: split-screen "**JEPA imagines vs reality**" + "JEPA plays Minecraft,
   it learned its own world model".
 - 📚 **Pedagogy**: `docs/06_minecraft_port.md` (MineRL, VPT action space, install pitfalls).
-- ✅ **GATE**: runs on consumer GPU, reproducible (seed + configs).
+- ✅ **GATE**: runs on consumer GPU, reproducible (seed + configs). Passed — agent chops trees
+  live (25% released / 50% best-seen, unseeded-training variance, see `CLAUDE.md` Phase 4).
 
-### Phase 5 — Viral packaging
+### Phase 5 — Crafting & cold-start ⏳ IN PROGRESS (redefined during execution — see note above)
+This phase did not exist in the original plan below; it replaced what this section originally
+called "Phase 5." Full detail lives in `CLAUDE.md` (Phase 5 / Phase 5+) and
+`docs/09_curiosity_coldstart.md` + `docs/10_coldstart_engineering.md` — summary only here:
+- **Craft loop** (chop → planks → crafting table → tool), GIVEN starting wood: ✅ DONE, 100% live
+  success over 6+ episodes. Required inventory-as-STATE-variable world model (WM v4), not
+  inventory-as-a-head — the POV alone never shows inventory counts.
+- **Cold-start** (find and chop the FIRST tree from a random survival spawn, no starting wood):
+  ⏳ UNRESOLVED after 18 numbered attempts. Two mechanisms give real, partial improvement
+  (`commit_length=4`, `FrontierTracker` coverage search + hazard-avoidance). The planner's
+  central goal-scoring mechanism has been independently confirmed broken on this specific
+  domain 7 times over, by 7 different techniques — closing "fix it with something built on the
+  frozen checkpoint" as an approach; the open question is whether to retrain the world model's
+  core training objective (expensive, never attempted) or consolidate around the partial
+  mechanisms and accept this as a known limitation.
+- ✅ **GATE (craft loop)**: passed. ⏳ **GATE (cold-start, ≥1 reliable success from random
+  spawn)**: not yet met.
+
+### Phase 6 — Viral packaging (was "Phase 5" in the original plan; deferred, not started)
 - **README** with GIFs/video at top, 2-line pitch, **one-command install** (Docker +
   Colab notebook for those without GPU), weights on Hugging Face.
 - **Storytelling**: X thread/blog "I made an AI play Minecraft with LeCun's architecture
   (JEPA), from pixels, without image generation". The `docs/0X_*.md` pedagogical docs
-  **become** the "how it works" content (your learning = your marketing).
+  **become** the "how it works" content (your learning = your marketing). The public learning
+  site (`site/`, French chapters 1-18 live) is already a substantial head start on this phase,
+  built ahead of schedule alongside the Phase 5 campaign.
 - (Narrative bonus) micro-comparison vs an LLM/VLM playing the same task → angle
   "JEPA faster/cheaper per action".
 - ✅ **GATE**: a stranger clones and gets a demo in < 15 min (or via Colab with nothing to install).
+  Blocked behind Phase 5's open decision — packaging a still-unresolved cold-start wall as
+  "done" would violate R5 below.
 
 ---
 
@@ -158,8 +192,9 @@ anywhere), **MineRL second** (the real Minecraft visuals = the brand that genera
   frames, short rollouts, encoding cache. Crafter first (lightweight).
 - **R4 — MineRL install** (JDK8, Zenodo mirrors). → Crafter validates everything first;
   MineRL in Phase 4.
-- **R5 — Demo "doesn't work" = no buzz.** → Strict gates: we only package (Phase 5) if
-  the agent truly succeeds (Phase 3). No hype over nothing.
+- **R5 — Demo "doesn't work" = no buzz.** → Strict gates: we only package (Phase 6) if
+  the agent truly succeeds (Phase 3, and Phase 5's cold-start question is at least resolved
+  one way or the other). No hype over nothing.
 - **R6 — LeWM code unavailable.** → Fallback: eb_jepa (official action-conditioned +
   planning) as base; verified in Phase 0.
 
@@ -172,7 +207,10 @@ anywhere), **MineRL second** (the real Minecraft visuals = the brand that genera
 - Phase 2: `scripts/eval_wm.py` → latent error curve 1/k-step vs copy baseline + imagination viz.
 - Phase 3: `scripts/play.py` → task success rate over N episodes + videos.
 - Phase 4: same on MineRL, on consumer GPU.
-- Phase 5: "clone-and-run" test by a third party / Colab.
+- Phase 5: `scripts/play_craft.py` → craft-loop success rate (done) + cold-start success rate
+  over N episodes (unresolved — see `CLAUDE.md`/`docs/10_coldstart_engineering.md` for the
+  full, honestly-reported attempt-by-attempt numbers, including negative results).
+- Phase 6: "clone-and-run" test by a third party / Colab.
 
 ---
 
