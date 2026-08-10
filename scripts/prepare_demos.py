@@ -29,6 +29,12 @@ def parse_args():
     return p.parse_args()
 
 
+# Index mapping cross-checked against configs/minerl_actions.yaml (n_actions=17,
+# the exact vocabulary ebwm.pt is trained on): 0=noop, 1=forward, 2=back,
+# 3=left, 4=right, 5=jump, 6=attack, 7=forward+attack, 8=forward+jump,
+# 9=look up, 10=look down, 11=turn left, 12=turn right, 13=sprint+forward,
+# 14=sprint+forward+attack, 15/16=forward+veer (never emitted here, no
+# demo-side signal distinguishes a slight veer from a full turn).
 ACTION_MAP = {
     (0, 1, 1): 14,   # sprint + forward + attack
     (0, 1, 0): 13,   # sprint + forward
@@ -40,33 +46,64 @@ ACTION_MAP = {
 
 
 def discretize_actions(d: dict, n: int) -> np.ndarray:
+    """Cold-start attempt #19 Run A: extends the original forward/attack/
+    sprint/yaw-only discretizer with action$jump, action$left, action$right,
+    action$back and the camera pitch component (action$camera[:, 0]) —
+    previously read but silently dropped by every prior version, which is why
+    ebwm.pt's own Treechop training data structurally never emits action
+    indices 2/3/4/5/8/9/10 (attempt #18 Diagnostic 2). Frames that already
+    resolved via the forward/attack/sprint/yaw combos below keep the exact
+    same assignment as before (priority order preserved); only frames that
+    previously fell through to noop/yaw-only can now resolve to a movement
+    action, which is the intended fix, not a regression.
+    """
     acts = np.zeros(n, dtype=np.int32)
     fwd = np.array(d.get("action$forward", np.zeros(n)), dtype=np.int32)
     atk = np.array(d.get("action$attack", np.zeros(n)), dtype=np.int32)
     spr = np.array(d.get("action$sprint", np.zeros(n)), dtype=np.int32)
+    jump = np.array(d.get("action$jump", np.zeros(n)), dtype=np.int32)
+    left = np.array(d.get("action$left", np.zeros(n)), dtype=np.int32)
+    right = np.array(d.get("action$right", np.zeros(n)), dtype=np.int32)
+    back = np.array(d.get("action$back", np.zeros(n)), dtype=np.int32)
     cam = np.array(d.get("action$camera", np.zeros((n, 2))), dtype=np.float32)
     for i in range(n):
-        if fwd[i] == 0 and spr[i] == 0 and atk[i] == 0:
-            # Look at camera delta to distinguish noop and rotations
-            dy = cam[i, 1] if cam.ndim == 2 else 0.0
-            if dy > 2.0:
-                acts[i] = 12   # turn right
-            elif dy < -2.0:
-                acts[i] = 11   # turn left
-            else:
-                acts[i] = 0    # noop
-        elif fwd[i] and spr[i] and atk[i]:
+        dy = cam[i, 1] if cam.ndim == 2 else 0.0   # yaw (unchanged from before)
+        dx = cam[i, 0] if cam.ndim == 2 else 0.0   # pitch (new)
+        if fwd[i] and spr[i] and atk[i]:
             acts[i] = 14
         elif fwd[i] and spr[i]:
             acts[i] = 13
         elif fwd[i] and atk[i]:
             acts[i] = 7
+        elif fwd[i] and jump[i]:
+            acts[i] = 8    # jump + forward, new
         elif fwd[i]:
             acts[i] = 1
         elif atk[i]:
             acts[i] = 6
+        elif jump[i]:
+            acts[i] = 5    # jump alone, new
+        elif left[i]:
+            acts[i] = 3    # strafe left, new
+        elif right[i]:
+            acts[i] = 4    # strafe right, new
+        elif back[i]:
+            acts[i] = 2    # back, new
         else:
-            acts[i] = 0
+            # Same fallback as the original: distinguish noop from a pure
+            # camera turn, now also checking pitch (same 2.0 symmetric
+            # threshold, yaw checked first so previously-yaw-resolved frames
+            # are unaffected).
+            if dy > 2.0:
+                acts[i] = 12   # turn right
+            elif dy < -2.0:
+                acts[i] = 11   # turn left
+            elif dx > 2.0:
+                acts[i] = 10   # look down, new
+            elif dx < -2.0:
+                acts[i] = 9    # look up, new
+            else:
+                acts[i] = 0    # noop
     return acts
 
 

@@ -1,0 +1,80 @@
+# Cold-start attempt #17 — offline OOD gate (no training, no MineRL/Java, no
+# checkpoint modification). Attempt #10 found ebwm.pt's own goal-centroid score
+# REVERSES direction on MineRLObtainIronPickaxeDense's spawn distribution
+# (closer trees -> lower score, the opposite of Treechop). Rather than fixing
+# the score directly (closed 5-fold: attempts #7, #11, #14 Phase1/Phase2, #15 —
+# every downstream head bolted onto ebwm.pt's frozen latent finds the same
+# brightness/scene-composition shortcut), this tests whether an
+# out-of-distribution DETECTOR can flag when the score should not be trusted,
+# so a later dispatch can fall back to FrontierTracker coverage search
+# (attempt #12) instead. This dispatch is the offline validation gate only —
+# no wiring into planner.py.
+#
+# Method: Lee et al., "A Simple Unified Framework for Detecting
+# Out-of-Distribution Samples and Adversarial Attacks", arXiv:1807.03888
+# (NeurIPS 2018) — single-Gaussian fit (mean + covariance) over the training
+# distribution's features + Mahalanobis distance at test time. Applied here to
+# the SAME pooled latent CraftPlannerV4/SwitchingCraftPlanner already compute
+# (mine_jepa/ebwm/planner.py: vpool = predicted.mean(dim=(3,4))), for a
+# single frame's own encoded latent (no rollout/actions needed — this is the
+# h=0, pre-action pooled state). Closed-form statistics, not a trained model:
+# nothing here can learn a brightness shortcut the way a trained head could.
+
+seed: 0
+
+model:
+  checkpoint: checkpoints/ebwm.pt
+
+# (mu, Sigma) fit: a random subsample of frame INDICES drawn from the whole
+# file ebwm.pt trained on (not restricted to the `treechop` diagnostic set's
+# episodes/offsets below) — any index that also lands in the diagnostic set is
+# excluded at runtime so fit and evaluation frames are disjoint (checked and
+# reported, not just assumed). n_fit_frames=4000 out of ~500k total frames is
+# a representative subsample, not the full set — documented, not the full-data
+# closed-form fit, to keep this diagnostic cheap.
+fit:
+  data_path: data/minerl_goal/episodes.npz
+  n_fit_frames: 4000
+  covariance_shrinkage: 1.0e-3   # Sigma += shrinkage * I, numerical stability for inversion
+
+# Reuses scripts/diagnose_score_generalization.py's gather_treechop_frames /
+# gather_obtain_frames VERBATIM — identical 251-frame diagnostic set (160
+# Treechop, 11 real Obtain spawn thumbnails from attempt #9, 80 Obtain
+# coverage-episode frames from attempt #3), same config shape.
+treechop:
+  data_path: data/minerl_goal/episodes.npz
+  n_episodes: 40
+  offsets: [0.0, 0.1, 0.25, 0.5]
+  n_thumbs: 0
+
+obtain:
+  spawn_thumb_dir: assets/spawn_thumbs
+  coverage_data_path: data/minerl_coverage/episodes.npz
+  coverage_chunk_size: 400
+  coverage_n_chunks: 20
+  coverage_offsets: [0.0, 0.1, 0.25, 0.5]
+
+# Hand-labeled direction-check frames, verbatim from
+# configs/train_value_projector_obtain.yaml's direction_check block (attempt
+# #11). CLAUDE.md's attempt #10 write-up confirms the goal-centroid score's
+# direction is WRONG on every one of these: tree_close frames scored LOWER
+# (0.0057-0.0060 spawn, 0.0030-0.0098 coverage) than no_tree frames
+# (0.0130-0.0190 spawn, 0.0146-0.0176 coverage) — reversed from the correct
+# Treechop pattern. Gate B checks whether Mahalanobis distance is elevated
+# SPECIFICALLY on this labeled-wrong subset, or uniformly across all Obtain
+# frames regardless of label.
+direction_check:
+  spawn_tree_close: ["ep001_1784647176868", "ep001_1784647708743"]
+  spawn_no_tree: ["ep001_1784633396270", "ep001_1784633525602", "ep001_1784647041967", "ep001_1784647444573"]
+  coverage_tree_close: [0, 7]   # chunk index (row "episode" field), offset 0.0
+  coverage_no_tree: [1, 5]      # chunk index (row "episode" field), offset 0.0
+
+output:
+  dir: assets/diagnostics
+  csv_name: ood_gate.csv
+  stats_name: ood_mahalanobis_stats.npz
+
+gates:
+  min_separation_ratio: 1.3   # Gate A bar, same threshold this campaign has used since attempt #7
+  specific_ratio_bar: 1.2     # Gate B: wrong-labeled mean MD / other-Obtain mean MD must clear this
+  max_brightness_corr: 0.3    # Gate C bar — must stay well below every prior confound (0.117-0.947)

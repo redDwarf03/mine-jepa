@@ -1,0 +1,36 @@
+# Cold-start attempt #18, Diagnostic 2 of 2 — action-coverage / distribution-shift
+# check between ebwm.pt's Treechop training data and the pooled Obtain-domain
+# data (data/minerl_craft + data/minerl_coverage). Motivated by Zhang, Guan,
+# Zhang, Zhang, Li, "On the Identifiability of Controlled World Models"
+# (arXiv:2607.22430, docs/references/index.md): an action-conditioned JEPA
+# (ebwm.pt's exact architecture family) only recovers a reliable state/dynamics
+# model when the training data's action distribution has adequate coverage of
+# the actions later exercised at test time. Attempt #10 found ebwm.pt's own
+# goal-centroid score reverses direction on the Obtain domain; every attempt
+# since assumed a purely photometric cause (6 independent confirmations) — this
+# is the first to test whether an action-coverage gap contributes too.
+#
+# No training, no GPU strictly required (action-array statistics only), no
+# checkpoint modified — ebwm.pt is loaded read-only, cpu, only to read
+# cfg["model"]["n_actions"] (its trained action-vocabulary size).
+
+seed: 0
+
+model:
+  checkpoint: checkpoints/ebwm.pt   # read-only: only cfg["model"]["n_actions"] is read
+
+# The same Treechop data source every prior diagnostic in this campaign has
+# used as "what ebwm.pt was trained on" (see configs/diagnose_ood_gate.yaml's
+# `fit.data_path` / `treechop.data_path`).
+treechop:
+  data_path: data/minerl_goal/episodes.npz
+
+# Pooled WITHOUT oversampling (attempt #14 Phase 2 4x-oversampled minerl_coverage
+# for training; this diagnostic reports the raw pooled composition instead).
+obtain:
+  craft_data_path: data/minerl_craft/episodes.npz
+  coverage_data_path: data/minerl_coverage/episodes.npz
+
+output:
+  dir: assets/diagnostics
+  json_name: action_coverage.json

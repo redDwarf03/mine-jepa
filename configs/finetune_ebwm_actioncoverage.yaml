@@ -1,0 +1,62 @@
+# Cold-start attempt #19, Run A — fine-tune ebwm.pt on the ACTION-COVERAGE-FIXED
+# Treechop dataset (data/minerl_goal_v2, scripts/prepare_demos.py::discretize_actions
+# extended to read action$jump/left/right/back + camera pitch, per the Run A
+# scoping) merged with the same Obtain-domain sources attempt #14 Phase 2 used
+# (data/minerl_craft, data/minerl_coverage). Everything else is an exact copy of
+# configs/finetune_ebwm_treechop_obtain.yaml (already validated: batch_var
+# 1.15-1.17 every epoch, no collapse) — the ONLY new variable in this run is the
+# underlying Treechop data (8/17 action indices covered -> 15/17, attempt #18
+# Diagnostic 2's root cause). Isolating the action-coverage lever from the
+# already-exhausted photometric-fix line (attempts #7/#11/#14 Phase1/#15/#17)
+# would mean disabling augmentation, but per this dispatch's own scoping the
+# recipe (including augmentation) is reused wholesale from attempt #14 Phase 2 —
+# any Gate B change here should be read as "coverage fix + augmentation", not
+# "coverage fix alone".
+
+data:
+  path: data/minerl_treechop_obtain_v2/episodes.npz
+  num_frames: 8
+  subsample: 4
+  val_fraction: 0.1
+  max_action: 17
+  source_weights:
+    0: 1.0
+    1: 4.0
+    2: 4.0
+
+model:
+  embed_dim: 64
+  encoder_hidden: 32
+  n_actions: 17
+  action_embed_dim: 16
+  predictor_hidden: 128
+
+regularizer:
+  std_coeff: 10.0
+  cov_coeff: 1.0
+  sim_coeff_t: 0.0
+
+training:
+  resume_from: checkpoints/ebwm.pt
+  epochs: 5
+  batch_size: 64
+  lr: 3.0e-5
+  weight_decay: 1.0e-5
+  num_workers: 0
+  seed: 0
+
+augmentation:
+  color_jitter:
+    enabled: true
+    brightness: 0.3
+    contrast: 0.2
+    saturation: 0.2
+    gamma_range: [0.7, 1.4]
+
+logging:
+  log_every: 1
+  collapse_threshold: 1.0e-4
+
+checkpoint:
+  dir: checkpoints/
+  name_prefix: ebwm_v3_actioncoverage   # snapshots: {prefix}_epoch{N}.pt

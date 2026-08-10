@@ -28,6 +28,7 @@ logging.getLogger("minerl").setLevel(logging.CRITICAL)
 
 from mine_jepa.ebwm.craft_wm import build_craft_wm_v4
 from mine_jepa.ebwm.dataset import INV_SCALE
+from mine_jepa.ebwm.depth import best_heading_delta_deg, column_depth_scores, column_heading_offsets_deg, load_depth_model
 from mine_jepa.ebwm.frontier import FrontierTracker
 from mine_jepa.ebwm.hazard import detect_underwater
 from mine_jepa.ebwm.planner import DiscreteLatentPlanner, SwitchingCraftPlanner
@@ -304,6 +305,14 @@ def main():
     # the Treechop training distribution; NOT RND, whose online predictor was
     # shown to converge on tick-count rather than scene content in this exact
     # deployment, attempt #4). Same trigger (goal_score_std flat on the chop planner).
+    # "depth" (cold-start attempt #18 follow-up, mine_jepa/ebwm/depth.py): steers
+    # toward the column of the CURRENT observed frame with the closest-looking
+    # object per an off-the-shelf MiDaS_small depth model — a genuinely
+    # different MODALITY from goal-centroid/RND/frontier, computed on real
+    # pixels only (never on the world model's imagined latents — no decoder
+    # exists to make that possible). Navigation heading only; never touches
+    # CraftPlannerV4's goal-centroid scoring. LIMITATION: depth alone cannot
+    # tell a tree trunk apart from a wall, a hill, or the ground.
     scan_macro = scan_cfg.get("macro", "turn")
     bushwhack_max_ticks = int(scan_cfg.get("bushwhack_max_ticks", 30))
     frontier_cfg = scan_cfg.get("frontier", {}) or {}
@@ -330,6 +339,30 @@ def main():
             tie_break=str(frontier_cfg.get("tie_break", "first")),
             seed=frontier_cfg.get("tie_break_seed", cfg.get("agent", {}).get("seed", 0)),
         )
+
+    # Depth scan macro (cold-start attempt #18 follow-up, mine_jepa/ebwm/depth.py):
+    # MiDaS_small loaded once at startup, config-gated on scan.macro=="depth" —
+    # absent/other macro = zero extra model load, zero extra computation.
+    depth_cfg = scan_cfg.get("depth", {}) or {}
+    depth_max_ticks = int(depth_cfg.get("max_ticks", 30))
+    depth_model, depth_transform, depth_offsets = None, None, None
+    depth_n_columns = int(depth_cfg.get("n_columns", 4))
+    depth_fov_deg = float(depth_cfg.get("fov_deg", 70.0))
+    depth_top_frac = float(depth_cfg.get("top_frac", 0.1))
+    depth_turn_slots = int(depth_cfg.get("turn_slots", 1))
+    depth_align_deg = float(depth_cfg.get("align_deg", 22.0))
+    if scan_macro == "depth":
+        print("\nLoading MiDaS_small for the depth scan macro "
+              "(off-the-shelf, zero Minecraft-specific training)...")
+        depth_model, depth_transform = load_depth_model(
+            depth_cfg.get("repo", "intel-isl/MiDaS"),
+            depth_cfg.get("model_type", "MiDaS_small"),
+            device,
+        )
+        depth_offsets = column_heading_offsets_deg(depth_n_columns, depth_fov_deg)
+        print(f"  MiDaS_small loaded | n_columns={depth_n_columns} fov_deg={depth_fov_deg} "
+              f"column_offsets_deg={np.round(depth_offsets, 1).tolist()} "
+              f"turn_slots={depth_turn_slots} align_deg={depth_align_deg}")
 
     # Transition logging (docs/10 cold-start attempt #16 candidate: Coverage-
     # Value Predictor, offline validation gate ONLY — no predictor is built or
@@ -364,6 +397,12 @@ def main():
                 f"jump=a{scan_cfg.get('bushwhack_jump_action', 8)} "
                 f"jump_every={scan_cfg.get('bushwhack_jump_every', 4)} "
                 f"max_ticks={bushwhack_max_ticks}"
+            )
+        elif scan_macro == "depth":
+            macro_desc = (
+                f"depth n_columns={depth_n_columns} fov_deg={depth_fov_deg} "
+                f"turn_slots={depth_turn_slots} align_deg={depth_align_deg} "
+                f"max_ticks={depth_max_ticks}"
             )
         else:
             macro_desc = (
@@ -515,6 +554,7 @@ def main():
         flat_count, scanning, scan_replans, scan_triggers = 0, False, 0, 0
         bushwhack_ticks = 0
         frontier_ticks = 0
+        depth_ticks = 0
         if frontier_tracker is not None:
             frontier_tracker.reset()   # per-episode memory only, fresh spawn
         pov_buffer = deque([pov] if log_transitions else [], maxlen=8)
@@ -557,12 +597,14 @@ def main():
                 if not scanning:
                     flat_count = flat_count + 1 if flat else 0
                     if flat_count >= int(scan_cfg.get("patience", 3)):
-                        scanning, scan_replans, bushwhack_ticks, frontier_ticks = True, 0, 0, 0
+                        scanning, scan_replans = True, 0
+                        bushwhack_ticks, frontier_ticks, depth_ticks = 0, 0, 0
                         scan_triggers += 1
                 if scanning:
                     ticks_exceeded = (
                         (scan_macro == "bushwhack" and bushwhack_ticks >= bushwhack_max_ticks)
                         or (scan_macro == "frontier" and frontier_ticks >= frontier_max_ticks)
+                        or (scan_macro == "depth" and depth_ticks >= depth_max_ticks)
                     )
                     if not flat or scan_replans >= int(scan_cfg.get("max_replans", 40)) or ticks_exceeded:
                         scanning, flat_count = False, 0
@@ -629,6 +671,70 @@ def main():
                                   f"target_cell={cell} target_visits={count} "
                                   f"unique_cells={frontier_tracker.n_unique_cells}")
                         frontier_ticks += len(committed)
+                        scan_replans += 1
+                    elif scan_macro == "depth":
+                        # Cold-start attempt #18 follow-up (mine_jepa/ebwm/depth.py):
+                        # MiDaS_small run on the CURRENT observed frame ONLY — there
+                        # is no decoder from imagined WM latents back to pixels in
+                        # this project, so unlike frontier's dead-reckoned world
+                        # position this heading is a purely CAMERA-RELATIVE bearing
+                        # re-derived fresh every replan, with no persistent
+                        # cross-replan target (the object judged "closest" can be a
+                        # different real object next replan, once the view has
+                        # rotated).
+                        #
+                        # LIMITATION (repeated here, not just in the module
+                        # docstring): depth alone cannot tell a tree trunk apart
+                        # from a wall, a hill, or the ground when looking down — it
+                        # only answers "something is close this way", not "that
+                        # something is choppable". Navigation heading only; never
+                        # touches CraftPlannerV4's goal-centroid scoring.
+                        scores = column_depth_scores(
+                            depth_model, depth_transform, pov, device, depth_n_columns, depth_top_frac,
+                        )
+                        delta, col_idx = best_heading_delta_deg(scores, depth_offsets)
+                        # Turn/align sizing — see mine_jepa/ebwm/depth.py's docstring
+                        # for the full derivation. hazard.py's escape uses the
+                        # STRICT "align_deg >= full turn sweep" invariant (never
+                        # flips delta's sign on any single check) — that bound would
+                        # require align_deg >= depth_turn_slots*action_repeat*10deg
+                        # (40deg at this config's defaults), which EXCEEDS every
+                        # realistic column bearing at fov_deg=70/4 columns (max
+                        # ~26deg), permanently disabling the turn branch. Depth's
+                        # delta is camera-relative and structurally bounded by
+                        # fov_deg/2, unlike hazard's world-position delta which can
+                        # be anywhere in [-180, 180] — so a WEAKER "settles, does
+                        # not repeat" bound (align_deg >= sweep / 2) is used
+                        # instead: after one overshoot the residual is guaranteed
+                        # <= align_deg, so it will not re-trigger a turn in the
+                        # opposite direction next replan (one bounded correction,
+                        # not attempt #13's original UNBOUNDED ping-pong, where
+                        # align_deg was smaller than even sweep/2).
+                        if abs(delta) > depth_align_deg:
+                            turn_action = (
+                                int(depth_cfg.get("turn_right_action", 12)) if delta > 0
+                                else int(depth_cfg.get("turn_left_action", 11))
+                            )
+                            forward_action = int(depth_cfg.get("forward_action", 13))
+                            committed = (
+                                [turn_action] * min(depth_turn_slots, len(committed))
+                                + [forward_action] * max(0, len(committed) - depth_turn_slots)
+                            )
+                            act_kind = "turn"
+                        else:
+                            jump_every = int(depth_cfg.get("jump_every", 4))
+                            jump_action = int(depth_cfg.get("jump_action", 8))
+                            forward_action = int(depth_cfg.get("forward_action", 13))
+                            committed = [
+                                jump_action if (depth_ticks + i) % jump_every == 0 else forward_action
+                                for i in range(len(committed))
+                            ]
+                            act_kind = "forward"
+                        if scan_cfg.get("log_std", False):
+                            print(f"    [depth] step={step:4d} col={col_idx} "
+                                  f"scores={np.round(scores, 3).tolist()} "
+                                  f"delta={delta:6.1f} action={act_kind}")
+                        depth_ticks += len(committed)
                         scan_replans += 1
                     else:
                         committed = [int(scan_cfg.get("turn_action", 12))] * len(committed)
